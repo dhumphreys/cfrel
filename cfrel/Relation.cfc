@@ -2,7 +2,22 @@
 	
 	<cffunction name="init" returntype="struct" access="public" hint="Constructor">
 		<cfscript>
+			variables.sql = {
+				select = [],
+				from = false,
+				joins = [],
+				joinParameters = [],
+				wheres = [],
+				whereParameters = [],
+				orders = []
+			};
 			return this;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="new" returntype="struct" access="public" hint="Create new instance of relation">
+		<cfscript>
+			return CreateObject("component", "cfrel.relation").init();
 		</cfscript>
 	</cffunction>
 	
@@ -60,6 +75,12 @@
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="sql" returntype="string" access="public">
+	<cffunction name="toSql" returntype="string" access="public" hint="Convert relational data into a SQL string">
+	</cffunction>
+	
+	<cffunction name="variableDump" returntype="struct" access="public" hint="Return private variables for testing">
+		<cfscript>
+			return variables;
+		</cfscript>
 	</cffunction>
 </cfcomponent>
