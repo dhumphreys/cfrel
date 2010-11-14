@@ -1,4 +1,5 @@
-<cfcomponent extends="mxunit.Framework.TestCase">
+<cfcomponent extends="mxunit.Framework.TestCase" output="false">
+	
 	<cffunction name="setup" returntype="void" access="public">
 		<cfscript>
 			variables.factory = CreateObject("component", "cfrel.relation");
@@ -48,7 +49,7 @@
 			var loc = {};
 			
 			// call each of the basic chainable methods
-			loc.select = instance.select();
+			loc.select = instance.select("a");
 			loc.include = instance.include();
 			loc.join = instance.join();
 			loc.where = instance.where();
@@ -58,11 +59,65 @@
 			loc.offset = instance.offset();
 			
 			// chain each call together for further testing
-			loc.multiple = instance.select().include().join().where().order().limit().offset();
+			loc.multiple = instance.select("b").include().join().where().order().limit().offset();
 			
 			// assert that each return is still the same object
 			for (key in loc)
 				assertSame(instance, loc[key]);
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testSelectSyntax" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.instance1 = factory.new();
+			loc.instance2 = factory.new();
+			loc.instance3 = factory.new();
+			loc.testVal = ListToArray("a,b,c");
+			
+			// run SELECT in various ways
+			loc.instance1.select("*");
+			loc.instance2.select("a,b,c");
+			loc.instance3.select("a","b","c");
+			
+			// make sure the items were added
+			loc.select1 = loc.instance1.variableDump().sql.select;
+			loc.select2 = loc.instance2.variableDump().sql.select;
+			loc.select3 = loc.instance3.variableDump().sql.select;
+			assertEquals(["*"], loc.select1, "SELECT clause should accept '*'");
+			assertEquals(loc.testVal, loc.select2, "SELECT clause should accept a list of columns");
+			assertEquals(loc.testVal, loc.select3, "SELECT clause should accept a columns as multiple arguments");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testSelectAppend" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.instance = factory.new();
+			
+			// run chained selects to confirm appending with both syntaxes
+			loc.instance.select("a,b").select("c","d").select("e,f");
+			
+			// make sure items were stacked/appended
+			loc.select = loc.instance.variableDump().sql.select;
+			assertEquals(ListToArray("a,b,c,d,e,f"), loc.select, "SELECT should append additional selects");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testEmptySelect" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.pass = false;
+			loc.instance = factory.new();
+			
+			// confirm that exception is thrown
+			try {
+				loc.instance.select();
+			} catch (Any e) {
+				loc.pass = true;
+			}
+			
+			assertTrue(loc.pass, "Empty parameters to SELECT should throw an error");
 		</cfscript>
 	</cffunction>
 	

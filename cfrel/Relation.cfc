@@ -1,4 +1,5 @@
 <cfcomponent output="false">
+	<cfinclude template="functions.cfm" />
 	
 	<cffunction name="init" returntype="struct" access="public" hint="Constructor">
 		<cfscript>
@@ -29,6 +30,28 @@
 	
 	<cffunction name="select" returntype="struct" access="public" hint="Append to the SELECT clause of the relation">
 		<cfscript>
+			var loc = {};
+			switch (StructCount(arguments)) {
+				
+				// do not allow empty call
+				case 0:
+					throwException("Arguments are required to select()", "Expression");
+					break;
+					
+				// treat single arguments as a list and append each list item
+				case 1:
+					loc.arguments = ListToArray(arguments[1]);
+					loc.iEnd = ArrayLen(loc.arguments);
+					for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+						ArrayAppend(sql.select, loc.arguments[loc.i]);
+					break;
+				
+				// loop and append if many arguments are passed
+				default:
+					for (loc.key in arguments)
+						ArrayAppend(sql.select, arguments[loc.key]);
+					break;
+			}
 			return this;
 		</cfscript>
 	</cffunction>
