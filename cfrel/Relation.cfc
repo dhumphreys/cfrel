@@ -87,13 +87,33 @@
 	</cffunction>
 	
 	<cffunction name="limit" returntype="struct" access="public" hint="Restrict the number of records when querying">
+		<cfargument name="value" type="numeric" required="true" />
 		<cfscript>
+			sql.limit = Int(arguments.value);
 			return this;
 		</cfscript>
 	</cffunction>
 	
 	<cffunction name="offset" returntype="struct" access="public" hint="Skip some records when querying">
+		<cfargument name="value" type="numeric" required="true" />
 		<cfscript>
+			sql.offset = Int(arguments.value);
+			return this;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="paginate" returntype="struct" access="public" hint="Calculate LIMIT and OFFSET with page number and per-page constraint">
+		<cfargument name="page" type="numeric" required="true" />
+		<cfargument name="perPage" type="numeric" required="true" />
+		<cfscript>
+			
+			// throw error if bad values are passed
+			if (arguments.page LT 1 OR arguments.perPage LT 1)
+				throwException("Page and per-page must be greater than zero", "Expression");
+			
+			// calculate limit and offset
+			sql.limit = Int(arguments.perPage);
+			sql.offset = (Int(arguments.page) - 1) * sql.limit;
 			return this;
 		</cfscript>
 	</cffunction>

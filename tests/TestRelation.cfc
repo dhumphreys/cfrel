@@ -55,11 +55,12 @@
 			loc.where = instance.where();
 			loc.group = instance.group();
 			loc.order = instance.order();
-			loc.limit = instance.limit();
-			loc.offset = instance.offset();
+			loc.limit = instance.limit(5);
+			loc.offset = instance.offset(10);
+			loc.paginate = instance.paginate(1, 5);
 			
 			// chain each call together for further testing
-			loc.multiple = instance.select("b").include().join().where().order().limit().offset();
+			loc.multiple = instance.select("b").include().join().where().order().limit(2).offset(8).paginate(3, 10);
 			
 			// assert that each return is still the same object
 			for (key in loc)
@@ -118,6 +119,72 @@
 			}
 			
 			assertTrue(loc.pass, "Empty parameters to SELECT should throw an error");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testLimit" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.instance = factory.new();
+			loc.instance.limit(31);
+			loc.sql = loc.instance.variableDump().sql;
+			assertTrue(StructKeyExists(loc.sql, "limit"), "LIMIT should be set in SQL");
+			assertEquals(31, loc.sql.limit, "LIMIT should be equal to value set");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testOffset" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.instance = factory.new();
+			loc.instance.offset(15);
+			loc.sql = loc.instance.variableDump().sql;
+			assertTrue(StructKeyExists(loc.sql, "offset"), "OFFSET should be set in SQL");
+			assertEquals(15, loc.sql.offset, "OFFSET should be equal to value set");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testPaginateSyntax" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			
+			// an example: 5th page of 10 per page
+			loc.instance = factory.new();
+			loc.instance.paginate(5, 10);
+			loc.sql = loc.instance.variableDump().sql;
+			
+			// make sure proper values were set in LIMIT and OFFSET clauses
+			assertTrue(StructKeyExists(loc.sql, "limit"), "LIMIT should be set in SQL");
+			assertTrue(StructKeyExists(loc.sql, "offset"), "OFFSET should be set in SQL");
+			assertEquals(10, loc.sql.limit, "LIMIT should be equal to value set");
+			assertEquals(40, loc.sql.offset, "OFFSET should equal (page - 1) * per-page");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testPaginateBounds" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.instance = factory.new();
+			loc.pass1 = false;
+			loc.pass2 = false;
+			
+			// test <1 value for page
+			try {
+				loc.instance.paginate(0, 5);
+			} catch (Any e) {
+				loc.pass1 = true;
+			}
+			
+			// test <1 value for perPage
+			try {
+				loc.instance.paginate(1, 0);
+			} catch (Any e) {
+				loc.pass2 = true;
+			}
+			
+			// make sure errors are thrown
+			assertTrue(loc.pass1, "paginate() should throw error when page < 1");
+			assertTrue(loc.pass1, "paginate() should throw error when perPage < 1");
 		</cfscript>
 	</cffunction>
 	
