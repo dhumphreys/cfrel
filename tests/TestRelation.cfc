@@ -55,7 +55,7 @@
 			loc.from = instance.from("users")
 			loc.include = instance.include();
 			loc.join = instance.join();
-			loc.where = instance.where();
+			loc.where = instance.where(a=5);
 			loc.group = instance.group();
 			loc.order = instance.order();
 			loc.limit = instance.limit(5);
@@ -63,7 +63,7 @@
 			loc.paginate = instance.paginate(1, 5);
 			
 			// chain each call together for further testing
-			loc.multiple = instance.select("b").from("posts").include().join().where().order().limit(2).offset(8).paginate(3, 10);
+			loc.multiple = instance.select("b").from("posts").include().join().where(b=10).order().limit(2).offset(8).paginate(3, 10);
 			
 			// assert that each return is still the same object
 			for (key in loc)
@@ -160,6 +160,64 @@
 				loc.pass = true;
 			}
 			assertTrue(loc.pass, "from() should throw exception when given invalid object");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testSingleWhere" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.instance = new();
+			loc.instance.where("1 = 1");
+			loc.sql = loc.instance._inspect().sql;
+			assertEquals(1, ArrayLen(loc.sql.wheres), "where() should only set one condition");
+			assertEquals(0, ArrayLen(loc.sql.whereParameters), "where() should not set any parameters");
+			assertEquals("1 = 1", loc.sql.wheres[1], "where() should append the correct condition");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testAppendWhere" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.instance = new();
+			loc.instance.where("1 = 1").where("2 = 2");
+			assertEquals("2 = 2", loc.instance._inspect().sql.wheres[2], "where() should append the second condition");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testWhereWithParameters" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.whereClause = "id = ? OR name = '?' OR role IN ?";
+			loc.whereParameters = [50, "admin", [1,2,3]];
+			loc.instance = new();
+			loc.instance.where(loc.whereClause, loc.whereParameters);
+			loc.sql = loc.instance._inspect().sql;
+			assertEquals(loc.whereClause, loc.sql.wheres[1], "where() should set the passed condition");
+			assertEquals(loc.whereParameters, loc.sql.whereParameters, "where() should set parameters in correct order");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testWhereParameterCount" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.pass = false;
+			loc.instance = new();
+			try {
+				loc.instance.where("id = ? OR name = '?'", [2]);
+			} catch (custom_type e) {
+				loc.pass = true;
+			}
+			assertTrue(loc.pass, "where() should throw an error if wrong count of parameters is passed");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testWhereWithNamedArguments" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.instance = new().where(a=45, b="BBB", c=[1,2,3]);
+			loc.sql = loc.instance._inspect().sql;
+			assertEquals(["a = ?", "b = ?", "c IN ?"], loc.sql.wheres, "Named arguments should be in WHERE clause");
+			assertEquals([45, "BBB", [1,2,3]], loc.sql.whereParameters, "Parameters should be set and in correct order");
 		</cfscript>
 	</cffunction>
 	

@@ -90,7 +90,75 @@
 	</cffunction>
 	
 	<cffunction name="where" returntype="struct" access="public" hint="Append to the WHERE clause of the relation">
+		<cfargument name="whereClause" type="any" required="false" />
+		<cfargument name="whereParameters" type="array" required="false" />
 		<cfscript>
+			var loc = {};
+			
+			// get count of arguments
+			loc.argumentCount = StructCount(arguments);
+			
+			// if arguments are empty
+			if (loc.argumentCount EQ 0) {
+				throwException(message="Relation requires arguments in where()");
+				
+			// if a where clause was passed
+			} else if (StructKeyExists(arguments, "whereClause")) {
+				
+				// make sure where clause fragment is a string
+				if (NOT IsSimpleValue(arguments.whereClause) OR Len(arguments.whereClause) EQ 0)
+					throwException(message="WHERE clause must be a string with length > 0");
+					
+				// count the number of placeholders in where clause and argument array
+				loc.placeholderCount = Len(arguments.whereClause) - Len(Replace(arguments.whereClause, "?", "", "ALL"));
+				loc.parameterCount = iif(StructKeyExists(arguments, "whereParameters"), "ArrayLen(arguments.whereParameters)", DE(0));
+				
+				// make sure the numbers are equal
+				if (loc.placeholderCount NEQ loc.parameterCount)
+					throwException(message="Parameter count does not match number of placeholders in WHERE clause");
+					
+				// append clause and parameters to sql options
+				ArrayAppend(sql.wheres, arguments.whereClause);
+				for (loc.i = 1; loc.i LTE loc.parameterCount; loc.i++)
+					ArrayAppend(sql.whereParameters, arguments.whereParameters[loc.i]);
+				
+			} else {
+				
+				// loop over parameters
+				for (loc.key in arguments) {
+					
+					// FIXME: (1) railo seems to keep these arguments around
+					if (ListFindNoCase("whereClause,whereParameters", loc.key))
+						continue;
+					
+					// grab the value from arguments
+					loc.value = arguments[loc.key];
+					
+					// use an IN if value is an array
+					if (IsArray(loc.value))
+						loc.where = "#loc.key# IN ?";
+						
+					// use an equality check if value is simple
+					else if (IsSimpleValue(loc.value))
+						loc.where = "#loc.key# = ?";
+						
+					// throw an error otherwise
+					else
+						throwException("Invalid parameter to WHERE clause. Only arrays and simple values may be used.");
+					
+					// FIXME: (2) note that we found a good value
+					loc.success = true;
+						
+					// append WHERE clause and parameters
+					ArrayAppend(sql.wheres, loc.where);
+					ArrayAppend(sql.whereParameters, loc.value);
+				}
+				
+				// FIXME: (3) throw an error if a good value was not found
+				if (NOT StructKeyExists(loc, "success"))
+					throwException(message="Relation requires arguments in where()");
+			}
+			
 			return this;
 		</cfscript>
 	</cffunction>
