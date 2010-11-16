@@ -52,6 +52,7 @@
 			
 			// call each of the basic chainable methods
 			loc.select = instance.select("a");
+			loc.from = instance.from("users")
 			loc.include = instance.include();
 			loc.join = instance.join();
 			loc.where = instance.where();
@@ -62,7 +63,7 @@
 			loc.paginate = instance.paginate(1, 5);
 			
 			// chain each call together for further testing
-			loc.multiple = instance.select("b").include().join().where().order().limit(2).offset(8).paginate(3, 10);
+			loc.multiple = instance.select("b").from("posts").include().join().where().order().limit(2).offset(8).paginate(3, 10);
 			
 			// assert that each return is still the same object
 			for (key in loc)
@@ -121,6 +122,44 @@
 			}
 			
 			assertTrue(loc.pass, "Empty parameters to SELECT should throw an error");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testEmptyFrom" returntype="void" access="public">
+		<cfscript>
+			assertFalse(StructKeyExists(new()._inspect().sql, "from"), "FROM clause should not be set initially");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testFromWithString" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.instance = new();
+			
+			loc.instance.from("users");
+			assertEquals("users", loc.instance._inspect().sql.from, "FROM clause should be set to passed value");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testFromWithRelation" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.instance = new();
+			loc.instance2 = new().from(loc.instance);
+			assertSame(loc.instance, loc.instance2._inspect().sql.from, "FROM clause should be set to passed relation");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testFromWithInvalidObject" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.pass = false;
+			try {
+				new().from(StructNew());
+			} catch (custom_type e) {
+				loc.pass = true;
+			}
+			assertTrue(loc.pass, "from() should throw exception when given invalid object");
 		</cfscript>
 	</cffunction>
 	

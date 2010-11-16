@@ -5,7 +5,6 @@
 		<cfscript>
 			variables.sql = {
 				select = [],
-				from = false,
 				joins = [],
 				joinParameters = [],
 				wheres = [],
@@ -52,6 +51,28 @@
 						ArrayAppend(sql.select, arguments[loc.key]);
 					break;
 			}
+			return this;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="from" returntype="struct" access="public" hint="Specify FROM target of either a table or another relation">
+		<cfargument name="target" type="any" required="true" />
+		<cfscript>
+			var loc = {};
+			
+			// accept other relation objects
+			loc.meta = getMetaData(arguments.target);
+			if (StructKeyExists(loc.meta, "fullname") AND loc.meta.fullname EQ "cfrel.relation")
+				sql.from = arguments.target;
+				
+			// accept simple values (but not arrays, preferably strings)
+			else if (NOT IsArray(arguments.target) AND IsSimpleValue(arguments.target))
+				sql.from = arguments.target;
+			
+			// throw error if other type
+			else
+				throwException("Only a table name or another relation can be in FROM clause");
+				
 			return this;
 		</cfscript>
 	</cffunction>
