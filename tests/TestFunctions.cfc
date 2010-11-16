@@ -1,5 +1,12 @@
 <cfinclude template="/cfrel/functions.cfm" />
-<cfcomponent extends="mxunit.Framework.TestCase" output="false">
+<cfcomponent extends="tests.TestCase" output="false">
+	
+	<cffunction name="setup" returntype="void" access="public">
+		<cfscript>
+			super.setup();
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="testThrowException" returntype="void" access="public">
 		<cfscript>
 			var pass = false

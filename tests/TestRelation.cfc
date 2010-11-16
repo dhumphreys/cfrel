@@ -1,18 +1,19 @@
-<cfcomponent extends="mxunit.Framework.TestCase" output="false">
+<cfcomponent extends="tests.TestCase" output="false">
 	
 	<cffunction name="setup" returntype="void" access="public">
 		<cfscript>
-			variables.factory = CreateObject("component", "cfrel.relation");
+			super.setup();
+			variables.cfc = "cfrel.relation";
 		</cfscript>
 	</cffunction>
 	
 	<cffunction name="testInit" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
-			loc.obj = CreateObject("component", "cfrel.relation");
-			loc.varCount1 = StructCount(loc.obj.variableDump());
+			loc.obj = new(init=false);
+			loc.varCount1 = StructCount(loc.obj._inspect());
 			loc.instance = loc.obj.init();
-			loc.varCount2 = StructCount(loc.instance.variableDump());
+			loc.varCount2 = StructCount(loc.instance._inspect());
 			
 			// make sure init modifies instance, not creating a new one
 			assertIsTypeOf(loc.instance, "cfrel.relation");
@@ -24,16 +25,17 @@
 	<cffunction name="testNew" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
-			loc.instance = factory.new();
+			loc.factory = new(init=false);
+			loc.instance = loc.factory.new();
 			assertIsTypeOf(loc.instance, "cfrel.relation");
-			assertNotSame(loc.instance, factory, "new() should create a new instance");
+			assertNotSame(loc.instance, loc.factory, "new() should create a new instance");
 		</cfscript>
 	</cffunction>
 	
 	<cffunction name="testClone" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
-			loc.instance = factory.new();
+			loc.instance = new();
 			loc.clone = loc.instance.clone();
 			
 			// make sure that call returns a different relation object
@@ -44,7 +46,7 @@
 	
 	<cffunction name="testCallsAreChainable" returntype="void" access="public">
 		<cfscript>
-			var instance = factory.new();
+			var instance = new();
 			var key = "";
 			var loc = {};
 			
@@ -71,9 +73,9 @@
 	<cffunction name="testSelectSyntax" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
-			loc.instance1 = factory.new();
-			loc.instance2 = factory.new();
-			loc.instance3 = factory.new();
+			loc.instance1 = new();
+			loc.instance2 = new();
+			loc.instance3 = new();
 			loc.testVal = ListToArray("a,b,c");
 			
 			// run SELECT in various ways
@@ -82,9 +84,9 @@
 			loc.instance3.select("a","b","c");
 			
 			// make sure the items were added
-			loc.select1 = loc.instance1.variableDump().sql.select;
-			loc.select2 = loc.instance2.variableDump().sql.select;
-			loc.select3 = loc.instance3.variableDump().sql.select;
+			loc.select1 = loc.instance1._inspect().sql.select;
+			loc.select2 = loc.instance2._inspect().sql.select;
+			loc.select3 = loc.instance3._inspect().sql.select;
 			assertEquals(["*"], loc.select1, "SELECT clause should accept '*'");
 			assertEquals(loc.testVal, loc.select2, "SELECT clause should accept a list of columns");
 			assertEquals(loc.testVal, loc.select3, "SELECT clause should accept a columns as multiple arguments");
@@ -94,13 +96,13 @@
 	<cffunction name="testSelectAppend" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
-			loc.instance = factory.new();
+			loc.instance = new();
 			
 			// run chained selects to confirm appending with both syntaxes
 			loc.instance.select("a,b").select("c","d").select("e,f");
 			
 			// make sure items were stacked/appended
-			loc.select = loc.instance.variableDump().sql.select;
+			loc.select = loc.instance._inspect().sql.select;
 			assertEquals(ListToArray("a,b,c,d,e,f"), loc.select, "SELECT should append additional selects");
 		</cfscript>
 	</cffunction>
@@ -109,7 +111,7 @@
 		<cfscript>
 			var loc = {};
 			loc.pass = false;
-			loc.instance = factory.new();
+			loc.instance = new();
 			
 			// confirm that exception is thrown
 			try {
@@ -125,9 +127,9 @@
 	<cffunction name="testLimit" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
-			loc.instance = factory.new();
+			loc.instance = new();
 			loc.instance.limit(31);
-			loc.sql = loc.instance.variableDump().sql;
+			loc.sql = loc.instance._inspect().sql;
 			assertTrue(StructKeyExists(loc.sql, "limit"), "LIMIT should be set in SQL");
 			assertEquals(31, loc.sql.limit, "LIMIT should be equal to value set");
 		</cfscript>
@@ -136,9 +138,9 @@
 	<cffunction name="testOffset" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
-			loc.instance = factory.new();
+			loc.instance = new();
 			loc.instance.offset(15);
-			loc.sql = loc.instance.variableDump().sql;
+			loc.sql = loc.instance._inspect().sql;
 			assertTrue(StructKeyExists(loc.sql, "offset"), "OFFSET should be set in SQL");
 			assertEquals(15, loc.sql.offset, "OFFSET should be equal to value set");
 		</cfscript>
@@ -149,9 +151,9 @@
 			var loc = {};
 			
 			// an example: 5th page of 10 per page
-			loc.instance = factory.new();
+			loc.instance = new();
 			loc.instance.paginate(5, 10);
-			loc.sql = loc.instance.variableDump().sql;
+			loc.sql = loc.instance._inspect().sql;
 			
 			// make sure proper values were set in LIMIT and OFFSET clauses
 			assertTrue(StructKeyExists(loc.sql, "limit"), "LIMIT should be set in SQL");
@@ -164,7 +166,7 @@
 	<cffunction name="testPaginateBounds" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
-			loc.instance = factory.new();
+			loc.instance = new();
 			loc.pass1 = false;
 			loc.pass2 = false;
 			
@@ -185,17 +187,6 @@
 			// make sure errors are thrown
 			assertTrue(loc.pass1, "paginate() should throw error when page < 1");
 			assertTrue(loc.pass1, "paginate() should throw error when perPage < 1");
-		</cfscript>
-	</cffunction>
-	
-	<cffunction name="testVariableDump" returntype="void" access="public">
-		<cfscript>
-			var loc = {};
-			loc.instance = factory.new();
-			
-			// make sure we get a dump of variables
-			loc.dump = loc.instance.variableDump();
-			assertTrue(IsStruct(loc.dump), "variableDump() should return reference to variable scope of instance");
 		</cfscript>
 	</cffunction>
 </cfcomponent>
