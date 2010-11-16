@@ -2,7 +2,7 @@
 	
 	<cffunction name="setup" returntype="void" access="private" hint="Set up some defaults">
 		<cfscript>
-			variables.cfc = "component";
+			variables.cfc = "railo-context.component";
 		</cfscript>
 	</cffunction>
 	
