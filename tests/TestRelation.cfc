@@ -402,6 +402,19 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="testSqlGeneration" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.visitor = CreateObject("component", "cfrel.visitors.sql");
+			
+			// generate a simple relation
+			loc.instance = new().select("a").from("b").where("a > 5").order("a ASC").paginate(2, 15);
+			
+			// make sure visitor is being called
+			assertEquals(loc.visitor.visit(loc.instance), loc.instance.toSql(), "toSql() should be calling Sql visitor for SQL generation");
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="testPaginateSyntax" returntype="void" access="public">
 		<cfscript>
 			var loc = {};

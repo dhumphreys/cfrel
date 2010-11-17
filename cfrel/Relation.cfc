@@ -3,6 +3,7 @@
 	
 	<cffunction name="init" returntype="struct" access="public" hint="Constructor">
 		<cfscript>
+			variables.visitor = CreateObject("component", "cfrel.visitors.sql");
 			variables.sql = {
 				select = [],
 				joins = [],
@@ -136,6 +137,9 @@
 	</cffunction>
 	
 	<cffunction name="toSql" returntype="string" access="public" hint="Convert relational data into a SQL string">
+		<cfscript>
+			return visitor.visit(this);
+		</cfscript>
 	</cffunction>
 	
 	<!---------------------
