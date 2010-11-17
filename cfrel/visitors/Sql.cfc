@@ -1,6 +1,6 @@
 <cfcomponent extends="visitor" output="false">
 	
-	<cffunction name="visit_relation" returntype="any" access="private">
+	<cffunction name="visit_relation" returntype="any" access="private" hint="Generate general SQL for a relation">
 		<cfscript>
 			var loc = {};
 			
@@ -61,7 +61,7 @@
 	--- Private Functions ---
 	------------------------>
 	
-	<cffunction name="_appendFieldsClause" returntype="void" access="private">
+	<cffunction name="_appendFieldsClause" returntype="void" access="private" hint="Concat and append field list to an array">
 		<cfargument name="clause" type="string" required="true" />
 		<cfargument name="dest" type="array" required="true" />
 		<cfargument name="src" type="array" required="true" />
@@ -71,7 +71,7 @@
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="_appendConditionsClause" returntype="void" access="private">
+	<cffunction name="_appendConditionsClause" returntype="void" access="private" hint="Concat and append conditions to an array">
 		<cfargument name="clause" type="string" required="true" />
 		<cfargument name="dest" type="array" required="true" />
 		<cfargument name="src" type="array" required="true" />
