@@ -31,7 +31,7 @@ Here is an example of the functionality currently available in CFRel:
 		
 		/*
 		SELECT a, b, c, SUM(d) FROM tableA
-		WHERE a = ? AND b = ? AND c IN (?, ?, ?)
+		WHERE a = ? AND b = ? AND c IN (?, ?, ?, ?)
 		GROUP BY a, b, c
 		HAVING SUM(d) > ?
 		ORDER BY a ASC
@@ -43,11 +43,12 @@ Here is an example of the functionality currently available in CFRel:
 
 * Execution directly against the database
 * JOIN and UNION support in queries
-* Database-specific SQL generation
+* Database-specific SQL generation: Sqlite, Sql Server, MySql, DB2, etc...
 * Intelligent table / column mapping, escaping, and aliasing
 * SQL literal objects that pass raw SQL code
 * Query-of-Query support when FROM is a ColdFusion query object
 * Automatic use of Query-of-Query when filtering a relation that has already been executed
+* Joining across databases using Query-of-Query and WHERE logic
 * More abstraction of portions of the SELECT clause
 * Full ColdFusion 9 / Railo 3.1 support
 * Plugin integration into CFWheels
