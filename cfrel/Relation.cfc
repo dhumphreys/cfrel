@@ -6,6 +6,7 @@
 			variables.visitor = CreateObject("component", "cfrel.visitors.sql");
 			variables.sql = {
 				select = [],
+				selectFlags = [],
 				joins = [],
 				joinParameters = [],
 				wheres = [],
@@ -34,6 +35,14 @@
 	<cffunction name="select" returntype="struct" access="public" hint="Append to the SELECT clause of the relation">
 		<cfscript>
 			_appendFieldsToClause("SELECT", sql.select, arguments);
+			return this;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="distinct" returntype="struct" access="public" hint="Set DISTINCT flag for SELECT">
+		<cfscript>
+			if (NOT ArrayFind(sql.selectFlags, "DISTINCT"))
+				ArrayAppend(sql.selectFlags, "DISTINCT");
 			return this;
 		</cfscript>
 	</cffunction>

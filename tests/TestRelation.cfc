@@ -52,6 +52,7 @@
 			
 			// call each of the basic chainable methods
 			loc.select = instance.select("a");
+			loc.distinct = instance.distinct();
 			loc.from = instance.from("users")
 			loc.include = instance.include();
 			loc.join = instance.join();
@@ -64,7 +65,7 @@
 			loc.paginate = instance.paginate(1, 5);
 			
 			// chain each call together for further testing
-			loc.multiple = instance.select("b").from("posts").include().join().where(b=10).group("b").having("b >= 10").order("b DESC").limit(2).offset(8).paginate(3, 10);
+			loc.multiple = instance.select("b").distinct().from("posts").include().join().where(b=10).group("b").having("b >= 10").order("b DESC").limit(2).offset(8).paginate(3, 10);
 			
 			// assert that each return is still the same object
 			for (key in loc)
@@ -123,6 +124,16 @@
 			}
 			
 			assertTrue(loc.pass, "Empty parameters to SELECT should throw an error");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testDistinct" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.instance = new().distinct().distinct(); // yes, call twice
+			loc.flags = loc.instance._inspect().sql.selectFlags;
+			assertEquals("DISTINCT", loc.flags[1], "distinct() should set DISTINCT flag");
+			assertEquals(1, ArrayLen(loc.flags), "DISTINCT should only be set once");
 		</cfscript>
 	</cffunction>
 	
