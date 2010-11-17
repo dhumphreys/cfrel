@@ -98,6 +98,7 @@
 	
 	<cffunction name="order" returntype="struct" access="public" hint="Append to ORDER BY clause of the relation">
 		<cfscript>
+			_appendFieldsToClause("ORDER BY", sql.orders, arguments);
 			return this;
 		</cfscript>
 	</cffunction>

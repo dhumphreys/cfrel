@@ -58,13 +58,13 @@
 			loc.where = instance.where(a=5);
 			loc.group = instance.group("a");
 			loc.having = instance.having("a > ?", [0]);
-			loc.order = instance.order();
+			loc.order = instance.order("a ASC");
 			loc.limit = instance.limit(5);
 			loc.offset = instance.offset(10);
 			loc.paginate = instance.paginate(1, 5);
 			
 			// chain each call together for further testing
-			loc.multiple = instance.select("b").from("posts").include().join().where(b=10).group("b").having("b >= 10").order().limit(2).offset(8).paginate(3, 10);
+			loc.multiple = instance.select("b").from("posts").include().join().where(b=10).group("b").having("b >= 10").order("b DESC").limit(2).offset(8).paginate(3, 10);
 			
 			// assert that each return is still the same object
 			for (key in loc)
@@ -229,7 +229,7 @@
 			loc.instance2 = new();
 			loc.testVal = ListToArray("a,b,c");
 			
-			// run SELECT in various ways
+			// run GROUP in various ways
 			loc.instance1.group("a,b,c");
 			loc.instance2.group("a","b","c");
 			
@@ -246,7 +246,7 @@
 			var loc = {};
 			loc.instance = new();
 			
-			// run chained selects to confirm appending with both syntaxes
+			// run chained groups to confirm appending with both syntaxes
 			loc.instance.group("a,b").group("c","d").group("e,f");
 			
 			// make sure items were stacked/appended
@@ -327,6 +327,56 @@
 			loc.sql = loc.instance._inspect().sql;
 			assertEquals(["a = ?", "b = ?", "c IN ?"], loc.sql.havings, "Named arguments should be in HAVING clause");
 			assertEquals([45, "BBB", [1,2,3]], loc.sql.havingParameters, "Parameters should be set and in correct order");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testOrderSyntax" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.instance1 = new();
+			loc.instance2 = new();
+			loc.testVal = ListToArray("a ASC,b DESC,c");
+			
+			// run ORDER in various ways
+			loc.instance1.order("a ASC,b DESC,c");
+			loc.instance2.order("a ASC","b DESC","c");
+			
+			// make sure the items were added
+			loc.orders1 = loc.instance1._inspect().sql.orders;
+			loc.orders2 = loc.instance2._inspect().sql.orders;
+			assertEquals(loc.testVal, loc.orders1, "ORDER BY clause should accept a list of columns");
+			assertEquals(loc.testVal, loc.orders2, "ORDER BY clause should accept a columns as multiple arguments");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testOrderAppend" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.instance = new();
+			
+			// run chained orders to confirm appending with both syntaxes
+			loc.instance.order("a,b").order("c","d").order("e,f");
+			
+			// make sure items were stacked/appended
+			loc.orders = loc.instance._inspect().sql.orders;
+			assertEquals(ListToArray("a,b,c,d,e,f"), loc.orders, "ORDER should append additional fields");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testEmptyOrder" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.pass = false;
+			loc.instance = new();
+			
+			// confirm that exception is thrown
+			try {
+				loc.instance.order();
+			} catch (Any e) {
+				loc.pass = true;
+			}
+			
+			assertTrue(loc.pass, "Empty parameters to ORDER should throw an error");
 		</cfscript>
 	</cffunction>
 	
