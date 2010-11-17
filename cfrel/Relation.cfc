@@ -9,6 +9,7 @@
 				joinParameters = [],
 				wheres = [],
 				whereParameters = [],
+				groups = [],
 				orders = []
 			};
 			return this;
@@ -29,28 +30,7 @@
 	
 	<cffunction name="select" returntype="struct" access="public" hint="Append to the SELECT clause of the relation">
 		<cfscript>
-			var loc = {};
-			switch (StructCount(arguments)) {
-				
-				// do not allow empty call
-				case 0:
-					throwException("Arguments are required to select()", "Expression");
-					break;
-					
-				// treat single arguments as a list and append each list item
-				case 1:
-					loc.arguments = ListToArray(arguments[1]);
-					loc.iEnd = ArrayLen(loc.arguments);
-					for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
-						ArrayAppend(sql.select, loc.arguments[loc.i]);
-					break;
-				
-				// loop and append if many arguments are passed
-				default:
-					for (loc.key in arguments)
-						ArrayAppend(sql.select, arguments[loc.key]);
-					break;
-			}
+			_appendFieldsToClause("SELECT", sql.select, arguments);
 			return this;
 		</cfscript>
 	</cffunction>
@@ -165,6 +145,7 @@
 	
 	<cffunction name="group" returntype="struct" access="public" hint="Append to GROUP BY clause of the relation">
 		<cfscript>
+			_appendFieldsToClause("GROUP BY", sql.groups, arguments);
 			return this;
 		</cfscript>
 	</cffunction>
@@ -208,5 +189,39 @@
 	</cffunction>
 	
 	<cffunction name="toSql" returntype="string" access="public" hint="Convert relational data into a SQL string">
+	</cffunction>
+	
+	<!---------------------
+	--- Private Methods ---
+	---------------------->
+	
+	<cffunction name="_appendFieldsToClause" returntype="void" access="private" hint="Take either lists or name/value pairs and append to an array">
+		<cfargument name="clause" type="string" required="true" />
+		<cfargument name="scope" type="array" required="true" />
+		<cfargument name="args" type="struct" required="true" />
+		<cfscript>
+			var loc = {};
+			switch (StructCount(arguments.args)) {
+				
+				// do not allow empty call
+				case 0:
+					throwException("Arguments are required in #UCase(arguments.clause)#", "Expression");
+					break;
+					
+				// treat single arguments as a list and append each list item
+				case 1:
+					loc.arguments = ListToArray(arguments.args[1]);
+					loc.iEnd = ArrayLen(loc.arguments);
+					for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+						ArrayAppend(arguments.scope, loc.arguments[loc.i]);
+					break;
+				
+				// loop and append if many arguments are passed
+				default:
+					for (loc.key in args)
+						ArrayAppend(arguments.scope, arguments.args[loc.key]);
+					break;
+			}
+		</cfscript>
 	</cffunction>
 </cfcomponent>

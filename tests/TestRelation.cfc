@@ -56,14 +56,14 @@
 			loc.include = instance.include();
 			loc.join = instance.join();
 			loc.where = instance.where(a=5);
-			loc.group = instance.group();
+			loc.group = instance.group("a");
 			loc.order = instance.order();
 			loc.limit = instance.limit(5);
 			loc.offset = instance.offset(10);
 			loc.paginate = instance.paginate(1, 5);
 			
 			// chain each call together for further testing
-			loc.multiple = instance.select("b").from("posts").include().join().where(b=10).order().limit(2).offset(8).paginate(3, 10);
+			loc.multiple = instance.select("b").from("posts").include().join().where(b=10).group("b").order().limit(2).offset(8).paginate(3, 10);
 			
 			// assert that each return is still the same object
 			for (key in loc)
@@ -218,6 +218,56 @@
 			loc.sql = loc.instance._inspect().sql;
 			assertEquals(["a = ?", "b = ?", "c IN ?"], loc.sql.wheres, "Named arguments should be in WHERE clause");
 			assertEquals([45, "BBB", [1,2,3]], loc.sql.whereParameters, "Parameters should be set and in correct order");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testGroupSyntax" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.instance1 = new();
+			loc.instance2 = new();
+			loc.testVal = ListToArray("a,b,c");
+			
+			// run SELECT in various ways
+			loc.instance1.group("a,b,c");
+			loc.instance2.group("a","b","c");
+			
+			// make sure the items were added
+			loc.groups1 = loc.instance1._inspect().sql.groups;
+			loc.groups2 = loc.instance2._inspect().sql.groups;
+			assertEquals(loc.testVal, loc.groups1, "GROUP BY clause should accept a list of columns");
+			assertEquals(loc.testVal, loc.groups2, "GROUP BY clause should accept a columns as multiple arguments");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testGroupAppend" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.instance = new();
+			
+			// run chained selects to confirm appending with both syntaxes
+			loc.instance.group("a,b").group("c","d").group("e,f");
+			
+			// make sure items were stacked/appended
+			loc.groups = loc.instance._inspect().sql.groups;
+			assertEquals(ListToArray("a,b,c,d,e,f"), loc.groups, "GROUP should append additional fields");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testEmptyGroup" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.pass = false;
+			loc.instance = new();
+			
+			// confirm that exception is thrown
+			try {
+				loc.instance.group();
+			} catch (Any e) {
+				loc.pass = true;
+			}
+			
+			assertTrue(loc.pass, "Empty parameters to GROUP should throw an error");
 		</cfscript>
 	</cffunction>
 	
