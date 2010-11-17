@@ -15,12 +15,16 @@
 			loc.fragments = [];
 			
 			// generate SELECT clause
+			loc.clause = "SELECT ";
+			if (ArrayLen(loc.sql.selectFlags) GT 0)
+				loc.clause &= ArrayToList(loc.sql.selectFlags, " ") & " ";
 			if (ArrayLen(loc.sql.select) EQ 0) {
-				ArrayAppend(loc.fragments, "SELECT *");
+				loc.clause &= "*";
 			} else {
-				ArrayAppend(loc.fragments, "SELECT " & ArrayToList(loc.sql.select, ", "));
+				loc.clause &= ArrayToList(loc.sql.select, ", ");
 				loc.select = true;
 			}
+			ArrayAppend(loc.fragments, loc.clause);
 			
 			// generate FROM clause, evaluating another relation if neccessary
 			if (StructKeyExists(loc.sql, "from")) {
