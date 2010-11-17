@@ -160,13 +160,13 @@
 					loc.arguments = ListToArray(arguments.args[1]);
 					loc.iEnd = ArrayLen(loc.arguments);
 					for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
-						ArrayAppend(arguments.scope, loc.arguments[loc.i]);
+						ArrayAppend(arguments.scope, Trim(loc.arguments[loc.i]));
 					break;
 				
 				// loop and append if many arguments are passed
 				default:
 					for (loc.key in args)
-						ArrayAppend(arguments.scope, arguments.args[loc.key]);
+						ArrayAppend(arguments.scope, Trim(arguments.args[loc.key]));
 					break;
 			}
 		</cfscript>
@@ -203,7 +203,7 @@
 					throwException(message="Parameter count does not match number of placeholders in #UCase(arguments.clause)# clause");
 					
 				// append clause and parameters to sql options
-				ArrayAppend(arguments.scope, arguments.args.$clause);
+				ArrayAppend(arguments.scope, Trim(arguments.args.$clause));
 				for (loc.i = 1; loc.i LTE loc.parameterCount; loc.i++)
 					ArrayAppend(arguments.parameterScope, arguments.args.$params[loc.i]);
 				
@@ -235,7 +235,7 @@
 					loc.success = true;
 						
 					// append clause and parameters
-					ArrayAppend(arguments.scope, loc.clause);
+					ArrayAppend(arguments.scope, Trim(loc.clause));
 					ArrayAppend(arguments.parameterScope, loc.value);
 				}
 				
