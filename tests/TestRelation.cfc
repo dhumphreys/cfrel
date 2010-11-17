@@ -57,13 +57,14 @@
 			loc.join = instance.join();
 			loc.where = instance.where(a=5);
 			loc.group = instance.group("a");
+			loc.having = instance.having("a > ?", [0]);
 			loc.order = instance.order();
 			loc.limit = instance.limit(5);
 			loc.offset = instance.offset(10);
 			loc.paginate = instance.paginate(1, 5);
 			
 			// chain each call together for further testing
-			loc.multiple = instance.select("b").from("posts").include().join().where(b=10).group("b").order().limit(2).offset(8).paginate(3, 10);
+			loc.multiple = instance.select("b").from("posts").include().join().where(b=10).group("b").having("b >= 10").order().limit(2).offset(8).paginate(3, 10);
 			
 			// assert that each return is still the same object
 			for (key in loc)
@@ -268,6 +269,64 @@
 			}
 			
 			assertTrue(loc.pass, "Empty parameters to GROUP should throw an error");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testSingleHaving" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.instance = new();
+			loc.instance.having("a > 1");
+			loc.sql = loc.instance._inspect().sql;
+			assertEquals(1, ArrayLen(loc.sql.havings), "having() should only set one condition");
+			assertEquals(0, ArrayLen(loc.sql.havingParameters), "having() should not set any parameters");
+			assertEquals("a > 1", loc.sql.havings[1], "having() should append the correct condition");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testAppendHaving" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.instance = new();
+			loc.instance.having("a > 1").having("b < 0");
+			assertEquals("b < 0", loc.instance._inspect().sql.havings[2], "having() should append the second condition");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testHavingWithParameters" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.havingClause = "id = ? OR name = '?' OR role IN ?";
+			loc.havingParameters = [50, "admin", [1,2,3]];
+			loc.instance = new();
+			loc.instance.having(loc.havingClause, loc.havingParameters);
+			loc.sql = loc.instance._inspect().sql;
+			assertEquals(loc.havingClause, loc.sql.havings[1], "having() should set the passed condition");
+			assertEquals(loc.havingParameters, loc.sql.havingParameters, "having() should set parameters in correct order");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testHavingParameterCount" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.pass = false;
+			loc.instance = new();
+			try {
+				loc.instance.having("id = ? OR name = '?'", [2]);
+			} catch (custom_type e) {
+				loc.pass = true;
+			}
+			assertTrue(loc.pass, "having() should throw an error if wrong count of parameters is passed");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testHavingWithNamedArguments" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.instance = new().having(a=45, b="BBB", c=[1,2,3]);
+			loc.sql = loc.instance._inspect().sql;
+			assertEquals(["a = ?", "b = ?", "c IN ?"], loc.sql.havings, "Named arguments should be in HAVING clause");
+			assertEquals([45, "BBB", [1,2,3]], loc.sql.havingParameters, "Parameters should be set and in correct order");
 		</cfscript>
 	</cffunction>
 	

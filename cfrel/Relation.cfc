@@ -10,6 +10,8 @@
 				wheres = [],
 				whereParameters = [],
 				groups = [],
+				havings = [],
+				havingParameters = [],
 				orders = []
 			};
 			return this;
@@ -70,75 +72,10 @@
 	</cffunction>
 	
 	<cffunction name="where" returntype="struct" access="public" hint="Append to the WHERE clause of the relation">
-		<cfargument name="whereClause" type="any" required="false" />
-		<cfargument name="whereParameters" type="array" required="false" />
+		<cfargument name="$clause" type="any" required="false" />
+		<cfargument name="$params" type="array" required="false" />
 		<cfscript>
-			var loc = {};
-			
-			// get count of arguments
-			loc.argumentCount = StructCount(arguments);
-			
-			// if arguments are empty
-			if (loc.argumentCount EQ 0) {
-				throwException(message="Relation requires arguments in where()");
-				
-			// if a where clause was passed
-			} else if (StructKeyExists(arguments, "whereClause")) {
-				
-				// make sure where clause fragment is a string
-				if (NOT IsSimpleValue(arguments.whereClause) OR Len(arguments.whereClause) EQ 0)
-					throwException(message="WHERE clause must be a string with length > 0");
-					
-				// count the number of placeholders in where clause and argument array
-				loc.placeholderCount = Len(arguments.whereClause) - Len(Replace(arguments.whereClause, "?", "", "ALL"));
-				loc.parameterCount = iif(StructKeyExists(arguments, "whereParameters"), "ArrayLen(arguments.whereParameters)", DE(0));
-				
-				// make sure the numbers are equal
-				if (loc.placeholderCount NEQ loc.parameterCount)
-					throwException(message="Parameter count does not match number of placeholders in WHERE clause");
-					
-				// append clause and parameters to sql options
-				ArrayAppend(sql.wheres, arguments.whereClause);
-				for (loc.i = 1; loc.i LTE loc.parameterCount; loc.i++)
-					ArrayAppend(sql.whereParameters, arguments.whereParameters[loc.i]);
-				
-			} else {
-				
-				// loop over parameters
-				for (loc.key in arguments) {
-					
-					// FIXME: (1) railo seems to keep these arguments around
-					if (ListFindNoCase("whereClause,whereParameters", loc.key))
-						continue;
-					
-					// grab the value from arguments
-					loc.value = arguments[loc.key];
-					
-					// use an IN if value is an array
-					if (IsArray(loc.value))
-						loc.where = "#loc.key# IN ?";
-						
-					// use an equality check if value is simple
-					else if (IsSimpleValue(loc.value))
-						loc.where = "#loc.key# = ?";
-						
-					// throw an error otherwise
-					else
-						throwException("Invalid parameter to WHERE clause. Only arrays and simple values may be used.");
-					
-					// FIXME: (2) note that we found a good value
-					loc.success = true;
-						
-					// append WHERE clause and parameters
-					ArrayAppend(sql.wheres, loc.where);
-					ArrayAppend(sql.whereParameters, loc.value);
-				}
-				
-				// FIXME: (3) throw an error if a good value was not found
-				if (NOT StructKeyExists(loc, "success"))
-					throwException(message="Relation requires arguments in where()");
-			}
-			
+			_appendConditionsToClause("WHERE", sql.wheres, sql.whereParameters, arguments);
 			return this;
 		</cfscript>
 	</cffunction>
@@ -146,6 +83,15 @@
 	<cffunction name="group" returntype="struct" access="public" hint="Append to GROUP BY clause of the relation">
 		<cfscript>
 			_appendFieldsToClause("GROUP BY", sql.groups, arguments);
+			return this;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="having" returntype="struct" access="public" hint="Append to HAVING clause of the relation">
+		<cfargument name="$clause" type="any" required="false" />
+		<cfargument name="$params" type="array" required="false" />
+		<cfscript>
+			_appendConditionsToClause("HAVING", sql.havings, sql.havingParameters, arguments);
 			return this;
 		</cfscript>
 	</cffunction>
@@ -221,6 +167,80 @@
 					for (loc.key in args)
 						ArrayAppend(arguments.scope, arguments.args[loc.key]);
 					break;
+			}
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="_appendConditionsToClause" returntype="void" access="private" hint="Take conditions and parameters and append to arrays">
+		<cfargument name="clause" type="string" required="true" />
+		<cfargument name="scope" type="array" required="true" />
+		<cfargument name="parameterScope" type="array" required="true" />
+		<cfargument name="args" type="struct" required="true" />
+		<cfscript>
+			var loc = {};
+			
+			// get count of arguments
+			loc.argumentCount = StructCount(arguments.args);
+			
+			// if arguments are empty
+			if (loc.argumentCount EQ 0) {
+				throwException(message="Relation requires arguments for #UCase(arguments.clause)#");
+				
+			// if a text clause was passed
+			} else if (StructKeyExists(arguments.args, "$clause")) {
+				
+				// make sure clause fragment is a string
+				if (NOT IsSimpleValue(arguments.args.$clause) OR Len(arguments.args.$clause) EQ 0)
+					throwException(message="#UCase(arguments.clause)# clause must be a string with length > 0");
+					
+				// count the number of placeholders in clause and argument array
+				loc.placeholderCount = Len(arguments.args.$clause) - Len(Replace(arguments.args.$clause, "?", "", "ALL"));
+				loc.parameterCount = iif(StructKeyExists(arguments.args, "$params"), "ArrayLen(arguments.args.$params)", DE(0));
+				
+				// make sure the numbers are equal
+				if (loc.placeholderCount NEQ loc.parameterCount)
+					throwException(message="Parameter count does not match number of placeholders in #UCase(arguments.clause)# clause");
+					
+				// append clause and parameters to sql options
+				ArrayAppend(arguments.scope, arguments.args.$clause);
+				for (loc.i = 1; loc.i LTE loc.parameterCount; loc.i++)
+					ArrayAppend(arguments.parameterScope, arguments.args.$params[loc.i]);
+				
+			} else {
+				
+				// loop over parameters
+				for (loc.key in arguments.args) {
+					
+					// FIXME: (1) railo seems to keep these arguments around
+					if (ListFindNoCase("$clause,$params", loc.key))
+						continue;
+					
+					// grab the value from arguments
+					loc.value = arguments.args[loc.key];
+					
+					// use an IN if value is an array
+					if (IsArray(loc.value))
+						loc.clause = "#loc.key# IN ?";
+						
+					// use an equality check if value is simple
+					else if (IsSimpleValue(loc.value))
+						loc.clause = "#loc.key# = ?";
+						
+					// throw an error otherwise
+					else
+						throwException("Invalid parameter to #UCase(arguments.clause)# clause. Only arrays and simple values may be used.");
+					
+					// FIXME: (2) note that we found a good value
+					loc.success = true;
+						
+					// append clause and parameters
+					ArrayAppend(arguments.scope, loc.clause);
+					ArrayAppend(arguments.parameterScope, loc.value);
+				}
+				
+				// FIXME: (3) throw an error if a good value was not found
+				if (NOT StructKeyExists(loc, "success"))
+					throwException(message="Relation requires arguments for #UCase(arguments.clause)#");
 			}
 		</cfscript>
 	</cffunction>
