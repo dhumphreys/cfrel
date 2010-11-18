@@ -15,7 +15,7 @@
 			loc.obj = new();
 			loc.obj.visit_visitors_visitor = variables.visit_visitors_visitor;
 			
-			assertEquals(36, loc.obj.visit(loc.obj), "visit(obj) should call visit_visitors_visitor()")
+			assertEquals(36, loc.obj.visit(loc.obj), "visit(obj) should call visit_visitors_visitor()");
 		</cfscript>
 	</cffunction>
 	
@@ -56,7 +56,7 @@
 				loc.pass = true;
 			}
 			assertFalse(StructKeyExists(loc.obj, "visit_struct"), "visit_struct() should not exist for this test to work");
-			assertTrue(loc.pass, "Calling visit() on an invalid object should throw an error")
+			assertTrue(loc.pass, "Calling visit() on an invalid object should throw an error");
 		</cfscript>
 	</cffunction>
 	

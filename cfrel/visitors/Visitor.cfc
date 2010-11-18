@@ -20,7 +20,8 @@
 				throwException("No visitor exists for type: #loc.type#");
 			
 			// call visit_xxx_yyy method
-			return variables[loc.method](obj=arguments.obj);
+			var method = variables[loc.method];
+			return method(obj=arguments.obj);
 		</cfscript>
 	</cffunction>
 </cfcomponent>

@@ -36,10 +36,10 @@
 			}
 			
 			// generate other clauses
-			_appendConditionsClause("WHERE", loc.fragments, obj.sql.wheres);
-			_appendFieldsClause("ORDER BY", loc.fragments, obj.sql.orders);
-			_appendFieldsClause("GROUP BY", loc.fragments, obj.sql.groups);
-			_appendConditionsClause("HAVING", loc.fragments, obj.sql.havings);
+			loc.fragments = _appendConditionsClause("WHERE", loc.fragments, obj.sql.wheres);
+			loc.fragments = _appendFieldsClause("ORDER BY", loc.fragments, obj.sql.orders);
+			loc.fragments = _appendFieldsClause("GROUP BY", loc.fragments, obj.sql.groups);
+			loc.fragments = _appendConditionsClause("HAVING", loc.fragments, obj.sql.havings);
 			
 			// generate LIMIT clause
 			if (StructKeyExists(obj.sql, "limit"))
@@ -47,7 +47,7 @@
 				
 			// generate OFFSET clause
 			if (StructKeyExists(obj.sql, "offset") AND obj.sql.offset GT 0)
-				ArrayAppend(loc.fragments, "OFFSET #obj.sql.offset#")
+				ArrayAppend(loc.fragments, "OFFSET #obj.sql.offset#");
 				
 			// return sql string
 			return ArrayToList(loc.fragments, " ");
@@ -63,17 +63,18 @@
 	--- Private Functions ---
 	------------------------>
 	
-	<cffunction name="_appendFieldsClause" returntype="void" access="private" hint="Concat and append field list to an array">
+	<cffunction name="_appendFieldsClause" returntype="array" access="private" hint="Concat and append field list to an array">
 		<cfargument name="clause" type="string" required="true" />
 		<cfargument name="dest" type="array" required="true" />
 		<cfargument name="src" type="array" required="true" />
 		<cfscript>
 			if (ArrayLen(arguments.src))
 				ArrayAppend(arguments.dest, "#UCase(arguments.clause)# " & ArrayToList(arguments.src, ", "));
+			return arguments.dest;
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="_appendConditionsClause" returntype="void" access="private" hint="Concat and append conditions to an array">
+	<cffunction name="_appendConditionsClause" returntype="array" access="private" hint="Concat and append conditions to an array">
 		<cfargument name="clause" type="string" required="true" />
 		<cfargument name="dest" type="array" required="true" />
 		<cfargument name="src" type="array" required="true" />
@@ -83,14 +84,16 @@
 			
 			// quit execution if needed
 			if (loc.iEnd EQ 0)
-				return;
+				return arguments.dest;
 				
 			// wrap clauses containing OR in parenthesis
 			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
 				if (REFind("\bOR\b", arguments.src[loc.i]) GT 0)
 					arguments.src[loc.i] = "(#arguments.src[loc.i]#)";
 			
+			// append and return array
 			ArrayAppend(arguments.dest, "#UCase(arguments.clause)# " & ArrayToList(arguments.src, " AND "));
+			return arguments.dest;
 		</cfscript>
 	</cffunction>
 </cfcomponent>

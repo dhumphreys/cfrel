@@ -36,7 +36,7 @@
 	
 	<cffunction name="select" returntype="struct" access="public" hint="Append to the SELECT clause of the relation">
 		<cfscript>
-			_appendFieldsToClause("SELECT", this.sql.select, arguments);
+			_appendFieldsToClause("SELECT", "select", arguments);
 			return this;
 		</cfscript>
 	</cffunction>
@@ -85,14 +85,14 @@
 		<cfargument name="$clause" type="any" required="false" />
 		<cfargument name="$params" type="array" required="false" />
 		<cfscript>
-			_appendConditionsToClause("WHERE", this.sql.wheres, this.sql.whereParameters, arguments);
+			_appendConditionsToClause("WHERE", "wheres", "whereParameters", arguments);
 			return this;
 		</cfscript>
 	</cffunction>
 	
 	<cffunction name="group" returntype="struct" access="public" hint="Append to GROUP BY clause of the relation">
 		<cfscript>
-			_appendFieldsToClause("GROUP BY", this.sql.groups, arguments);
+			_appendFieldsToClause("GROUP BY", "groups", arguments);
 			return this;
 		</cfscript>
 	</cffunction>
@@ -101,14 +101,14 @@
 		<cfargument name="$clause" type="any" required="false" />
 		<cfargument name="$params" type="array" required="false" />
 		<cfscript>
-			_appendConditionsToClause("HAVING", this.sql.havings, this.sql.havingParameters, arguments);
+			_appendConditionsToClause("HAVING", "havings", "havingParameters", arguments);
 			return this;
 		</cfscript>
 	</cffunction>
 	
 	<cffunction name="order" returntype="struct" access="public" hint="Append to ORDER BY clause of the relation">
 		<cfscript>
-			_appendFieldsToClause("ORDER BY", this.sql.orders, arguments);
+			_appendFieldsToClause("ORDER BY", "orders", arguments);
 			return this;
 		</cfscript>
 	</cffunction>
@@ -136,7 +136,7 @@
 			
 			// throw error if bad values are passed
 			if (arguments.page LT 1 OR arguments.perPage LT 1)
-				throwException("Page and per-page must be greater than zero", "Expression");
+				throwException("Page and per-page must be greater than zero");
 			
 			// calculate limit and offset
 			this.sql.limit = Int(arguments.perPage);
@@ -157,7 +157,7 @@
 	
 	<cffunction name="_appendFieldsToClause" returntype="void" access="private" hint="Take either lists or name/value pairs and append to an array">
 		<cfargument name="clause" type="string" required="true" />
-		<cfargument name="scope" type="array" required="true" />
+		<cfargument name="scope" type="string" required="true" />
 		<cfargument name="args" type="struct" required="true" />
 		<cfscript>
 			var loc = {};
@@ -165,7 +165,7 @@
 				
 				// do not allow empty call
 				case 0:
-					throwException("Arguments are required in #UCase(arguments.clause)#", "Expression");
+					throwException("Arguments are required in #UCase(arguments.clause)#");
 					break;
 					
 				// treat single arguments as a list and append each list item
@@ -173,13 +173,14 @@
 					loc.arguments = ListToArray(arguments.args[1]);
 					loc.iEnd = ArrayLen(loc.arguments);
 					for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
-						ArrayAppend(arguments.scope, Trim(loc.arguments[loc.i]));
+						ArrayAppend(this.sql[arguments.scope], Trim(loc.arguments[loc.i]));
 					break;
 				
 				// loop and append if many arguments are passed
 				default:
-					for (loc.key in args)
-						ArrayAppend(arguments.scope, Trim(arguments.args[loc.key]));
+					loc.iEnd = StructCount(arguments.args);
+					for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+						ArrayAppend(this.sql[arguments.scope], Trim(arguments.args[loc.i]));
 					break;
 			}
 		</cfscript>
@@ -187,8 +188,8 @@
 	
 	<cffunction name="_appendConditionsToClause" returntype="void" access="private" hint="Take conditions and parameters and append to arrays">
 		<cfargument name="clause" type="string" required="true" />
-		<cfargument name="scope" type="array" required="true" />
-		<cfargument name="parameterScope" type="array" required="true" />
+		<cfargument name="scope" type="string" required="true" />
+		<cfargument name="parameterScope" type="string" required="true" />
 		<cfargument name="args" type="struct" required="true" />
 		<cfscript>
 			var loc = {};
@@ -216,9 +217,9 @@
 					throwException(message="Parameter count does not match number of placeholders in #UCase(arguments.clause)# clause");
 					
 				// append clause and parameters to sql options
-				ArrayAppend(arguments.scope, Trim(arguments.args.$clause));
+				ArrayAppend(this.sql[arguments.scope], Trim(arguments.args.$clause));
 				for (loc.i = 1; loc.i LTE loc.parameterCount; loc.i++)
-					ArrayAppend(arguments.parameterScope, arguments.args.$params[loc.i]);
+					ArrayAppend(this.sql[arguments.parameterScope], arguments.args.$params[loc.i]);
 				
 			} else {
 				
@@ -231,7 +232,7 @@
 					
 					// grab the value from arguments and decide its type
 					loc.value = arguments.args[loc.key];
-					loc.type = typeOf(loc.value)
+					loc.type = typeOf(loc.value);
 					
 					// use an IN if value is an array
 					if (loc.type EQ "array")
@@ -249,8 +250,8 @@
 					loc.success = true;
 						
 					// append clause and parameters
-					ArrayAppend(arguments.scope, Trim(loc.clause));
-					ArrayAppend(arguments.parameterScope, loc.value);
+					ArrayAppend(this.sql[arguments.scope], Trim(loc.clause));
+					ArrayAppend(this.sql[arguments.parameterScope], loc.value);
 				}
 				
 				// FIXME: (3) throw an error if a good value was not found

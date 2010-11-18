@@ -42,7 +42,7 @@
 			
 			// make sure that call returns a different relation object
 			assertIsTypeOf(loc.clone, "cfrel.relation");
-			assertNotSame(loc.clone, loc.instance, "clone() should return copy of object, not same one")
+			assertNotSame(loc.clone, loc.instance, "clone() should return copy of object, not same one");
 			assertNotSame(loc.clone.sql, loc.instance.sql, "clone() should copy the sql struct, not reference it");
 		</cfscript>
 	</cffunction>
@@ -56,7 +56,7 @@
 			// call each of the basic chainable methods
 			loc.select = instance.select("a");
 			loc.distinct = instance.distinct();
-			loc.from = instance.from("users")
+			loc.from = instance.from("users");
 			loc.include = instance.include();
 			loc.join = instance.join();
 			loc.where = instance.where(a=5);
@@ -114,7 +114,7 @@
 			// confirm that exception is thrown
 			try {
 				loc.instance.select();
-			} catch (Any e) {
+			} catch (custom_type e) {
 				loc.pass = true;
 			}
 			
@@ -255,7 +255,7 @@
 			// confirm that exception is thrown
 			try {
 				loc.instance.group();
-			} catch (Any e) {
+			} catch (custom_type e) {
 				loc.pass = true;
 			}
 			
@@ -351,7 +351,7 @@
 			// confirm that exception is thrown
 			try {
 				loc.instance.order();
-			} catch (Any e) {
+			} catch (custom_type e) {
 				loc.pass = true;
 			}
 			
@@ -415,14 +415,14 @@
 			// test <1 value for page
 			try {
 				loc.instance.paginate(0, 5);
-			} catch (Any e) {
+			} catch (custom_type e) {
 				loc.pass1 = true;
 			}
 			
 			// test <1 value for perPage
 			try {
 				loc.instance.paginate(1, 0);
-			} catch (Any e) {
+			} catch (custom_type e) {
 				loc.pass2 = true;
 			}
 			

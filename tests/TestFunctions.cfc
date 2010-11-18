@@ -17,10 +17,10 @@
 	
 	<cffunction name="testThrowException" returntype="void" access="public">
 		<cfscript>
-			var pass = false
+			var pass = false;
 			try {
-				throwException("Test Throw", "Object");
-			} catch (Object e) {
+				throwException("Test Throw");
+			} catch (custom_type e) {
 				pass = true;
 			}
 			assertTrue(pass, "throwException() should have thrown an exception.");
