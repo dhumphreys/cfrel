@@ -1,5 +1,4 @@
 <cfcomponent extends="tests.TestCase" output="false">
-	<cfinclude template="/cfrel/functions.cfm" />
 	
 	<cffunction name="setup" returntype="void" access="public">
 		<cfscript>

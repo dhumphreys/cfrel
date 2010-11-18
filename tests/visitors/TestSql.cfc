@@ -32,4 +32,12 @@
 				assertEquals(loc["exp#loc.i#"], loc.sql.visit(loc["rel#loc.i#"]));
 		</cfscript>
 	</cffunction>
+	
+	<cffunction name="testVisitNodesLiteral" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.sql = new();
+			assertEquals("SELECT 1", loc.sql.visit(literal("SELECT 1")), "visit_literal() should just retain plain text contents");
+		</cfscript>
+	</cffunction>
 </cfcomponent>

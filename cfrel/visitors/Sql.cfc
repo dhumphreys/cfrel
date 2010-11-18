@@ -54,6 +54,11 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="visit_nodes_literal" returntype="string" access="private" hint="Render a literal SQL string">
+		<cfargument name="obj" type="any" required="true" />
+		<cfreturn arguments.obj.content />
+	</cffunction>
+	
 	<!-----------------------
 	--- Private Functions ---
 	------------------------>
