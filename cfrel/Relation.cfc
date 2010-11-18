@@ -3,8 +3,8 @@
 	
 	<cffunction name="init" returntype="struct" access="public" hint="Constructor">
 		<cfscript>
-			variables.visitor = CreateObject("component", "cfrel.visitors.sql");
-			variables.sql = {
+			this.visitor = CreateObject("component", "cfrel.visitors.sql");
+			this.sql = {
 				select = [],
 				selectFlags = [],
 				joins = [],
@@ -28,21 +28,23 @@
 	
 	<cffunction name="clone" returntype="struct" access="public" hint="Duplicate the relation object">
 		<cfscript>
-			return Duplicate(this);
+			var rel = Duplicate(this);
+			rel.sql = StructCopy(this.sql);
+			return rel;
 		</cfscript>
 	</cffunction>
 	
 	<cffunction name="select" returntype="struct" access="public" hint="Append to the SELECT clause of the relation">
 		<cfscript>
-			_appendFieldsToClause("SELECT", sql.select, arguments);
+			_appendFieldsToClause("SELECT", this.sql.select, arguments);
 			return this;
 		</cfscript>
 	</cffunction>
 	
 	<cffunction name="distinct" returntype="struct" access="public" hint="Set DISTINCT flag for SELECT">
 		<cfscript>
-			if (NOT ArrayFind(sql.selectFlags, "DISTINCT"))
-				ArrayAppend(sql.selectFlags, "DISTINCT");
+			if (NOT ArrayFind(this.sql.selectFlags, "DISTINCT"))
+				ArrayAppend(this.sql.selectFlags, "DISTINCT");
 			return this;
 		</cfscript>
 	</cffunction>
@@ -55,11 +57,11 @@
 			// accept other relation objects
 			loc.meta = getMetaData(arguments.target);
 			if (StructKeyExists(loc.meta, "fullname") AND loc.meta.fullname EQ "cfrel.relation")
-				sql.from = arguments.target;
+				this.sql.from = arguments.target;
 				
 			// accept simple values (but not arrays, preferably strings)
 			else if (NOT IsArray(arguments.target) AND IsSimpleValue(arguments.target))
-				sql.from = arguments.target;
+				this.sql.from = arguments.target;
 			
 			// throw error if other type
 			else
@@ -85,14 +87,14 @@
 		<cfargument name="$clause" type="any" required="false" />
 		<cfargument name="$params" type="array" required="false" />
 		<cfscript>
-			_appendConditionsToClause("WHERE", sql.wheres, sql.whereParameters, arguments);
+			_appendConditionsToClause("WHERE", this.sql.wheres, this.sql.whereParameters, arguments);
 			return this;
 		</cfscript>
 	</cffunction>
 	
 	<cffunction name="group" returntype="struct" access="public" hint="Append to GROUP BY clause of the relation">
 		<cfscript>
-			_appendFieldsToClause("GROUP BY", sql.groups, arguments);
+			_appendFieldsToClause("GROUP BY", this.sql.groups, arguments);
 			return this;
 		</cfscript>
 	</cffunction>
@@ -101,14 +103,14 @@
 		<cfargument name="$clause" type="any" required="false" />
 		<cfargument name="$params" type="array" required="false" />
 		<cfscript>
-			_appendConditionsToClause("HAVING", sql.havings, sql.havingParameters, arguments);
+			_appendConditionsToClause("HAVING", this.sql.havings, this.sql.havingParameters, arguments);
 			return this;
 		</cfscript>
 	</cffunction>
 	
 	<cffunction name="order" returntype="struct" access="public" hint="Append to ORDER BY clause of the relation">
 		<cfscript>
-			_appendFieldsToClause("ORDER BY", sql.orders, arguments);
+			_appendFieldsToClause("ORDER BY", this.sql.orders, arguments);
 			return this;
 		</cfscript>
 	</cffunction>
@@ -116,7 +118,7 @@
 	<cffunction name="limit" returntype="struct" access="public" hint="Restrict the number of records when querying">
 		<cfargument name="value" type="numeric" required="true" />
 		<cfscript>
-			sql.limit = Int(arguments.value);
+			this.sql.limit = Int(arguments.value);
 			return this;
 		</cfscript>
 	</cffunction>
@@ -124,7 +126,7 @@
 	<cffunction name="offset" returntype="struct" access="public" hint="Skip some records when querying">
 		<cfargument name="value" type="numeric" required="true" />
 		<cfscript>
-			sql.offset = Int(arguments.value);
+			this.sql.offset = Int(arguments.value);
 			return this;
 		</cfscript>
 	</cffunction>
@@ -139,15 +141,15 @@
 				throwException("Page and per-page must be greater than zero", "Expression");
 			
 			// calculate limit and offset
-			sql.limit = Int(arguments.perPage);
-			sql.offset = (Int(arguments.page) - 1) * sql.limit;
+			this.sql.limit = Int(arguments.perPage);
+			this.sql.offset = (Int(arguments.page) - 1) * this.sql.limit;
 			return this;
 		</cfscript>
 	</cffunction>
 	
 	<cffunction name="toSql" returntype="string" access="public" hint="Convert relational data into a SQL string">
 		<cfscript>
-			return visitor.visit(this);
+			return this.visitor.visit(this);
 		</cfscript>
 	</cffunction>
 	

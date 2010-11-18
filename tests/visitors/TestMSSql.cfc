@@ -65,19 +65,19 @@
 		<cfscript>
 			var loc = {};
 			loc.visitor = new();
+			
+			// perform TOP and ROW_NUMBER() style limits on data
 			loc.rel1 = new("cfrel.relation").select("a").order("a ASC").limit(5);
 			loc.rel2 = new("cfrel.relation").select("b").order("b DESC").limit(5).offset(10);
 			
 			// generate sql string
 			loc.visitor.visit(loc.rel1);
 			loc.visitor.visit(loc.rel2);
-			loc.sql1 = loc.rel1._inspect().sql;
-			loc.sql2 = loc.rel2._inspect().sql;
 			
 			// make sure original limit and offset are still left
-			assertEquals(5, loc.sql1.limit, "Original LIMIT should not be modified");
-			assertEquals(5, loc.sql2.limit, "Original LIMIT should not be modified");
-			assertEquals(10, loc.sql2.offset, "Original OFFSET should not be modified");
+			assertEquals(5, loc.rel1.sql.limit, "Original LIMIT should not be modified");
+			assertEquals(5, loc.rel2.sql.limit, "Original LIMIT should not be modified");
+			assertEquals(10, loc.rel2.sql.offset, "Original OFFSET should not be modified");
 		</cfscript>
 	</cffunction>
 </cfcomponent>
