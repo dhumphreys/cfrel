@@ -53,20 +53,18 @@
 		<cfargument name="target" type="any" required="true" />
 		<cfscript>
 			var loc = {};
-			
-			// accept other relation objects
-			loc.meta = getMetaData(arguments.target);
-			if (StructKeyExists(loc.meta, "fullname") AND loc.meta.fullname EQ "cfrel.relation")
-				this.sql.from = arguments.target;
+			switch(typeOf(arguments.target)) {
 				
-			// accept simple values (but not arrays, preferably strings)
-			else if (NOT IsArray(arguments.target) AND IsSimpleValue(arguments.target))
-				this.sql.from = arguments.target;
-			
-			// throw error if other type
-			else
-				throwException("Only a table name or another relation can be in FROM clause");
-				
+				// accept relations and strings
+				case "cfrel.relation":
+				case "simple":
+					this.sql.from = arguments.target;
+					break;
+					
+				// and reject all others by throwing an errors
+				default:
+					throwException("Only a table name or another relation can be in FROM clause");
+			}	
 			return this;
 		</cfscript>
 	</cffunction>
@@ -231,15 +229,16 @@
 					if (ListFindNoCase("$clause,$params", loc.key))
 						continue;
 					
-					// grab the value from arguments
+					// grab the value from arguments and decide its type
 					loc.value = arguments.args[loc.key];
+					loc.type = typeOf(loc.value)
 					
 					// use an IN if value is an array
-					if (IsArray(loc.value))
+					if (loc.type EQ "array")
 						loc.clause = "#loc.key# IN ?";
 						
 					// use an equality check if value is simple
-					else if (IsSimpleValue(loc.value))
+					else if (loc.type EQ "simple")
 						loc.clause = "#loc.key# = ?";
 						
 					// throw an error otherwise
