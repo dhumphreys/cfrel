@@ -1,9 +1,15 @@
 <cfcomponent output="false">
 	<cfinclude template="functions.cfm" />
+	<cfinclude template="inspection.cfm" />
 	
 	<cffunction name="init" returntype="struct" access="public" hint="Constructor">
 		<cfscript>
+			
+			// datasource and visitor to use
+			this.datasource = "";
 			this.visitor = CreateObject("component", "cfrel.visitors.sql");
+			
+			// struct to hold SQL tree
 			this.sql = {
 				select = [],
 				selectFlags = [],
@@ -16,6 +22,13 @@
 				havingParameters = [],
 				orders = []
 			};
+			
+			// internal control and value variables
+			variables.query = false;
+			variables.result = false;
+			variables.executed = false;
+			variables.qoq = false;
+			
 			return this;
 		</cfscript>
 	</cffunction>
@@ -28,14 +41,30 @@
 	
 	<cffunction name="clone" returntype="struct" access="public" hint="Duplicate the relation object">
 		<cfscript>
-			var rel = Duplicate(this);
-			rel.sql = StructCopy(this.sql);
-			return rel;
+			var loc = {};
+			
+			// duplicate object and sql
+			loc.rel = Duplicate(this);
+			loc.rel.sql = StructCopy(this.sql);
+			loc.rel.executed = false;
+			
+			// remove query values that should not be kept in new instance
+			if (variables.executed EQ true OR IsObject(variables.query)) {
+				loc.private = injectInspector(loc.rel)._inspect();
+				loc.private.query = false;
+				loc.private.result = false;
+				loc.private.executed = false;
+			}
+			
+			return loc.rel;
 		</cfscript>
 	</cffunction>
 	
 	<cffunction name="select" returntype="struct" access="public" hint="Append to the SELECT clause of the relation">
 		<cfscript>
+			if (variables.executed)
+				return this.clone().select(argumentCollection=arguments);
+				
 			_appendFieldsToClause("SELECT", "select", arguments);
 			return this;
 		</cfscript>
@@ -43,6 +72,9 @@
 	
 	<cffunction name="distinct" returntype="struct" access="public" hint="Set DISTINCT flag for SELECT">
 		<cfscript>
+			if (variables.executed)
+				return this.clone().distinct(argumentCollection=arguments);
+				
 			if (NOT ArrayFind(this.sql.selectFlags, "DISTINCT"))
 				ArrayAppend(this.sql.selectFlags, "DISTINCT");
 			return this;
@@ -59,6 +91,12 @@
 				case "cfrel.relation":
 				case "simple":
 					this.sql.from = arguments.target;
+					break;
+				
+				// accept queries for QoQ operations
+				case "query":
+					this.sql.from = arguments.target;
+					variables.qoq = true;
 					break;
 					
 				// and reject all others by throwing an errors
@@ -85,6 +123,9 @@
 		<cfargument name="$clause" type="any" required="false" />
 		<cfargument name="$params" type="array" required="false" />
 		<cfscript>
+			if (variables.executed)
+				return this.qoq().where(argumentCollection=arguments);
+				
 			_appendConditionsToClause("WHERE", "wheres", "whereParameters", arguments);
 			return this;
 		</cfscript>
@@ -92,6 +133,9 @@
 	
 	<cffunction name="group" returntype="struct" access="public" hint="Append to GROUP BY clause of the relation">
 		<cfscript>
+			if (variables.executed)
+				return this.clone().group(argumentCollection=arguments);
+				
 			_appendFieldsToClause("GROUP BY", "groups", arguments);
 			return this;
 		</cfscript>
@@ -101,6 +145,9 @@
 		<cfargument name="$clause" type="any" required="false" />
 		<cfargument name="$params" type="array" required="false" />
 		<cfscript>
+			if (variables.executed)
+				return this.clone().having(argumentCollection=arguments);
+				
 			_appendConditionsToClause("HAVING", "havings", "havingParameters", arguments);
 			return this;
 		</cfscript>
@@ -108,6 +155,9 @@
 	
 	<cffunction name="order" returntype="struct" access="public" hint="Append to ORDER BY clause of the relation">
 		<cfscript>
+			if (variables.executed)
+				return this.clone().order(argumentCollection=arguments);
+				
 			_appendFieldsToClause("ORDER BY", "orders", arguments);
 			return this;
 		</cfscript>
@@ -116,6 +166,9 @@
 	<cffunction name="limit" returntype="struct" access="public" hint="Restrict the number of records when querying">
 		<cfargument name="value" type="numeric" required="true" />
 		<cfscript>
+			if (variables.executed)
+				return this.clone().limit(argumentCollection=arguments);
+				
 			this.sql.limit = Int(arguments.value);
 			return this;
 		</cfscript>
@@ -124,6 +177,9 @@
 	<cffunction name="offset" returntype="struct" access="public" hint="Skip some records when querying">
 		<cfargument name="value" type="numeric" required="true" />
 		<cfscript>
+			if (variables.executed)
+				return this.clone().offset(argumentCollection=arguments);
+				
 			this.sql.offset = Int(arguments.value);
 			return this;
 		</cfscript>
@@ -148,6 +204,79 @@
 	<cffunction name="toSql" returntype="string" access="public" hint="Convert relational data into a SQL string">
 		<cfscript>
 			return this.visitor.visit(this);
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="exec" returntype="struct" access="public" hint="Run query() but return the relation">
+		<cfscript>
+			this.query();
+			return this;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="reload" returntype="struct" access="public" hint="Execute again to reload dataset">
+		<cfscript>
+			variables.executed = false;
+			return this.exec();
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="qoq" returntype="struct" access="public" hint="Return a QoQ relation with the current recordset as the FROM">
+		<cfreturn this.new().from(this.query()) />
+	</cffunction>
+	
+	<cffunction name="query" returntype="query" access="public" hint="Lazily execute and return query object">
+		<cfscript>
+			var loc = {};
+			
+			// drop into query logic if we don't have a query yet
+			if (variables.executed EQ false OR NOT IsQuery(variables.query)) {
+					
+				// create the new query object
+				loc.query = new query();
+				
+				// if we are using query of a query, set dbtype and resultset
+				if (variables.qoq) {
+					loc.query.setAttributes(dbType="query", resultSet=this.sql.from);
+					
+				} else {
+			
+					// set up a datasource
+					if (Len(this.datasource) EQ 0)
+						throwException("Cannot execute query without a datasource");
+					loc.query.setDatasource(this.datasource);
+				}
+				
+				// stack on where parameters
+				loc.iEnd = ArrayLen(this.sql.whereParameters);
+				for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+					loc.query.addParam(value=this.sql.whereParameters[loc.i]);
+				
+				// stack on having parameters
+				loc.iEnd = ArrayLen(this.sql.havingParameters);
+				for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+					loc.query.addParam(value=this.sql.havingParameters[loc.i]);
+					
+				// execute query
+				loc.result = loc.query.execute(sql=this.toSql());
+				
+				// save objects
+				variables.query = loc.result.getResult();
+				variables.result = loc.result.getPrefix();
+				
+				// change state
+				variables.executed = true;
+			}
+			
+			return variables.query;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="result" returntype="struct" access="public" hint="Return result object generated by query()">
+		<cfscript>
+			if (variables.executed EQ false OR NOT IsStruct(variables.result))
+				this.query();
+			return variables.result;
 		</cfscript>
 	</cffunction>
 	

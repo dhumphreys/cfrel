@@ -1,0 +1,26 @@
+# The following tests need to be added to TestRelation.cfc in order
+# to make sure query, query-of-query, and datasource functionality all
+# work as expected. A custom testing datasource / table structure needs
+# to be created in order to fully test querying.
+
+# new variables
+this.datasource
+variables.query
+variables.result
+variables.executed
+
+# new cloning logic
+clone()
+
+# lazy query logic
+exec()
+reload()
+query()
+result()
+
+# query-of-query
+qoq()
+
+# automatic clone() or qoq() calls in
+select(), distinct(), where(), group(),
+having(), order(), limit(), offset()

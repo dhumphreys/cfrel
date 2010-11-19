@@ -27,6 +27,8 @@
 			if (StructKeyExists(obj.sql, "from")) {
 				if (IsSimpleValue(obj.sql.from))
 					ArrayAppend(loc.fragments, "FROM #visit(obj.sql.from)#");
+				else if (IsQuery(obj.sql.from))
+					ArrayAppend(loc.fragments, "FROM resultSet");
 				else
 					ArrayAppend(loc.fragments, "FROM (#visit(obj.sql.from)#)");
 					

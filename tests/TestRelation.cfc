@@ -154,6 +154,19 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="testFromWithQuery" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.query = QueryNew('');
+			loc.instance = new();
+			loc.private = loc.instance._inspect();
+			assertFalse(loc.private.qoq, "QOQ should be false initially");
+			loc.instance.from(loc.query);
+			assertSame(loc.query, loc.instance.sql.from, "FROM clause should be set to passed query");
+			assertTrue(loc.private.qoq, "QOQ should be true after using from(query)");
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="testFromWithInvalidObject" returntype="void" access="public">
 		<cfscript>
 			var loc = {};

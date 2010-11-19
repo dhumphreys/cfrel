@@ -19,6 +19,7 @@
 			loc.rel3 = loc.factory.new().from("example").where("c > 5 OR c < 2").where(a=5).order("c ASC");
 			loc.rel4 = loc.factory.new().from("example").order("a DESC").paginate(7, 10);
 			loc.rel5 = loc.factory.new().from(loc.rel4).where("b > ?", [10]);
+			loc.rel6 = loc.factory.new().from(QueryNew(''));
 			
 			// set expected values
 			loc.exp1 = "SELECT DISTINCT 1 + 2, 3, 4";
@@ -26,9 +27,10 @@
 			loc.exp3 = "SELECT * FROM example WHERE (c > 5 OR c < 2) AND a = ? ORDER BY c ASC";
 			loc.exp4 = "SELECT * FROM example ORDER BY a DESC LIMIT 10 OFFSET 60";
 			loc.exp5 = "SELECT * FROM (#loc.exp4#) WHERE b > ?";
+			loc.exp6 = "SELECT * FROM resultSet";
 			
 			// test each value
-			for (loc.i = 1; loc.i LTE 5; loc.i++)
+			for (loc.i = 1; loc.i LTE 6; loc.i++)
 				assertEquals(loc["exp#loc.i#"], loc.sql.visit(loc["rel#loc.i#"]));
 		</cfscript>
 	</cffunction>
