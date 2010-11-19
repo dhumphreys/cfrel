@@ -27,7 +27,7 @@
 						throwException("ORDER BY clause is required for pagination");
 					
 					// create new SELECT item from inner query
-					ArrayAppend(obj.sql.select, "ROW_NUMBER() OVER (ORDER BY #ArrayToList(obj.sql.orders, ', ')#) AS rowNum");
+					ArrayAppend(obj.sql.select, literal("ROW_NUMBER() OVER (ORDER BY #ArrayToList(obj.sql.orders, ', ')#) AS rowNum"));
 					
 					// remove LIMIT and OFFSET from inner query
 					StructDelete(obj.sql, "limit");

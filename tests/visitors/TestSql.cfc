@@ -33,6 +33,28 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="testVisitSimple" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.visitor = new();
+			assertEquals(5, loc.visitor.visit(5));
+			assertEquals("boo", loc.visitor.visit("boo"));
+			assertEquals(true, loc.visitor.visit(true));
+			assertEquals(Now(), loc.visitor.visit(Now()));
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testVisitArray" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.visitor = new();
+			loc.rel = new("cfrel.relation").select(1).from("a");
+			loc.input = [5, "a", literal("b"), loc.rel];
+			loc.output = [5, "a", "b", "SELECT 1 FROM a"];
+			assertEquals(loc.output, loc.visitor.visit(loc.input));
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="testVisitNodesLiteral" returntype="void" access="public">
 		<cfscript>
 			var loc = {};

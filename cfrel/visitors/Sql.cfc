@@ -14,11 +14,11 @@
 			// generate SELECT clause
 			loc.clause = "SELECT ";
 			if (ArrayLen(obj.sql.selectFlags) GT 0)
-				loc.clause &= ArrayToList(obj.sql.selectFlags, " ") & " ";
+				loc.clause &= ArrayToList(visit(obj.sql.selectFlags), " ") & " ";
 			if (ArrayLen(obj.sql.select) EQ 0) {
 				loc.clause &= "*";
 			} else {
-				loc.clause &= ArrayToList(obj.sql.select, ", ");
+				loc.clause &= ArrayToList(visit(obj.sql.select), ", ");
 				loc.select = true;
 			}
 			ArrayAppend(loc.fragments, loc.clause);
@@ -26,7 +26,7 @@
 			// generate FROM clause, evaluating another relation if neccessary
 			if (StructKeyExists(obj.sql, "from")) {
 				if (IsSimpleValue(obj.sql.from))
-					ArrayAppend(loc.fragments, "FROM #obj.sql.from#");
+					ArrayAppend(loc.fragments, "FROM #visit(obj.sql.from)#");
 				else
 					ArrayAppend(loc.fragments, "FROM (#visit(obj.sql.from)#)");
 					
@@ -59,6 +59,26 @@
 		<cfreturn arguments.obj.content />
 	</cffunction>
 	
+	<cffunction name="visit_simple" returntype="any" access="private" hint="Render a simple value by just returning it">
+		<cfargument name="obj" type="any" required="true" />
+		<cfreturn arguments.obj />
+	</cffunction>
+	
+	<cffunction name="visit_array" returntype="array" access="private" hint="Call visit on each element of array">
+		<cfargument name="obj" type="array" required="true" />
+		<cfscript>
+			var loc = {};
+			loc.rtn = [];
+			loc.iEnd = ArrayLen(arguments.obj);
+			
+			// loop over each item and call visit
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+				ArrayAppend(loc.rtn, visit(arguments.obj[loc.i]));
+				
+			return loc.rtn;
+		</cfscript>
+	</cffunction>
+	
 	<!-----------------------
 	--- Private Functions ---
 	------------------------>
@@ -69,7 +89,7 @@
 		<cfargument name="src" type="array" required="true" />
 		<cfscript>
 			if (ArrayLen(arguments.src))
-				ArrayAppend(arguments.dest, "#UCase(arguments.clause)# " & ArrayToList(arguments.src, ", "));
+				ArrayAppend(arguments.dest, "#UCase(arguments.clause)# " & ArrayToList(visit(arguments.src), ", "));
 			return arguments.dest;
 		</cfscript>
 	</cffunction>
