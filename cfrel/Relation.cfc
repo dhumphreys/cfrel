@@ -3,11 +3,13 @@
 	<cfinclude template="inspection.cfm" />
 	
 	<cffunction name="init" returntype="struct" access="public" hint="Constructor">
+		<cfargument name="datasource" type="string" default="" />
+		<cfargument name="visitor" type="string" default="sql" />
 		<cfscript>
 			
 			// datasource and visitor to use
-			this.datasource = "";
-			this.visitor = CreateObject("component", "cfrel.visitors.sql");
+			this.datasource = arguments.datasource;
+			this.visitor = CreateObject("component", "cfrel.visitors.#arguments.visitor#");
 			
 			// struct to hold SQL tree
 			this.sql = {

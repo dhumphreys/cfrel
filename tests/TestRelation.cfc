@@ -24,6 +24,19 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="testInitWithOptions" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			
+			// create a new item with some options
+			loc.instance = new(init=false).init(datasource="test", visitor="mssql");
+			
+			// make sure datasource and visitor were correctly set
+			assertEquals("test", loc.instance.datasource, "Datasource should be set through constructor");
+			assertIsTypeOf(loc.instance.visitor, "cfrel.visitors.mssql");
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="testNew" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
