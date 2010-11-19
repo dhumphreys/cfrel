@@ -13,7 +13,7 @@
 			
 			// mixin a visitor for cfrel.visitors.visitor
 			loc.obj = new();
-			loc.obj.visit_visitors_visitor = variables.visit_visitors_visitor;
+			loc.obj._inspect().visit_visitors_visitor = variables.visit_visitors_visitor;
 			
 			assertEquals(36, loc.obj.visit(loc.obj), "visit(obj) should call visit_visitors_visitor()");
 		</cfscript>
@@ -26,7 +26,7 @@
 			
 			// mixin a visitor for structs
 			loc.obj = new();
-			loc.obj.visit_struct = visit_struct;
+			loc.obj._inspect().visit_struct = visit_struct;
 			
 			assertEquals(StructCount(loc.set), loc.obj.visit(loc.set), "visit({}) should call visit_struct()");
 		</cfscript>
@@ -39,7 +39,7 @@
 			
 			// mixin a visitor for structs
 			loc.obj = new();
-			loc.obj.visit_query = visit_query;
+			loc.obj._inspect().visit_query = visit_query;
 			
 			assertEquals(loc.query.recordCount, loc.obj.visit(loc.query), "visit(query) should call visit_query()");
 		</cfscript>

@@ -16,7 +16,7 @@
 			
 			// construct method name for type. throw exception if it doesnt exist
 			loc.method = "visit_#loc.type#";
-			if (NOT(StructKeyExists(variables, loc.method) OR StructKeyExists(this, loc.method)))
+			if (NOT StructKeyExists(variables, loc.method))
 				throwException("No visitor exists for type: #loc.type#");
 			
 			// call visit_xxx_yyy method
