@@ -3,7 +3,7 @@
 	<cffunction name="setup" returntype="void" access="public">
 		<cfscript>
 			super.setup();
-			variables.cfc = "cfrel.nodes.literal";
+			variables.cfc = "cfrel.nodes.Literal";
 		</cfscript>
 	</cffunction>
 	

@@ -3,7 +3,7 @@
 	<cffunction name="setup" returntype="void" access="public">
 		<cfscript>
 			super.setup();
-			variables.cfc = "cfrel.visitors.visitor";
+			variables.cfc = "cfrel.visitors.Visitor";
 		</cfscript>
 	</cffunction>
 	
@@ -11,7 +11,7 @@
 		<cfscript>
 			var loc = {};
 			
-			// mixin a visitor for cfrel.visitors.visitor
+			// mixin a visitor for cfrel.visitors.Visitor
 			loc.obj = new();
 			loc.obj._inspect().visit_visitors_visitor = variables.visit_visitors_visitor;
 			

@@ -1,2 +1,2 @@
-<cfcomponent extends="mxunit.Framework.RemoteFacade">
+<cfcomponent extends="mxunit.framework.RemoteFacade">
 </cfcomponent>

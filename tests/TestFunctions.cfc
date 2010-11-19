@@ -10,7 +10,7 @@
 		<cfscript>
 			var loc = {};
 			loc.node = literal("ROW_NUMBER()");
-			assertIsTypeOf(loc.node, "cfrel.nodes.literal");
+			assertIsTypeOf(loc.node, "cfrel.nodes.Literal");
 			assertEquals("ROW_NUMBER()", loc.node.content, "Literal node should be constructed with correct value");
 		</cfscript>
 	</cffunction>
@@ -34,7 +34,7 @@
 			assertEquals("struct", typeOf({}));
 			assertEquals("binary", typeOf(ToBinary(ToBase64("1234"))));
 			assertEquals("function", typeOf(literal));
-			assertEquals("cfrel.nodes.literal", typeOf(literal("SELECT a FROM b")));
+			assertEquals("cfrel.nodes.Literal", typeOf(literal("SELECT a FROM b")));
 		</cfscript>
 	</cffunction>
 </cfcomponent>

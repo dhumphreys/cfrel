@@ -1,6 +1,6 @@
 <cffunction name="literal" returntype="any" access="private" hint="Create a Literal SQL node">
 	<cfargument name="content" type="string" required="true" />
-	<cfreturn CreateObject("component", "cfrel.nodes.literal").init(arguments.content) />
+	<cfreturn CreateObject("component", "cfrel.nodes.Literal").init(arguments.content) />
 </cffunction>
 
 <cffunction name="throwException" returntype="void" access="private" hint="Throw an exception with CFTHROW">

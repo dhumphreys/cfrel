@@ -3,7 +3,7 @@
 	<cffunction name="setup" returntype="void" access="public">
 		<cfscript>
 			super.setup();
-			variables.cfc = "cfrel.relation";
+			variables.cfc = "cfrel.Relation";
 		</cfscript>
 	</cffunction>
 	
@@ -18,7 +18,7 @@
 			loc.varCount2 = StructCount(loc.instance);
 			
 			// make sure init modifies instance, not creating a new one
-			assertIsTypeOf(loc.instance, "cfrel.relation");
+			assertIsTypeOf(loc.instance, "cfrel.Relation");
 			assertSame(loc.obj, loc.instance, "init() should return same instance");
 			assertTrue(loc.varCount2 GT loc.varCount1, "init() should define private variables");
 		</cfscript>
@@ -29,11 +29,11 @@
 			var loc = {};
 			
 			// create a new item with some options
-			loc.instance = new(init=false).init(datasource="test", visitor="mssql");
+			loc.instance = new(init=false).init(datasource="test", visitor="MSSql");
 			
 			// make sure datasource and visitor were correctly set
 			assertEquals("test", loc.instance.datasource, "Datasource should be set through constructor");
-			assertIsTypeOf(loc.instance.visitor, "cfrel.visitors.mssql");
+			assertIsTypeOf(loc.instance.visitor, "cfrel.visitors.MSSql");
 		</cfscript>
 	</cffunction>
 	
@@ -42,7 +42,7 @@
 			var loc = {};
 			loc.factory = new(init=false);
 			loc.instance = loc.factory.new();
-			assertIsTypeOf(loc.instance, "cfrel.relation");
+			assertIsTypeOf(loc.instance, "cfrel.Relation");
 			assertNotSame(loc.instance, loc.factory, "new() should create a new instance");
 		</cfscript>
 	</cffunction>
@@ -54,7 +54,7 @@
 			loc.clone = loc.instance.clone();
 			
 			// make sure that call returns a different relation object
-			assertIsTypeOf(loc.clone, "cfrel.relation");
+			assertIsTypeOf(loc.clone, "cfrel.Relation");
 			assertNotSame(loc.clone, loc.instance, "clone() should return copy of object, not same one");
 			assertNotSame(loc.clone.sql, loc.instance.sql, "clone() should copy the sql struct, not reference it");
 		</cfscript>
@@ -406,7 +406,7 @@
 	<cffunction name="testSqlGeneration" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
-			loc.visitor = CreateObject("component", "cfrel.visitors.sql");
+			loc.visitor = CreateObject("component", "cfrel.visitors.Sql");
 			
 			// generate a simple relation
 			loc.instance = new().select("a").from("b").where("a > 5").order("a ASC").paginate(2, 15);

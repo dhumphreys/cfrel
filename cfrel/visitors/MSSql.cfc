@@ -1,4 +1,4 @@
-<cfcomponent extends="sql" output="false">
+<cfcomponent extends="Sql" output="false">
 
 	<cffunction name="visit_relation" returntype="any" access="private" hint="Generate SQL for a relation specific to MSSQL">
 		<cfargument name="obj" type="any" required="true" />

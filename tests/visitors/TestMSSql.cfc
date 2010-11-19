@@ -3,7 +3,7 @@
 	<cffunction name="setup" returntype="void" access="public">
 		<cfscript>
 			super.setup();
-			variables.cfc = "cfrel.visitors.mssql";
+			variables.cfc = "cfrel.visitors.MSSql";
 		</cfscript>
 	</cffunction>
 	
@@ -11,7 +11,7 @@
 		<cfscript>
 			var loc = {};
 			loc.visitor = new();
-			loc.factory = CreateObject("component", "cfrel.relation");
+			loc.factory = CreateObject("component", "cfrel.Relation");
 			
 			// build a variety of queries
 			loc.rel1 = loc.factory.new().select("a,b,c,d").distinct().from("example").limit(15);
@@ -32,7 +32,7 @@
 			var loc = {};
 			loc.pass = false;
 			loc.visitor = new();
-			loc.rel = new("cfrel.relation").select("c").offset(5);
+			loc.rel = new("cfrel.Relation").select("c").offset(5);
 			
 			// should not allow OFFSET without LIMIT
 			try {
@@ -49,7 +49,7 @@
 			var loc = {};
 			loc.pass = false;
 			loc.visitor = new();
-			loc.rel = new("cfrel.relation").select("c").paginate(2, 10);
+			loc.rel = new("cfrel.Relation").select("c").paginate(2, 10);
 			
 			// should not allow empty ORDER BY
 			try {
@@ -67,8 +67,8 @@
 			loc.visitor = new();
 			
 			// perform TOP and ROW_NUMBER() style limits on data
-			loc.rel1 = new("cfrel.relation").select("a").order("a ASC").limit(5);
-			loc.rel2 = new("cfrel.relation").select("b").order("b DESC").limit(5).offset(10);
+			loc.rel1 = new("cfrel.Relation").select("a").order("a ASC").limit(5);
+			loc.rel2 = new("cfrel.Relation").select("b").order("b DESC").limit(5).offset(10);
 			
 			// generate sql string
 			loc.visitor.visit(loc.rel1);

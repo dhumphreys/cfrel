@@ -1,4 +1,4 @@
-<cfcomponent extends="mxunit.Framework.TestCase" output="false" hint="Base-class test for customer functionality/helpers/assertions">
+<cfcomponent extends="mxunit.framework.TestCase" output="false" hint="Base-class test for customer functionality/helpers/assertions">
 	<cfinclude template="/cfrel/functions.cfm" />
 	<cfinclude template="/cfrel/inspection.cfm" />
 	

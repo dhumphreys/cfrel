@@ -4,7 +4,7 @@
 	
 	<cffunction name="init" returntype="struct" access="public" hint="Constructor">
 		<cfargument name="datasource" type="string" default="" />
-		<cfargument name="visitor" type="string" default="sql" />
+		<cfargument name="visitor" type="string" default="Sql" />
 		<cfscript>
 			
 			// datasource and visitor to use
@@ -37,7 +37,7 @@
 	
 	<cffunction name="new" returntype="struct" access="public" hint="Create new instance of relation">
 		<cfscript>
-			return CreateObject("component", "cfrel.relation").init();
+			return CreateObject("component", "cfrel.Relation").init();
 		</cfscript>
 	</cffunction>
 	
@@ -90,7 +90,7 @@
 			switch(typeOf(arguments.target)) {
 				
 				// accept relations and strings
-				case "cfrel.relation":
+				case "cfrel.Relation":
 				case "simple":
 					this.sql.from = arguments.target;
 					break;
