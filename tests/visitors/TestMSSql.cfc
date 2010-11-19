@@ -19,7 +19,7 @@
 			
 			// set expected values
 			loc.exp1 = "SELECT DISTINCT TOP 15 a, b, c, d FROM example";
-			loc.exp2 = "SELECT * FROM (SELECT a, ROW_NUMBER() OVER (ORDER BY a DESC) AS rowNum FROM example ORDER BY a DESC) WHERE rowNum BETWEEN 6 AND 10";
+			loc.exp2 = "SELECT * FROM (SELECT a, ROW_NUMBER() OVER (ORDER BY a DESC) AS rowNum FROM example) paged_query WHERE rowNum BETWEEN 6 AND 10 ORDER BY a DESC";
 			
 			// test each value
 			for (loc.i = 1; loc.i LTE 2; loc.i++)

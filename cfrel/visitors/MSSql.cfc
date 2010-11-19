@@ -27,14 +27,18 @@
 						throwException("ORDER BY clause is required for pagination");
 					
 					// create new SELECT item from inner query
-					ArrayAppend(obj.sql.select, literal("ROW_NUMBER() OVER (ORDER BY #ArrayToList(obj.sql.orders, ', ')#) AS rowNum"));
+					ArrayAppend(obj.sql.select, literal("ROW_NUMBER() OVER (ORDER BY #ArrayToList(visit(obj.sql.orders), ', ')#) AS rowNum"));
+					
+					// render order clause and then wipe out order in inner query
+					loc.order = ArrayToList(visit(obj.sql.orders), ", ");
+					obj.sql.orders = [];
 					
 					// remove LIMIT and OFFSET from inner query
 					StructDelete(obj.sql, "limit");
 					StructDelete(obj.sql, "offset");
 					
 					// get SQL for inner query and return inside of SELECT
-					return "SELECT * FROM (#super.visit_relation(obj)#) WHERE rowNum BETWEEN #loc.start# AND #loc.end#";
+					return "SELECT * FROM (#super.visit_relation(obj)#) paged_query WHERE rowNum BETWEEN #loc.start# AND #loc.end# ORDER BY #loc.order#";
 				
 				// use TOP to restrict dataset instead of LIMIT
 				} else {
