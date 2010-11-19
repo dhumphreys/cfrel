@@ -4,8 +4,8 @@
 </cffunction>
 
 <cffunction name="throwException" returntype="void" access="private" hint="Throw an exception with CFTHROW">
-	<cfargument name="message" type="string" required="false" />
-	<cfargument name="type" type="string" required="false" />
+	<cfargument name="message" type="string" required="true" />
+	<cfargument name="type" type="string" default="custom_type" />
 	<cfargument name="detail" type="string" required="false" />
 	<cfthrow attributeCollection="#arguments#" />
 </cffunction>
