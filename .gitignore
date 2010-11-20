@@ -1,2 +1,4 @@
 .project
+*.db
+*.sqlite3
 WEB-INF
