@@ -15,6 +15,16 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="testRelation" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.rel = relation(datasource="cfrel", visitor="MSSql");
+			assertIsTypeOf(loc.rel, "cfrel.Relation");
+			assertIsTypeOf(loc.rel.visitor, "cfrel.visitors.MSSql");
+			assertEquals("cfrel", loc.rel.datasource);
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="testThrowException" returntype="void" access="public">
 		<cfscript>
 			var pass = false;

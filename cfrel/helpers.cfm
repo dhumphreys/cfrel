@@ -2,6 +2,10 @@
 --- Helper Functions ---
 ----------------------->
 
+<cffunction name="relation" returntype="struct" access="private" hint="Created a new Relation instance">
+	<cfreturn CreateObject("component", "cfrel.Relation").init(argumentCollection=arguments) />
+</cffunction>
+
 <cffunction name="throwException" returntype="void" access="private" hint="Throw an exception with CFTHROW">
 	<cfargument name="message" type="string" required="true" />
 	<cfargument name="type" type="string" default="custom_type" />

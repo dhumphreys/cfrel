@@ -36,7 +36,7 @@
 	
 	<cffunction name="new" returntype="struct" access="public" hint="Create new instance of relation">
 		<cfscript>
-			return CreateObject("component", "cfrel.Relation").init(argumentCollection=arguments);
+			return relation(argumentCollection=arguments);
 		</cfscript>
 	</cffunction>
 	
