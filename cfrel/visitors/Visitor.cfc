@@ -1,6 +1,5 @@
 <cfcomponent displayName="Vistor" output="false">
 	<cfinclude template="../functions.cfm" />
-	<cfinclude template="../inspection.cfm" />
 	
 	<cffunction name="visit" returntype="any" access="public" hint="Visit a particular object">
 		<cfargument name="obj" type="any" required="true" />

@@ -27,7 +27,7 @@
 						throwException("ORDER BY clause is required for pagination");
 					
 					// create new SELECT item from inner query
-					ArrayAppend(obj.sql.select, literal("ROW_NUMBER() OVER (ORDER BY #ArrayToList(visit(obj.sql.orders), ', ')#) AS rowNum"));
+					ArrayAppend(obj.sql.select, sqlLiteral("ROW_NUMBER() OVER (ORDER BY #ArrayToList(visit(obj.sql.orders), ', ')#) AS rowNum"));
 					
 					// render order clause and then wipe out order in inner query
 					loc.order = ArrayToList(visit(obj.sql.orders), ", ");

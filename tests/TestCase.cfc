@@ -1,6 +1,5 @@
 <cfcomponent extends="mxunit.framework.TestCase" output="false" hint="Base-class test for customer functionality/helpers/assertions">
 	<cfinclude template="/cfrel/functions.cfm" />
-	<cfinclude template="/cfrel/inspection.cfm" />
 	
 	<cffunction name="setup" returntype="void" access="private" hint="Set up some defaults">
 		<cfscript>

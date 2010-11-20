@@ -24,3 +24,18 @@ qoq()
 # automatic clone() or qoq() calls in
 select(), distinct(), where(), group(),
 having(), order(), limit(), offset()
+
+# Additional testing should be done on all of the components under
+# cfrel.nodes.* Each of these CFCs also has a method in nodes.cfm used to
+# easily generate instances of the components for use in relations. Need
+# to also test and improve functionality of _transformInput() in Relation
+
+_transformInput()
+
+BinaryOp
+Column
+Expression
+Order
+Table
+UnaryOp
+Wildcard

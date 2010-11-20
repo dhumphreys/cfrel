@@ -1,6 +1,5 @@
 <cfcomponent output="false">
 	<cfinclude template="functions.cfm" />
-	<cfinclude template="inspection.cfm" />
 	
 	<cffunction name="init" returntype="struct" access="public" hint="Constructor">
 		<cfargument name="datasource" type="string" default="" />
@@ -304,14 +303,14 @@
 					loc.arguments = ListToArray(arguments.args[1]);
 					loc.iEnd = ArrayLen(loc.arguments);
 					for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
-						ArrayAppend(this.sql[arguments.scope], Trim(loc.arguments[loc.i]));
+						ArrayAppend(this.sql[arguments.scope], _transformInput(loc.arguments[loc.i], arguments.clause));
 					break;
 				
 				// loop and append if many arguments are passed
 				default:
 					loc.iEnd = StructCount(arguments.args);
 					for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
-						ArrayAppend(this.sql[arguments.scope], Trim(arguments.args[loc.i]));
+						ArrayAppend(this.sql[arguments.scope], _transformInput(arguments.args[loc.i], arguments.clause));
 					break;
 			}
 		</cfscript>
@@ -348,7 +347,7 @@
 					throwException(message="Parameter count does not match number of placeholders in #UCase(arguments.clause)# clause");
 					
 				// append clause and parameters to sql options
-				ArrayAppend(this.sql[arguments.scope], Trim(arguments.args.$clause));
+				ArrayAppend(this.sql[arguments.scope], _transformInput(arguments.args.$clause, arguments.clause));
 				for (loc.i = 1; loc.i LTE loc.parameterCount; loc.i++)
 					ArrayAppend(this.sql[arguments.parameterScope], arguments.args.$params[loc.i]);
 				
@@ -381,7 +380,7 @@
 					loc.success = true;
 						
 					// append clause and parameters
-					ArrayAppend(this.sql[arguments.scope], Trim(loc.clause));
+					ArrayAppend(this.sql[arguments.scope], _transformInput(loc.clause, arguments.clause));
 					ArrayAppend(this.sql[arguments.parameterScope], loc.value);
 				}
 				
@@ -389,6 +388,67 @@
 				if (NOT StructKeyExists(loc, "success"))
 					throwException(message="Relation requires arguments for #UCase(arguments.clause)#");
 			}
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="_transformInput" returntype="any" access="private">
+		<cfargument name="obj" type="any" required="true">
+		<cfargument name="clause" type="string" default="SELECT">
+		<cfscript>
+			var loc = {};
+			loc.type = typeOf(arguments.obj);
+			
+			// literals pass straight through
+			if (loc.type EQ "cfrel.nodes.literal")
+				return arguments.obj;
+			
+			// determine behavior
+			switch(arguments.clause) {
+				
+				// try to see item as a column or expression
+				case "SELECT":
+				case "GROUP BY":
+					loc.behavior = "select";
+					break;
+				
+				// try to see item as a condition
+				case "WHERE":
+				case "HAVING":
+					loc.behavior = "where";
+					break;
+				
+				// try to see item as a column or expression with order
+				case "ORDER BY":
+					loc.behavior = "order";
+					break;
+				
+				// have no extra behavior
+				default:
+					loc.behavior = false;
+			}
+			
+			// if we are dealing with a simple value
+			if (loc.type EQ "simple") {
+				loc.value = Trim(arguments.obj);
+				switch (loc.behavior) {
+					case "select": loc.value = loc.value; break;
+					case "where": loc.value = loc.value; break;
+					case "order": loc.value = loc.value; break;
+					default: loc.value = loc.value;
+				}
+				return loc.value;
+			}
+			
+			// just keep returning other node objects
+			if (REFindNoCase("^cfrel\.nodes\.", loc.type) GT 0)
+				return loc.obj;
+				
+			// return relations as expressions with aliases
+			if (loc.type EQ "cfrel.relation")
+				return expression(loc.obj, "A1");
+				
+			// throw error if we havent found it yet
+			throwException("Invalid object type passed into #UCase(arguments.clause)#");
 		</cfscript>
 	</cffunction>
 </cfcomponent>

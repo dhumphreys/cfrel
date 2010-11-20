@@ -51,7 +51,7 @@
 			var loc = {};
 			loc.visitor = new();
 			loc.rel = new("cfrel.Relation").select(1).from("a");
-			loc.input = [5, "a", literal("b"), loc.rel];
+			loc.input = [5, "a", sqlLiteral("b"), loc.rel];
 			loc.output = [5, "a", "b", "SELECT 1 FROM a"];
 			assertEquals(loc.output, loc.visitor.visit(loc.input));
 		</cfscript>
@@ -61,7 +61,7 @@
 		<cfscript>
 			var loc = {};
 			loc.sql = new();
-			assertEquals("SELECT 1", loc.sql.visit(literal("SELECT 1")), "visit_literal() should just retain plain text contents");
+			assertEquals("SELECT 1", loc.sql.visit(sqlLiteral("SELECT 1")), "visit_literal() should just retain plain text contents");
 		</cfscript>
 	</cffunction>
 </cfcomponent>

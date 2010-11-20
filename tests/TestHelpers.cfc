@@ -9,7 +9,7 @@
 	<cffunction name="testLiteral" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
-			loc.node = literal("ROW_NUMBER()");
+			loc.node = sqlLiteral("ROW_NUMBER()");
 			assertIsTypeOf(loc.node, "cfrel.nodes.Literal");
 			assertEquals("ROW_NUMBER()", loc.node.content, "Literal node should be constructed with correct value");
 		</cfscript>
@@ -33,8 +33,8 @@
 			assertEquals("query", typeOf(QueryNew('')));
 			assertEquals("struct", typeOf({}));
 			assertEquals("binary", typeOf(ToBinary(ToBase64("1234"))));
-			assertEquals("function", typeOf(literal));
-			assertEquals("cfrel.nodes.Literal", typeOf(literal("SELECT a FROM b")));
+			assertEquals("function", typeOf(sqlLiteral));
+			assertEquals("cfrel.nodes.Literal", typeOf(sqlLiteral("SELECT a FROM b")));
 		</cfscript>
 	</cffunction>
 </cfcomponent>
