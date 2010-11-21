@@ -86,6 +86,12 @@
 		<cfargument name="target" type="any" required="true" />
 		<cfscript>
 			var loc = {};
+			
+			// auto-clone if relation already executed
+			if (variables.executed)
+				return this.clone().from(argumentCollection=arguments);
+			
+			// make decision based on argument type
 			switch(typeOf(arguments.target)) {
 				
 				// accept relations and strings
@@ -110,12 +116,18 @@
 	
 	<cffunction name="include" returntype="struct" access="public" hint="Add a JOIN to the relation using predefined relationships">
 		<cfscript>
+			if (variables.executed)
+				return this.clone().include(argumentCollection=arguments);
+				
 			return this;
 		</cfscript>
 	</cffunction>
 	
 	<cffunction name="join" returntype="struct" access="public" hint="Add a JOIN to the relation">
 		<cfscript>
+			if (variables.executed)
+				return this.clone().join(argumentCollection=arguments);
+				
 			return this;
 		</cfscript>
 	</cffunction>
@@ -190,6 +202,8 @@
 		<cfargument name="page" type="numeric" required="true" />
 		<cfargument name="perPage" type="numeric" required="true" />
 		<cfscript>
+			if (variables.executed)
+				return this.clone().paginate(argumentCollection=arguments);
 			
 			// throw error if bad values are passed
 			if (arguments.page LT 1 OR arguments.perPage LT 1)
@@ -198,6 +212,7 @@
 			// calculate limit and offset
 			this.sql.limit = Int(arguments.perPage);
 			this.sql.offset = (Int(arguments.page) - 1) * this.sql.limit;
+			
 			return this;
 		</cfscript>
 	</cffunction>

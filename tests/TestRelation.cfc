@@ -4,6 +4,7 @@
 		<cfscript>
 			super.setup();
 			variables.cfc = "cfrel.Relation";
+			variables.datasourceRel = new(datasource="cfrel").select("id,username,password").from("users");
 		</cfscript>
 	</cffunction>
 	
@@ -50,13 +51,52 @@
 	<cffunction name="testClone" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
-			loc.instance = new();
-			loc.clone = loc.instance.clone();
+			loc.instance = new(datasource="cfrel");
+			loc.clone1 = injectInspector(loc.instance.clone());
+			loc.clone1.select("id").from("users").exec();
+			loc.clone2 = injectInspector(loc.clone1.clone());
+			
+			// get private scopes
+			loc.private1 = loc.clone1._inspect();
+			loc.private2 = loc.clone2._inspect();
 			
 			// make sure that call returns a different relation object
-			assertIsTypeOf(loc.clone, "cfrel.Relation");
-			assertNotSame(loc.clone, loc.instance, "clone() should return copy of object, not same one");
-			assertNotSame(loc.clone.sql, loc.instance.sql, "clone() should copy the sql struct, not reference it");
+			assertIsTypeOf(loc.clone1, "cfrel.Relation");
+			assertNotSame(loc.clone1, loc.instance, "clone() should return copy of object, not same one");
+			assertNotSame(loc.clone1, loc.clone2);
+			assertNotSame(loc.clone1.sql, loc.instance.sql, "clone() should copy the sql struct, not reference it");
+			assertNotSame(loc.clone1.sql, loc.clone2.sql);
+			assertEquals(loc.clone1.datasource, loc.clone2.datasource);
+			assertTrue(IsQuery(loc.private1.query));
+			assertFalse(loc.private2.query);
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testAutoClone" returntype="void" access="public">
+		<cfscript>
+			var instance = datasourceRel.clone().exec();
+			var key = "";
+			var loc = {};
+			
+			// call each of the basic chainable methods
+			loc.select = instance.select("a");
+			loc.distinct = instance.distinct();
+			loc.from = instance.from("users");
+			loc.include = instance.include();
+			loc.join = instance.join();
+			loc.group = instance.group("a");
+			loc.having = instance.having("a > ?", [0]);
+			loc.order = instance.order("a ASC");
+			loc.limit = instance.limit(5);
+			loc.offset = instance.offset(10);
+			loc.paginate = instance.paginate(1, 5);
+			
+			// assert that each return is not the original object and has an empty query
+			for (key in loc) {
+				injectInspector(loc[key]);
+				assertNotSame(instance, loc[key], "Operation #key#() should auto-clone");
+				assertFalse(loc[key]._inspect().query);
+			}
 		</cfscript>
 	</cffunction>
 	
@@ -403,19 +443,6 @@
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="testSqlGeneration" returntype="void" access="public">
-		<cfscript>
-			var loc = {};
-			loc.visitor = CreateObject("component", "cfrel.visitors.Sql");
-			
-			// generate a simple relation
-			loc.instance = new().select("a").from("b").where("a > 5").order("a ASC").paginate(2, 15);
-			
-			// make sure visitor is being called
-			assertEquals(loc.visitor.visit(loc.instance), loc.instance.toSql(), "toSql() should be calling Sql visitor for SQL generation");
-		</cfscript>
-	</cffunction>
-	
 	<cffunction name="testPaginateSyntax" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
@@ -455,6 +482,100 @@
 			// make sure errors are thrown
 			assertTrue(loc.pass1, "paginate() should throw error when page < 1");
 			assertTrue(loc.pass1, "paginate() should throw error when perPage < 1");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testSqlGeneration" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.visitor = CreateObject("component", "cfrel.visitors.Sql");
+			
+			// generate a simple relation
+			loc.instance = new().select("a").from("b").where("a > 5").order("a ASC").paginate(2, 15);
+			
+			// make sure visitor is being called
+			assertEquals(loc.visitor.visit(loc.instance), loc.instance.toSql(), "toSql() should be calling Sql visitor for SQL generation");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testEmptyDatasource" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.pass = false;
+			loc.rel = new().select(1);
+			try {
+				loc.rel.query();
+			} catch (custom_type e) {
+				loc.pass = true;
+			}
+			assertEquals("", loc.rel.datasource, "Datasource should be blank");
+			assertTrue(loc.pass, "Exception should be thrown if query() is called with empty datasource");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testQuery" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.rel = injectInspector(datasourceRel.clone());
+			loc.variables = loc.rel._inspect();
+			loc.query1 = loc.rel.query();
+			loc.query0 = loc.variables.query;
+			loc.query2 = loc.rel.query();
+			assertTrue(loc.variables.executed, "Calling query() should set executed flag");
+			assertTrue(IsQuery(loc.query1), "query() should return a recordset");
+			assertSame(loc.query0, loc.query1, "query() should store query inside of the relation");
+			assertSame(loc.query1, loc.query2, "Multiple calls to query() should return same recordset object");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testResult" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.rel = injectInspector(datasourceRel.clone());
+			loc.variables = loc.rel._inspect();
+			loc.result1 = loc.rel.result();
+			loc.result0 = loc.variables.result;
+			loc.result2 = loc.rel.result();
+			assertTrue(IsStruct(loc.result1), "result() should return query result data");
+			assertSame(loc.result0, loc.result1, "result() should store result inside of the relation");
+			assertSame(loc.result1, loc.result2, "Multiple calls to result() should return same result struct");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testExecution" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.rel = injectInspector(datasourceRel.clone()).exec();
+			loc.variables = loc.rel._inspect();
+			loc.query1 = loc.variables.query;
+			assertTrue(IsQuery(loc.query1), "Execute should populate query field");
+			loc.query2 = loc.rel.query();
+			assertSame(loc.query1, loc.query2, "exec() should run and store the query for calls to query()");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testReload" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.rel = injectInspector(datasourceRel.clone());
+			loc.query1 = loc.rel.query();
+			loc.query2 = loc.rel.reload().query();
+			assertTrue(IsQuery(loc.query2), "A query object should be returned");
+			assertNotSame(loc.query1, loc.query2, "reload() should cause a new query to be executed");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testQueryOfQuery" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.rel = datasourceRel.clone();
+			loc.query = loc.rel.query();
+			loc.qoq1 = loc.rel.qoq();
+			loc.qoq2 = loc.rel.where("1 = 1");
+			assertNotSame(loc.rel, loc.qoq1);
+			assertNotSame(loc.qoq1, loc.qoq2);
+			assertSame(loc.query, loc.qoq1.sql.from);
+			assertSame(loc.query, loc.qoq2.sql.from);
 		</cfscript>
 	</cffunction>
 </cfcomponent>
