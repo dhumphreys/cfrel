@@ -13,3 +13,7 @@ Order
 Table
 UnaryOp
 Wildcard
+
+# Tests should be performed on the Parser class to make sure the proper
+# trees of nodes are returned when parsing SQL strings containing either
+# expressions, conditions, orders, or field lists.
