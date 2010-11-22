@@ -14,6 +14,10 @@
 	<cfreturn constructObject("cfrel.nodes.Expression", arguments)>
 </cffunction>
 
+<cffunction name="sqlFunction" returntype="any" access="private">
+	<cfreturn constructObject("cfrel.nodes.Function", arguments)>
+</cffunction>
+
 <cffunction name="sqlLiteral" returntype="any" access="private">
 	<cfreturn constructObject("cfrel.nodes.Literal", arguments)>
 </cffunction>

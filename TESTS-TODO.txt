@@ -8,6 +8,7 @@ _transformInput()
 BinaryOp
 Column
 Expression
+Function
 Order
 Table
 UnaryOp
