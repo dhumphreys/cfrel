@@ -56,11 +56,6 @@
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="visit_nodes_literal" returntype="string" access="private" hint="Render a literal SQL string">
-		<cfargument name="obj" type="any" required="true" />
-		<cfreturn arguments.obj.content />
-	</cffunction>
-	
 	<cffunction name="visit_simple" returntype="any" access="private" hint="Render a simple value by just returning it">
 		<cfargument name="obj" type="any" required="true" />
 		<cfreturn arguments.obj />
@@ -79,6 +74,43 @@
 				
 			return loc.rtn;
 		</cfscript>
+	</cffunction>
+	
+	<!-------------------
+	--- Node Visitors ---
+	-------------------->
+	
+	<cffunction name="visit_nodes_literal" returntype="string" access="private" hint="Render a literal SQL string">
+		<cfargument name="obj" type="any" required="true" />
+		<cfreturn arguments.obj.content />
+	</cffunction>
+	
+	<cffunction name="visit_nodes_between" returntype="string" access="private">
+		<cfargument name="obj" type="any" required="true" />
+		<cfreturn "#visit(obj.left)# BETWEEN #visit(obj.start)# AND #visit(obj.end)#" />
+	</cffunction>
+	
+	<cffunction name="visit_nodes_binaryOp" returntype="string" access="private">
+		<cfargument name="obj" type="any" required="true" />
+		<cfscript>
+			var loc = {};
+			
+			// render the parts of the operation
+			loc.op = REReplace(obj.op, "_", " ", "ALL");
+			loc.left = visit(obj.left);
+			loc.right = visit(obj.right);
+			
+			// properly handle IN
+			if (loc.op EQ "IN") 
+				return "#obj.left# IN (#ArrayToList(obj.right, ', ')#)";
+			else
+				return "#obj.left# #obj.op# #obj.right#";		
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="visit_nodes_unaryOp" returntype="string" access="private">
+		<cfargument name="obj" type="any" required="true" />
+		<cfreturn "#obj.op# #visit(obj.subject)#" />
 	</cffunction>
 	
 	<!-----------------------

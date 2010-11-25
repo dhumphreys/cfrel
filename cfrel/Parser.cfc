@@ -13,9 +13,9 @@
 			
 			// terminals (and literal placeholders)
 			variables.t = {string="::string::", number="::number::", param="\?", dot="\.", comma=",",
-				lparen="\(", rparen="\)", addOp="\+|-", mulOp="\*", divOp="/", as="\bAS\b",
-				compOp="=|<|>|<=|>=|<>|!=|\bLIKE\b", between="\bBETWEEN\b", andOp="\bAND\b",
-				orOp="\bOR\b", neg="\bNOT\b", sortOp="\bASC|DESC\b", null="\bNULL\b",
+				lparen="\(", rparen="\)", addOp="\+|-|&|\^|\|", star="\*", mulOp="\*|/|%", as="\bAS\b",
+				unaryOp="\+|-|~|\bNOT\b", compOp="=|<|>|<=|>=|<>|!=|!>|!<|<=>|\bLIKE\b", between="\bBETWEEN\b",
+				andOp="\bAND\b", orOp="\bOR\b", neg="\bNOT\b", sortOp="\bASC\b|\bDESC\b", null="\bNULL\b",
 				cast="\bCAST\b", iss="\bIS\b", inn="\bIN\b", identifier="\w+"};
 			
 			// build regex to match any of the terminals above
@@ -47,9 +47,6 @@
 			var loc = {};
 			tokenize(arguments.str);
 			switch (arguments.type) {
-				case "condition":
-					loc.tree = orCondition();
-					break;
 				default:
 					loc.tree = expr();
 			}
@@ -63,84 +60,11 @@
 	--- Grammar Functions ---
 	------------------------>
 	
-	<cffunction name="orCondition" returntype="any" access="private" hint="Match OR condition in grammar">
+	<cffunction name="optExprs" returntype="any" access="private" hint="Match optional list of expressions in grammar">
 		<cfscript>
-			var loc = {};
-			loc.left = andCondition();
-			
-			// AND_CONDITION OR OR_CONDITION
-			if (accept(t.orOp)) {
-				loc.right = orCondition();
-				return sqlBinaryOp(left=loc.left, op="OR", right=loc.right);
-			}
-			
-			// AND_CONDITION
-			return loc.left;
-		</cfscript>
-	</cffunction>
-	
-	<cffunction name="andCondition" returntype="any" access="private" hint="Match AND condition in grammar">
-		<cfscript>
-			var loc = {};
-			
-			// LPAREN OR_CONDITION RPAREN
-			if (accept(t.lparen)) {
-				loc.cond = orCondition();
-				expect(t.rparen);
-				return loc.cond;
-				
-			} else {
-				loc.left = comp();
-			
-				// COMP AND AND_CONDITION
-				if (accept(t.andOp)) {
-					loc.right = andCondition();
-					return sqlBinaryOp(left=loc.left, op="AND", right=loc.right);	
-				}
-				
-				// COMP
-				return loc.left;
-			}
-		</cfscript>
-	</cffunction>
-	
-	<cffunction name="comp" returntype="any" access="private" hint="Match comparison in grammar">
-		<cfscript>
-			var loc = {};
-			loc.left = expr();
-			
-			// EXPR BETWEEN EXPR AND EXPR
-			if (accept(t.between)) {
-				loc.start = expr();
-				expect(t.andOp);
-				loc.end = expr();
-				
-			} else if (accept(t.iss)) {
-				
-				// EXPR IS_NOT EXPR
-				if (accept(t.neg)) {
-					loc.right = expr();
-					return sqlBinaryOp(left=loc.left, op="IS_NOT", right="NULL");
-					
-				// EXPR IS EXPR
-				} else {
-					loc.right = expr();
-					return sqlBinaryOp(left=loc.left, op="IS", right=loc.right);
-				}
-				
-			// EXPR IN LPAREN EXPRS RPAREN
-			} else if (accept(t.inn) AND expect(t.lparen)) {
-				loc.e = exprs();
-				expect(t.rparen);
-				return sqlBinaryOp(left=loc.left, op="IN", right=loc.e);
-				
-			// EXPR COMPOP EXPR
-			} else {
-				expect(t.compOp);
-				loc.op = tokens[tokenIndex - 1];
-				loc.right = expr();
-				return sqlBinaryOp(left=loc.left, op=loc.op, right=loc.right);
-			}
+			if (NOT peek(t.rparen))
+				return exprs();
+			return [];
 		</cfscript>
 	</cffunction>
 	
@@ -155,7 +79,121 @@
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="expr" returntype="any" access="private" hint="Match expression in grammar">
+	<cffunction name="expr" returntype="any" access="private" hint="Match an expression in grammer">
+		<cfreturn orCondition() />
+	</cffunction>
+	
+	<cffunction name="orCondition" returntype="any" access="private" hint="Match OR condition in grammar">
+		<cfscript>
+			var loc = {};
+			loc.left = andCondition();
+			
+			// AND_CONDITION OR OR_CONDITION
+			if (accept(t.orOp))
+				return sqlBinaryOp(left=loc.left, op="OR", right=orCondition());
+			
+			// AND_CONDITION
+			return loc.left;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="andCondition" returntype="any" access="private" hint="Match AND condition in grammar">
+		<cfscript>
+			var loc = {};
+			loc.left = notExpr();
+		
+			// NOT_EXPR AND AND_CONDITION
+			if (accept(t.andOp))
+				return sqlBinaryOp(left=loc.left, op="AND", right=andCondition());
+			
+			// NOT_EXPR
+			return loc.left;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="notExpr" returntype="any" access="private" hint="Match NOT expression in grammar">
+		<cfscript>
+			
+			// NOT COMP_EXPR
+			if (accept(t.neg))
+				return sqlUnaryOp(subject=compExpr(), op="NOT");
+			
+			// COMP_EXPR
+			return compExpr();
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="compExpr" returntype="any" access="private" hint="Match comparison in grammar">
+		<cfscript>
+			var loc = {};
+			loc.left = addExpr();
+			
+			// ADD_EXPR BETWEEN TERM AND TERM
+			if (accept(t.between)) {
+				loc.start = term();
+				expect(t.andOp);
+				return sqlBetween(subject=loc.left, start=loc.start, end=term());
+				
+			} else if (accept(t.iss)) {
+				
+				// ADD_EXPR IS_NOT ADD_EXPR
+				if (accept(t.neg))
+					return sqlBinaryOp(left=loc.left, op="IS_NOT", right=addExpr());
+					
+				// ADD_EXPR IS ADD_EXPR
+				else
+					return sqlBinaryOp(left=loc.left, op="IS", right=addExpr());
+				
+			// ADD_EXPR IN LPAREN EXPRS RPAREN
+			} else if (accept(t.inn) AND expect(t.lparen)) {
+				loc.e = sqlParen(subject=exprs());
+				expect(t.rparen);
+				return sqlBinaryOp(left=loc.left, op="IN", right=loc.e);
+				
+			// ADD_EXPR COMPOP ADD_EXPR
+			} else if (accept(t.compOp)) {
+				loc.op = tokens[tokenIndex - 1];
+				return sqlBinaryOp(left=loc.left, op=loc.op, right=addExpr());
+			}
+			
+			// ADD-EXPR
+			return loc.left;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="addExpr" returntype="any" access="private" hint="Match add/subtract expression in grammar">
+		<cfscript>
+			var loc = {};
+			loc.left = mulExpr();
+			
+			// MUL_EXPR ADD_OP ADD_EXPR
+			if (accept(t.addOp)) {
+				loc.op = tokens[tokenIndex - 1];
+				return sqlBinaryOp(left=loc.left, op=loc.op, right=addExpr());
+			}
+			
+			// MUL_EXPR
+			return loc.left;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="mulExpr" returntype="any" access="private" hint="Match multiplication/division expression in grammar">
+		<cfscript>
+			var loc = {};
+			loc.left = term();
+			
+			// TERM MUL_OP MUL_EXPR
+			if (accept(t.mulOp)) {
+				loc.op = tokens[tokenIndex - 1];
+				return sqlBinaryOp(left=loc.left, op=loc.op, right=mulExpr());
+			}
+			
+			// TERM
+			return loc.left;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="term" returntype="any" access="private" hint="Match term in grammar">
 		<cfscript>
 			var loc = {};
 			
@@ -172,47 +210,45 @@
 				return "NULL"; // wrap in nodes.literal? or nodes.null?
 				
 			// WILDCARD
-			} else if (accept(t.mulop)) {
+			} else if (accept(t.star)) {
 				return sqlWildcard();
 				
 			// PARAM
 			} else if (accept(t.param)) {
-				return "?"; // todo: object
+				return "?"; // todo: object? wrap in nodes.literal?
 				
-			// NOT EXPR
-			} else if (accept(t.neg)) {
-				loc.e = expr();
-				return sqlUnaryOp(op="NOT", subject=loc.e);
+			// UNARY TERM
+			} else if (accept(t.unaryOp)) {
+				loc.op = tokens[tokenIndex - 1];
+				loc.e = term();
+				return sqlUnaryOp(op=loc.op, subject=loc.e);
 			
 			// LPAREN EXPR RPAREN
 			} else if (accept(t.lparen)) {
 				loc.e = expr();
 				expect(t.rparen);
-				if (accept(t.as)) {
-					expect(t.identifier);
-					return sqlExpression(subject=loc.e, alias=tokens[tokenIndex - 1]);
-				}
-				return loc.e;
+				return sqlParen(subject=loc.e);
+				
+			// CAST LPAREN EXPR AS TYPE_NAME RPAREN
+			} else if (accept(t.cast) AND expect(t.lparen)) {
+				loc.e = expr();
+				expect(t.as);
+				loc.t = typeName();
+				expect(t.rparen);
+				return sqlCast(subject=loc.e, type=loc.t);
 			
 			} else if (accept(t.identifier)) {
+				loc.id = tokens[tokenIndex - 1];
 				
-				// FUNC
-				if (peek(t.lparen)) {
-					tokenIndex -= 1;
-					loc.f = func();
-					if (accept(t.as)) {
-						expect(t.identifier);
-						return sqlExpression(subject=loc.f, alias=tokens[tokenIndex - 1]);
-					}
-					return loc.f;
+				// IDENTIFIER LPAREN OPT_EXPRS RPAREN
+				if (accept(t.lparen)) {
+					loc.args = optExprs();
+					expect(t.rparen);
+					return sqlFunction(name=loc.id, args=loc.args);
 					
 				// IDENTIFIER
 				} else {
-					loc.c = sqlColumn(column=tokens[tokenIndex - 1]);
-					if (accept(t.as)) {
-						expect(t.identifier);
-						loc.c.alias = tokens[tokenIndex - 1];
-					}
+					loc.c = sqlColumn(column=loc.id);
 					return loc.c;
 				}
 			}
@@ -220,31 +256,20 @@
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="func" returntype="any" access="private" hint="Match function call in grammar">
+	<cffunction name="typeName" returntype="any" access="private" hint="Match type name in grammar">
 		<cfscript>
-			var loc = {};
-			
-			// IDENTIFIER LPAREN OPT_ARGS RPAREN
-			if (accept(t.identifier) AND expect(t.lparen)) {
-				loc.id = tokens[tokenIndex - 2];
-				loc.a = funcArgs();
-				expect(t.rparen);
-				return sqlFunction(name=loc.id, args=loc.a);
+			var loc = {num1="", num2=""};
+			if (accept(t.identifier)) {
+				loc.id = tokens[tokenIndex - 1];
+				if (accept(t.lparen) AND expect(t.number)) {
+					loc.num1 = popLiteral();
+					if (accept(t.comma) AND expect(t.number))
+						loc.num2 = popLiteral();
+					expect(t.rparen);
+				}
+				return sqlType(name=loc.id, val1=loc.num1, val2=loc.num2);
 			}
 			return false;
-		</cfscript>
-	</cffunction>
-	
-	<cffunction name="funcArgs" returntype="any" access="private" hint="Match list of function parameters in grammar">
-		<cfscript>
-			var loc = {};
-			loc.args = [];
-			if (NOT peek(t.rparen)) {
-				do {
-					ArrayAppend(loc.args, expr());
-				} while (accept(t.comma));
-			}
-			return loc.args;
 		</cfscript>
 	</cffunction>
 	
