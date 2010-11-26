@@ -6,7 +6,7 @@
 			var loc = {};
 			
 			// string and numeric literals
-			variables.l = {string="'[^']*'", number="\b-?\d+(.\d+)?\b"};
+			variables.l = {string="'[^']*'", number="\b-?\d+(\.\d+)?\b"};
 			
 			// build regex to match literals
 			variables.literalRegex = "(#l.string#|#l.number#)";
@@ -308,7 +308,7 @@
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="popLiteral" returntype="numeric" access="private" hint="Pop the next literal string or number of the literals stack">
+	<cffunction name="popLiteral" returntype="any" access="private" hint="Pop the next literal string or number of the literals stack">
 		<cfscript>
 			var loc = {};
 			if (ArrayLen(literals) GT 0) {

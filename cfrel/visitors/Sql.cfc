@@ -80,11 +80,6 @@
 	--- Node Visitors ---
 	-------------------->
 	
-	<cffunction name="visit_nodes_literal" returntype="string" access="private" hint="Render a literal SQL string">
-		<cfargument name="obj" type="any" required="true" />
-		<cfreturn arguments.obj.content />
-	</cffunction>
-	
 	<cffunction name="visit_nodes_between" returntype="string" access="private">
 		<cfargument name="obj" type="any" required="true" />
 		<cfreturn "#visit(obj.left)# BETWEEN #visit(obj.start)# AND #visit(obj.end)#" />
@@ -102,9 +97,52 @@
 			
 			// properly handle IN
 			if (loc.op EQ "IN") 
-				return "#obj.left# IN (#ArrayToList(obj.right, ', ')#)";
+				return "#loc.left# IN (#ArrayToList(loc.right, ', ')#)";
 			else
-				return "#obj.left# #obj.op# #obj.right#";		
+				return "#loc.left# #loc.op# #loc.right#";		
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="visit_nodes_cast" returntype="string" access="private">
+		<cfargument name="obj" type="any" required="true" />
+		<cfscript>
+			return "CAST(#visit(obj.subject)# AS #visit(obj.type)#)";
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="visit_nodes_column" returntype="string" access="private">
+		<cfargument name="obj" type="any" required="true" />
+		<cfscript>
+			// todo: tie into mapper
+			// tood: escape field correctly
+			return obj.column;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="visit_nodes_literal" returntype="string" access="private" hint="Render a literal SQL string">
+		<cfargument name="obj" type="any" required="true" />
+		<cfreturn arguments.obj.content />
+	</cffunction>
+	
+	<cffunction name="visit_nodes_function" returntype="string" access="private">
+		<cfargument name="obj" type="any" required="true" />
+		<cfscript>
+			return "#obj.name#(#ArrayToList(visit(obj.args), ', ')#)";
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="visit_nodes_type" returntype="string" access="private">
+		<cfargument name="obj" type="any" required="true" />
+		<cfscript>
+			var loc = {};
+			loc.type = obj.name;
+			if (Len(obj.val1) GT 0) {
+				loc.type &= "(#obj.val1#";
+				if (Len(obj.val2) GT 0)
+					loc.type &= ",#obj.val2#";
+				loc.type &= ")";
+			}
+			return loc.type;
 		</cfscript>
 	</cffunction>
 	

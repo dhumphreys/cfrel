@@ -30,6 +30,9 @@
 			variables.executed = false;
 			variables.qoq = false;
 			
+			// internal parser
+			variables.parser = CreateObject("component", "cfrel.Parser").init();
+			
 			return this;
 		</cfscript>
 	</cffunction>
@@ -413,54 +416,13 @@
 			var loc = {};
 			loc.type = typeOf(arguments.obj);
 			
-			// literals pass straight through
-			if (loc.type EQ "cfrel.nodes.literal")
-				return arguments.obj;
-			
-			// determine behavior
-			switch(arguments.clause) {
-				
-				// try to see item as a column or expression
-				case "SELECT":
-				case "GROUP BY":
-					loc.behavior = "select";
-					break;
-				
-				// try to see item as a condition
-				case "WHERE":
-				case "HAVING":
-					loc.behavior = "where";
-					break;
-				
-				// try to see item as a column or expression with order
-				case "ORDER BY":
-					loc.behavior = "order";
-					break;
-				
-				// have no extra behavior
-				default:
-					loc.behavior = false;
-			}
-			
-			// if we are dealing with a simple value
-			if (loc.type EQ "simple") {
-				loc.value = Trim(arguments.obj);
-				switch (loc.behavior) {
-					case "select": loc.value = loc.value; break;
-					case "where": loc.value = loc.value; break;
-					case "order": loc.value = loc.value; break;
-					default: loc.value = loc.value;
-				}
-				return loc.value;
-			}
-			
-			// just keep returning other node objects
+			// nodes should pass straight through
 			if (REFindNoCase("^cfrel\.nodes\.", loc.type) GT 0)
 				return loc.obj;
-				
-			// return relations as expressions with aliases
-			if (loc.type EQ "cfrel.relation")
-				return expression(loc.obj, "A1");
+
+			// parse simple values with parser
+			if (loc.type EQ "simple")
+				return variables.parser.parse(arguments.obj);
 				
 			// throw error if we havent found it yet
 			throwException("Invalid object type passed into #UCase(arguments.clause)#");
