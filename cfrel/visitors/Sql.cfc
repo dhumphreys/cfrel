@@ -94,12 +94,7 @@
 			loc.op = REReplace(obj.op, "_", " ", "ALL");
 			loc.left = visit(obj.left);
 			loc.right = visit(obj.right);
-			
-			// properly handle IN
-			if (loc.op EQ "IN") 
-				return "#loc.left# IN (#ArrayToList(loc.right, ', ')#)";
-			else
-				return "#loc.left# #loc.op# #loc.right#";		
+			return "#loc.left# #loc.op# #loc.right#";
 		</cfscript>
 	</cffunction>
 	
@@ -128,6 +123,17 @@
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
 			return "#obj.name#(#ArrayToList(visit(obj.args), ', ')#)";
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="visit_nodes_paren" returntype="string" access="private">
+		<cfargument name="obj" type="any" required="true" />
+		<cfscript>
+			var loc = {};
+			loc.subject = visit(obj.subject);
+			if (IsArray(loc.subject))
+				loc.subject = ArrayToList(loc.subject, ", ");
+			return "(#loc.subject#)";
 		</cfscript>
 	</cffunction>
 	
@@ -174,17 +180,20 @@
 			var loc = {};
 			loc.iEnd = ArrayLen(arguments.src);
 			
+			// visit arguments
+			arguments.src = visit(arguments.src);
+			
 			// quit execution if needed
 			if (loc.iEnd EQ 0)
 				return arguments.dest;
 				
 			// wrap clauses containing OR in parenthesis
 			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
-				if (REFind("\bOR\b", arguments.src[loc.i]) GT 0)
+				if (loc.iEnd GT 1 AND REFind("\bOR\b", arguments.src[loc.i]) GT 0)
 					arguments.src[loc.i] = "(#arguments.src[loc.i]#)";
 			
 			// append and return array
-			ArrayAppend(arguments.dest, "#UCase(arguments.clause)# " & ArrayToList(arguments.src, " AND "));
+			ArrayAppend(arguments.dest, "#UCase(arguments.clause)# " & ArrayToList(visit(arguments.src), " AND "));
 			return arguments.dest;
 		</cfscript>
 	</cffunction>

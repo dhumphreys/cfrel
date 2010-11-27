@@ -35,7 +35,7 @@
 </cffunction>
 
 <cffunction name="sqlParen" returntype="any" access="private">
-	<cfreturn constructObject("cfrel.nodes.Column", arguments)>
+	<cfreturn constructObject("cfrel.nodes.Paren", arguments)>
 </cffunction>
 
 <cffunction name="sqlTable" returntype="any" access="private">
