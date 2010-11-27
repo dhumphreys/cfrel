@@ -76,6 +76,14 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="visit_model" returntype="string" access="private" hint="Visit a CFWheels model">
+		<cfargument name="obj" type="any" required="true" />
+		<cfscript>
+			// todo: move logic to mapper
+			return arguments.obj.$classData().tableName;
+		</cfscript>
+	</cffunction>
+	
 	<!-------------------
 	--- Node Visitors ---
 	-------------------->

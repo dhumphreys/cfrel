@@ -29,6 +29,8 @@
 			variables.result = false;
 			variables.executed = false;
 			variables.qoq = false;
+			variables.paged = false;
+			variables.paginationData = false;
 			
 			// internal parser
 			variables.parser = CreateObject("component", "cfrel.Parser").init();
@@ -58,6 +60,12 @@
 				loc.private.query = false;
 				loc.private.result = false;
 				loc.private.executed = false;
+			}
+			
+			// remove pagination variables
+			if (variables.paged EQ true) {
+				loc.private = injectInspector(loc.rel)._inspect();
+				loc.private.paginationData = false;
 			}
 			
 			return loc.rel;
@@ -97,8 +105,9 @@
 			// make decision based on argument type
 			switch(typeOf(arguments.target)) {
 				
-				// accept relations and strings
+				// accept relations, models, and stings
 				case "cfrel.Relation":
+				case "model":
 				case "simple":
 					this.sql.from = arguments.target;
 					break;
@@ -111,6 +120,7 @@
 					
 				// and reject all others by throwing an errors
 				default:
+					throwException(typeOf(arguments.target));
 					throwException("Only a table name or another relation can be in FROM clause");
 			}	
 			return this;
@@ -216,6 +226,9 @@
 			this.sql.limit = Int(arguments.perPage);
 			this.sql.offset = (Int(arguments.page) - 1) * this.sql.limit;
 			
+			// set variable showing this is paged
+			variables.paged = true;
+			
 			return this;
 		</cfscript>
 	</cffunction>
@@ -283,6 +296,15 @@
 				variables.query = loc.result.getResult();
 				variables.result = loc.result.getPrefix();
 				
+				// build pagination data
+				// todo: lazy loading?
+				if (variables.paged) {
+					variables.paginationData = {
+						currentPage = (this.sql.offset / this.sql.limit) + 1,
+						perPage = this.sql.limit
+					};
+				}
+				
 				// change state
 				variables.executed = true;
 			}
@@ -296,6 +318,14 @@
 			if (variables.executed EQ false OR NOT IsStruct(variables.result))
 				this.query();
 			return variables.result;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="pagination" returntype="struct" access="public" hint="Return structure describing pagination state">
+		<cfscript>
+			if (variables.paged EQ false OR NOT IsStruct(variables.paginationData))
+				return false;
+			return variables.paginationData;
 		</cfscript>
 	</cffunction>
 	

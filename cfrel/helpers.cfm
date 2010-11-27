@@ -21,7 +21,10 @@
 		
 		// if the argument is a component/object, return its path
 		if (IsArray(loc.meta) EQ false AND StructKeyExists(loc.meta, "fullname"))
-			return loc.meta.fullname;
+			if (REFindNoCase("^models\.", loc.meta.fullname) EQ 0)
+				return loc.meta.fullname;
+			else
+				return "model";
 			
 		// the rest are simple
 		else if (IsCustomFunction(arguments.obj))
