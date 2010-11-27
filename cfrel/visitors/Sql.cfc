@@ -90,7 +90,7 @@
 	
 	<cffunction name="visit_nodes_between" returntype="string" access="private">
 		<cfargument name="obj" type="any" required="true" />
-		<cfreturn "#visit(obj.left)# BETWEEN #visit(obj.start)# AND #visit(obj.end)#" />
+		<cfreturn "#visit(obj.subject)# BETWEEN #visit(obj.start)# AND #visit(obj.end)#" />
 	</cffunction>
 	
 	<cffunction name="visit_nodes_binaryOp" returntype="string" access="private">
