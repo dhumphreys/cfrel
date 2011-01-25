@@ -1,11 +1,18 @@
 <cfcomponent extends="tests.TestCase" output="false">
 	
+	<!--- TODO: Improve testing. Verify SQL trees instead of visit() return value. Improve comments --->
 	<cffunction name="setup" returntype="void" access="public">
 		<cfscript>
 			super.setup();
 			variables.cfc = "cfrel.Relation";
 			variables.datasourceRel = new(datasource="cfrel").select("id,username,password").from("users");
+			variables.sqlVisitor = CreateObject("component", "cfrel.visitors.Sql");
 		</cfscript>
+	</cffunction>
+	
+	<cffunction name="visit" returntype="any" access="private">
+		<cfargument name="obj" type="any" required="true" />
+		<cfreturn variables.sqlVisitor.visit(arguments.obj) />
 	</cffunction>
 	
 	<cffunction name="testInit" returntype="void" access="public">
@@ -139,10 +146,17 @@
 			loc.instance2 = new().select("a,b,c");
 			loc.instance3 = new().select("a","b","c");
 			
-			// make sure the items were added
-			assertEquals(["*"], loc.instance1.sql.select, "SELECT clause should accept '*'");
-			assertEquals(loc.testVal, loc.instance2.sql.select, "SELECT clause should accept a list of columns");
-			assertEquals(loc.testVal, loc.instance3.sql.select, "SELECT clause should accept a columns as multiple arguments");
+			// make sure nodes were added and evaluate to input strings
+			assertIsTypeOf(loc.instance1.sql.select[1], "cfrel.nodes.Wildcard");
+			assertIsTypeOf(loc.instance2.sql.select[1], "cfrel.nodes.Column");
+			assertIsTypeOf(loc.instance2.sql.select[2], "cfrel.nodes.Column");
+			assertIsTypeOf(loc.instance2.sql.select[3], "cfrel.nodes.Column");
+			assertIsTypeOf(loc.instance3.sql.select[1], "cfrel.nodes.Column");
+			assertIsTypeOf(loc.instance3.sql.select[2], "cfrel.nodes.Column");
+			assertIsTypeOf(loc.instance3.sql.select[3], "cfrel.nodes.Column");
+			assertEquals(["*"], visit(loc.instance1.sql.select));
+			assertEquals(loc.testVal, visit(loc.instance2.sql.select));
+			assertEquals(loc.testVal, visit(loc.instance3.sql.select));
 		</cfscript>
 	</cffunction>
 	
@@ -154,7 +168,7 @@
 			loc.instance = new().select("a,b").select("c","d").select("e,f");
 			
 			// make sure items were stacked/appended
-			assertEquals(ListToArray("a,b,c,d,e,f"), loc.instance.sql.select, "SELECT should append additional selects");
+			assertEquals(ListToArray("a,b,c,d,e,f"), visit(loc.instance.sql.select), "SELECT should append additional selects");
 		</cfscript>
 	</cffunction>
 	
@@ -237,9 +251,10 @@
 		<cfscript>
 			var loc = {};
 			loc.instance = new().where("1 = 1");
-			assertEquals(1, ArrayLen(loc.instance.sql.wheres), "where() should only set one condition");
-			assertEquals(0, ArrayLen(loc.instance.sql.whereParameters), "where() should not set any parameters");
-			assertEquals("1 = 1", loc.instance.sql.wheres[1], "where() should append the correct condition");
+			assertEquals(1, ArrayLen(loc.instance.sql.wheres));
+			assertEquals(0, ArrayLen(loc.instance.sql.whereParameters));
+			assertIsTypeOf(loc.instance.sql.wheres[1], "cfrel.nodes.BinaryOp");
+			assertEquals("1 = 1", visit(loc.instance.sql.wheres[1]));
 		</cfscript>
 	</cffunction>
 	
@@ -247,18 +262,19 @@
 		<cfscript>
 			var loc = {};
 			loc.instance = new().where("1 = 1").where("2 = 2");
-			assertEquals("2 = 2", loc.instance.sql.wheres[2], "where() should append the second condition");
+			assertEquals("1 = 1", visit(loc.instance.sql.wheres[1]));
+			assertEquals("2 = 2", visit(loc.instance.sql.wheres[2]));
 		</cfscript>
 	</cffunction>
 	
 	<cffunction name="testWhereWithParameters" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
-			loc.whereClause = "id = ? OR name = '?' OR role IN ?";
+			loc.whereClause = "id = ? OR name = '?' OR role IN (?)";
 			loc.whereParameters = [50, "admin", [1,2,3]];
 			loc.instance = new().where(loc.whereClause, loc.whereParameters);
-			assertEquals(loc.whereClause, loc.instance.sql.wheres[1], "where() should set the passed condition");
-			assertEquals(loc.whereParameters, loc.instance.sql.whereParameters, "where() should set parameters in correct order");
+			assertEquals(loc.whereClause, visit(loc.instance.sql.wheres[1]), "where() should set the passed condition");
+			assertEquals(loc.whereParameters, visit(loc.instance.sql.whereParameters), "where() should set parameters in correct order");
 		</cfscript>
 	</cffunction>
 	
@@ -280,7 +296,7 @@
 		<cfscript>
 			var loc = {};
 			loc.instance = new().where(a=45, b="BBB", c=[1,2,3]);
-			assertEquals(["a = ?", "b = ?", "c IN ?"], loc.instance.sql.wheres, "Named arguments should be in WHERE clause");
+			assertEquals(["a = ?", "b = ?", "c IN (?)"], visit(loc.instance.sql.wheres), "Named arguments should be in WHERE clause");
 			assertEquals([45, "BBB", [1,2,3]], loc.instance.sql.whereParameters, "Parameters should be set and in correct order");
 		</cfscript>
 	</cffunction>
@@ -295,8 +311,8 @@
 			loc.instance2 = new().group("a","b","c");
 			
 			// make sure the items were added
-			assertEquals(loc.testVal, loc.instance1.sql.groups, "GROUP BY clause should accept a list of columns");
-			assertEquals(loc.testVal, loc.instance2.sql.groups, "GROUP BY clause should accept a columns as multiple arguments");
+			assertEquals(loc.testVal, visit(loc.instance1.sql.groups));
+			assertEquals(loc.testVal, visit(loc.instance2.sql.groups));
 		</cfscript>
 	</cffunction>
 	
@@ -308,7 +324,7 @@
 			loc.instance = new().group("a,b").group("c","d").group("e,f");
 			
 			// make sure items were stacked/appended
-			assertEquals(ListToArray("a,b,c,d,e,f"), loc.instance.sql.groups, "GROUP should append additional fields");
+			assertEquals(ListToArray("a,b,c,d,e,f"), visit(loc.instance.sql.groups));
 		</cfscript>
 	</cffunction>
 	
@@ -333,9 +349,10 @@
 		<cfscript>
 			var loc = {};
 			loc.instance = new().having("a > 1");
-			assertEquals(1, ArrayLen(loc.instance.sql.havings), "having() should only set one condition");
-			assertEquals(0, ArrayLen(loc.instance.sql.havingParameters), "having() should not set any parameters");
-			assertEquals("a > 1", loc.instance.sql.havings[1], "having() should append the correct condition");
+			assertEquals(1, ArrayLen(loc.instance.sql.havings));
+			assertEquals(0, ArrayLen(loc.instance.sql.havingParameters));
+			assertIsTypeOf(loc.instance.sql.havings[1], "cfrel.nodes.BinaryOp");
+			assertEquals("a > 1", visit(loc.instance.sql.havings[1]));
 		</cfscript>
 	</cffunction>
 	
@@ -343,18 +360,19 @@
 		<cfscript>
 			var loc = {};
 			loc.instance = new().having("a > 1").having("b < 0");
-			assertEquals("b < 0", loc.instance.sql.havings[2], "having() should append the second condition");
+			assertIsTypeOf(loc.instance.sql.havings[2], "cfrel.nodes.BinaryOp");
+			assertEquals("b < 0", sqlVisitor.visit(loc.instance.sql.havings[2]), "having() should append the second condition");
 		</cfscript>
 	</cffunction>
 	
 	<cffunction name="testHavingWithParameters" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
-			loc.havingClause = "id = ? OR name = '?' OR role IN ?";
+			loc.havingClause = "id = ? OR name = '?' OR role IN (?)";
 			loc.havingParameters = [50, "admin", [1,2,3]];
 			loc.instance = new().having(loc.havingClause, loc.havingParameters);
-			assertEquals(loc.havingClause, loc.instance.sql.havings[1], "having() should set the passed condition");
-			assertEquals(loc.havingParameters, loc.instance.sql.havingParameters, "having() should set parameters in correct order");
+			assertEquals(loc.havingClause, visit(loc.instance.sql.havings[1]), "having() should set the passed condition");
+			assertEquals(loc.havingParameters, visit(loc.instance.sql.havingParameters), "having() should set parameters in correct order");
 		</cfscript>
 	</cffunction>
 	
@@ -376,7 +394,7 @@
 		<cfscript>
 			var loc = {};
 			loc.instance = new().having(a=45, b="BBB", c=[1,2,3]);
-			assertEquals(["a = ?", "b = ?", "c IN ?"], loc.instance.sql.havings, "Named arguments should be in HAVING clause");
+			assertEquals(["a = ?", "b = ?", "c IN (?)"], visit(loc.instance.sql.havings), "Named arguments should be in HAVING clause");
 			assertEquals([45, "BBB", [1,2,3]], loc.instance.sql.havingParameters, "Parameters should be set and in correct order");
 		</cfscript>
 	</cffunction>
@@ -384,15 +402,15 @@
 	<cffunction name="testOrderSyntax" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
-			loc.testVal = ListToArray("a ASC,b DESC,c");
+			loc.testVal = ListToArray("a ASC,b DESC,c ASC");
 			
 			// run ORDER in various ways
 			loc.instance1 = new().order("a ASC,b DESC,c");
 			loc.instance2 = new().order("a ASC","b DESC","c");
 			
 			// make sure the items were added
-			assertEquals(loc.testVal, loc.instance1.sql.orders, "ORDER BY clause should accept a list of columns");
-			assertEquals(loc.testVal, loc.instance2.sql.orders, "ORDER BY clause should accept a columns as multiple arguments");
+			assertEquals(loc.testVal, visit(loc.instance1.sql.orders), "ORDER BY clause should accept a list of columns");
+			assertEquals(loc.testVal, visit(loc.instance2.sql.orders), "ORDER BY clause should accept a columns as multiple arguments");
 		</cfscript>
 	</cffunction>
 	
@@ -404,7 +422,7 @@
 			loc.instance = new().order("a,b").order("c","d").order("e,f");
 			
 			// make sure items were stacked/appended
-			assertEquals(ListToArray("a,b,c,d,e,f"), loc.instance.sql.orders, "ORDER should append additional fields");
+			assertEquals(ListToArray("a ASC,b ASC,c ASC,d ASC,e ASC,f ASC"), visit(loc.instance.sql.orders));
 		</cfscript>
 	</cffunction>
 	
