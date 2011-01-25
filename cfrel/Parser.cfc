@@ -14,7 +14,7 @@
 			// terminals (and literal placeholders)
 			variables.t = {string="::string::", number="::number::", param="\?", dot="\.", comma=",",
 				lparen="\(", rparen="\)", addOp="\+|-|&|\^|\|", star="\*", mulOp="\*|/|%", as="\bAS\b",
-				unaryOp="\+|-|~|\bNOT\b", compOp="=|<|>|<=|>=|<>|!=|!>|!<|<=>|\bLIKE\b", between="\bBETWEEN\b",
+				unaryOp="\+|-|~|\bNOT\b", compOp="<=>|<=|>=|<>|!=|!>|!<|=|<|>|\bLIKE\b", between="\bBETWEEN\b",
 				andOp="\bAND\b", orOp="\bOR\b", neg="\bNOT\b", sortOp="\bASC\b|\bDESC\b", null="\bNULL\b",
 				cast="\bCAST\b", iss="\bIS\b", inn="\bIN\b", identifier="\w+"};
 			
@@ -42,11 +42,18 @@
 	
 	<cffunction name="parse" returntype="any" access="public" hint="Turn a SQL string into a tree of nodes">
 		<cfargument name="str" type="string" required="true" />
-		<cfargument name="type" type="string" default="expression" />
+		<cfargument name="clause" type="string" default="WHERE" />
 		<cfscript>
 			var loc = {};
 			tokenize(arguments.str);
-			switch (arguments.type) {
+			switch (arguments.clause) {
+				case "SELECT":
+				case "GROUP BY":
+					loc.tree = exprs();
+					break;
+				case "ORDER BY":
+					loc.tree = orderExprs();
+					break;
 				default:
 					loc.tree = expr();
 			}
@@ -273,6 +280,28 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="orderExprs" returntype="any" access="private" hint="Match a list of order bys in grammar">
+		<cfscript>
+			var loc = {};
+			loc.orders = [];
+			ArrayAppend(loc.orders, orderExpr());
+			while (accept(t.comma))
+				ArrayAppend(loc.orders, orderExpr());
+			return loc.orders;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="orderExpr" returntype="any" access="private" hint="Match order by in grammar">
+		<cfscript>
+			var loc = {};
+			loc.expr = expr();
+			loc.desc = false;
+			if (accept(t.sortOp))
+				loc.desc = (tokens[tokenIndex - 1] EQ "DESC");
+			return sqlOrder(subject=loc.expr, descending=loc.desc);
+		</cfscript>
+	</cffunction>
+	
 	<!-----------------------
 	--- Control Functions ---
 	------------------------>
@@ -283,7 +312,7 @@
 		<cfscript>
 			if (tokenIndex + arguments.offset GT tokenLen)
 				return false;
-			return (REFindNoCase("^#arguments.regex#$", tokens[tokenIndex + arguments.offset]) GT 0);
+			return (REFindNoCase("^(?:#arguments.regex#)$", tokens[tokenIndex + arguments.offset]) GT 0);
 		</cfscript>
 	</cffunction>
 	

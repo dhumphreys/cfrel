@@ -339,27 +339,28 @@
 		<cfargument name="args" type="struct" required="true" />
 		<cfscript>
 			var loc = {};
-			switch (StructCount(arguments.args)) {
+			loc.iEnd = StructCount(arguments.args);
+			
+			// do not allow empty call
+			if (loc.iEnd EQ 0) {
+				throwException("Arguments are required in #UCase(arguments.clause)#");
 				
-				// do not allow empty call
-				case 0:
-					throwException("Arguments are required in #UCase(arguments.clause)#");
-					break;
+			} else {
+			
+				// loop over all arguments
+				for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
+					loc.value = _transformInput(arguments.args[loc.i], arguments.clause);
 					
-				// treat single arguments as a list and append each list item
-				case 1:
-					loc.arguments = ListToArray(arguments.args[1]);
-					loc.iEnd = ArrayLen(loc.arguments);
-					for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
-						ArrayAppend(this.sql[arguments.scope], _transformInput(loc.arguments[loc.i], arguments.clause));
-					break;
-				
-				// loop and append if many arguments are passed
-				default:
-					loc.iEnd = StructCount(arguments.args);
-					for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
-						ArrayAppend(this.sql[arguments.scope], _transformInput(arguments.args[loc.i], arguments.clause));
-					break;
+					if (IsObject(loc.value)) {
+						ArrayAppend(this.sql[arguments.scope], loc.value);
+					} else if (IsArray(loc.value)) {
+						loc.jEnd = ArrayLen(loc.value);
+						for (loc.j = 1; loc.j LTE loc.jEnd; loc.j++)
+							ArrayAppend(this.sql[arguments.scope], loc.value[loc.j]);
+					} else {
+						throwException("Unknown return from parser in #UCase(arguments.clause)#");
+					}
+				}
 			}
 		</cfscript>
 	</cffunction>
@@ -414,7 +415,7 @@
 					
 					// use an IN if value is an array
 					if (loc.type EQ "array")
-						loc.clause = "#loc.key# IN ?";
+						loc.clause = "#loc.key# IN (?)";
 						
 					// use an equality check if value is simple
 					else if (loc.type EQ "simple")
@@ -452,7 +453,7 @@
 
 			// parse simple values with parser
 			if (loc.type EQ "simple")
-				return variables.parser.parse(arguments.obj);
+				return variables.parser.parse(arguments.obj, arguments.clause);
 				
 			// throw error if we havent found it yet
 			throwException("Invalid object type passed into #UCase(arguments.clause)#");

@@ -134,6 +134,11 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="visit_nodes_order" returntype="string" access="private">
+		<cfargument name="obj" type="any" required="true" />
+		<cfreturn obj.descending ? "#visit(obj.subject)# DESC" : "#visit(obj.subject)# ASC" />
+	</cffunction>
+	
 	<cffunction name="visit_nodes_paren" returntype="string" access="private">
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
@@ -163,6 +168,11 @@
 	<cffunction name="visit_nodes_unaryOp" returntype="string" access="private">
 		<cfargument name="obj" type="any" required="true" />
 		<cfreturn "#obj.op# #visit(obj.subject)#" />
+	</cffunction>
+	
+	<cffunction name="visit_nodes_wildcard" returntype="string" access="private">
+		<cfargument name="obj" type="any" required="true" />
+		<cfreturn obj.subject NEQ "" ? "#visit(obj.subject)#.*" : "*" />
 	</cffunction>
 	
 	<!-----------------------
