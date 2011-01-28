@@ -208,7 +208,7 @@
 		<cfscript>
 			var loc = {};
 			loc.instance = new().from("users");
-			assertEquals("users", loc.instance.sql.from, "FROM clause should be set to passed value");
+			assertEquals("users", loc.instance.sql.from.table, "FROM clause should be set to passed value");
 		</cfscript>
 	</cffunction>
 	
