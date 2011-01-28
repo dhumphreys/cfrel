@@ -88,6 +88,11 @@
 	--- Node Visitors ---
 	-------------------->
 	
+	<cffunction name="visit_nodes_alias" returntype="string" access="private">
+		<cfargument name="obj" type="any" required="true" />
+		<cfreturn "#visit(obj.subject)# AS #visit(obj.alias)#" />
+	</cffunction>
+	
 	<cffunction name="visit_nodes_between" returntype="string" access="private">
 		<cfargument name="obj" type="any" required="true" />
 		<cfreturn "#visit(obj.subject)# BETWEEN #visit(obj.start)# AND #visit(obj.end)#" />

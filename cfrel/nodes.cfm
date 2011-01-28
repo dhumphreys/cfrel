@@ -2,6 +2,10 @@
 --- Node Generation ---
 ---------------------->
 
+<cffunction name="sqlAlias" returntype="any" access="private">
+	<cfreturn constructObject("cfrel.nodes.Alias", arguments)>
+</cffunction>
+
 <cffunction name="sqlBetween" returntype="any" access="private">
 	<cfreturn constructObject("cfrel.nodes.Between", arguments)>
 </cffunction>
@@ -16,10 +20,6 @@
 
 <cffunction name="sqlColumn" returntype="any" access="private">
 	<cfreturn constructObject("cfrel.nodes.Column", arguments)>
-</cffunction>
-
-<cffunction name="sqlExpression" returntype="any" access="private">
-	<cfreturn constructObject("cfrel.nodes.Expression", arguments)>
 </cffunction>
 
 <cffunction name="sqlFunction" returntype="any" access="private">

@@ -87,7 +87,13 @@
 	</cffunction>
 	
 	<cffunction name="expr" returntype="any" access="private" hint="Match an expression in grammer">
-		<cfreturn orCondition() />
+		<cfscript>
+			var loc = {};
+			loc.expr = orCondition();
+			if (accept(t.as) AND expect(t.identifier))
+				return sqlAlias(subject=loc.expr, alias=tokens[tokenIndex - 1]);
+			return loc.expr;
+		</cfscript>
 	</cffunction>
 	
 	<cffunction name="orCondition" returntype="any" access="private" hint="Match OR condition in grammar">
