@@ -4,11 +4,13 @@
 	<cffunction name="init" returntype="struct" access="public" hint="Constructor">
 		<cfargument name="datasource" type="string" default="" />
 		<cfargument name="visitor" type="string" default="Sql" />
+		<cfargument name="mapper" type="string" default="Mapper" />
 		<cfscript>
 			
 			// datasource and visitor to use
 			this.datasource = arguments.datasource;
 			this.visitor = CreateObject("component", "cfrel.visitors.#arguments.visitor#");
+			this.mapper = CreateObject("component", "cfrel.mappers.#arguments.mapper#").init();
 			
 			// struct to hold SQL tree
 			this.sql = {
@@ -107,9 +109,15 @@
 				
 				// accept relations, models, and stings
 				case "cfrel.Relation":
-				case "model":
-				case "simple":
 					this.sql.from = arguments.target;
+					break;
+					
+				case "model":
+					this.sql.from = sqlTable(model=arguments.target);
+					break;
+					
+				case "simple":
+					this.sql.from = sqlTable(arguments.target);
 					break;
 				
 				// accept queries for QoQ operations
@@ -235,6 +243,10 @@
 	
 	<cffunction name="toSql" returntype="string" access="public" hint="Convert relational data into a SQL string">
 		<cfscript>
+			if (ArrayLen(this.sql.select) EQ 0)
+				ArrayAppend(this.sql.select, sqlWildcard());
+			this.mapper.buildMapping(this);
+			this.mapper.applyMapping(this);
 			return this.visitor.visit(this);
 		</cfscript>
 	</cffunction>
@@ -326,6 +338,15 @@
 			if (variables.paged EQ false OR NOT IsStruct(variables.paginationData))
 				return false;
 			return variables.paginationData;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="buildModelArray" returntype="array" access="public" hint="Return array of all models involved in query">
+		<cfscript>
+			var models = [];
+			if (StructKeyExists(this.sql, "from") AND typeOf(this.sql.from) EQ "cfrel.nodes.table" AND IsObject(this.sql.from.model))
+				ArrayAppend(models, this.sql.from);
+			return models;
 		</cfscript>
 	</cffunction>
 	

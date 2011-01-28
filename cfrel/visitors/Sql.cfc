@@ -25,7 +25,7 @@
 			
 			// generate FROM clause, evaluating another relation if neccessary
 			if (StructKeyExists(obj.sql, "from")) {
-				if (IsSimpleValue(obj.sql.from))
+				if (IsSimpleValue(obj.sql.from) OR typeOf(obj.sql.from) EQ "cfrel.nodes.table")
 					ArrayAppend(loc.fragments, "FROM #visit(obj.sql.from)#");
 				else if (IsQuery(obj.sql.from))
 					ArrayAppend(loc.fragments, "FROM resultSet");
@@ -121,15 +121,18 @@
 	<cffunction name="visit_nodes_column" returntype="string" access="private">
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
-			// todo: tie into mapper
-			// tood: escape field correctly
-			return obj.column;
+			// todo: escape field correctly
+			var loc = {};
+			loc.alias = Len(obj.alias) ? " AS #obj.alias#" : "";
+			if (StructKeyExists(obj, "mapping"))
+				return visit(obj.mapping.value) & loc.alias;
+			return obj.column & loc.alias;
 		</cfscript>
 	</cffunction>
 	
 	<cffunction name="visit_nodes_literal" returntype="string" access="private" hint="Render a literal SQL string">
 		<cfargument name="obj" type="any" required="true" />
-		<cfreturn arguments.obj.content />
+		<cfreturn arguments.obj.subject />
 	</cffunction>
 	
 	<cffunction name="visit_nodes_function" returntype="string" access="private">
@@ -155,6 +158,19 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="visit_nodes_table" returntype="string" access="private">
+		<cfargument name="obj" type="any" required="true" />
+		<cfscript>
+			var loc = {};
+			if (Len(obj.table) EQ 0)
+				throwException("No table defined.");
+			loc.table = obj.table;
+			if (Len(obj.alias))
+				loc.table &= " " & obj.alias;
+			return loc.table;
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="visit_nodes_type" returntype="string" access="private">
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
@@ -177,7 +193,12 @@
 	
 	<cffunction name="visit_nodes_wildcard" returntype="string" access="private">
 		<cfargument name="obj" type="any" required="true" />
-		<cfreturn obj.subject NEQ "" ? "#visit(obj.subject)#.*" : "*" />
+		<cfscript>
+			if (StructKeyExists(obj, "mapping"))
+				return obj.mapping;
+			else
+				return obj.subject NEQ "" ? "#visit(obj.subject)#.*" : "*";
+		</cfscript>
 	</cffunction>
 	
 	<!-----------------------

@@ -43,3 +43,9 @@
 			return "simple";
 	</cfscript>
 </cffunction>
+
+<cffunction name="isModel" returntype="boolean" access="private" hint="See if an object is a model">
+	<cfscript>
+		var loc = {};
+	</cfscript>
+</cffunction>
