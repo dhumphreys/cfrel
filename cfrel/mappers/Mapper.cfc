@@ -28,6 +28,12 @@
 		<!--- do nothing here --->
 	</cffunction>
 	
+	<cffunction name="mapIncludes" returntype="void" access="public">
+		<cfargument name="relation" type="any" required="true" />
+		<cfargument name="include" type="string" required="true" />
+		<cfset throwException("Current mapper does not support includes") />
+	</cffunction>
+	
 	<cffunction name="columnsFor" returntype="string" access="private">
 		<cfargument name="table" type="string" default="" />
 		<cfscript>

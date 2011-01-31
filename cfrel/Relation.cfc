@@ -137,13 +137,18 @@
 	</cffunction>
 	
 	<cffunction name="include" returntype="struct" access="public" hint="Add a JOIN to the relation using predefined relationships">
+		<cfargument name="include" type="string" required="true" />
 		<cfscript>
+			var loc = {};
 			if (variables.executed)
 				return this.clone().include(argumentCollection=arguments);
 				
 			// make sure a from has been specified
 			if (NOT StructKeyExists(this.sql, "from"))
 				throwException("Includes cannot be specified before FROM clause");
+				
+			// let mapper do the work with includes
+			this.mapper.mapIncludes(this, arguments.include);
 				
 			return this;
 		</cfscript>
@@ -172,7 +177,12 @@
 				
 				// assume simple values are names
 				case "simple":
-					loc.table = sqlTable(arguments.target);
+					loc.table = sqlTable(table=arguments.target);
+					break;
+					
+				// add a model to a new table object
+				case "model":
+					loc.table = sqlTable(model=arguments.target);
 					break;
 					
 				// just use raw table object
@@ -400,10 +410,20 @@
 	
 	<cffunction name="buildModelArray" returntype="array" access="public" hint="Return array of all models involved in query">
 		<cfscript>
-			var models = [];
+			var loc = {};
+			loc.models = [];
+			
+			// add model from FROM clause
 			if (StructKeyExists(this.sql, "from") AND typeOf(this.sql.from) EQ "cfrel.nodes.table" AND IsObject(this.sql.from.model))
-				ArrayAppend(models, this.sql.from);
-			return models;
+				ArrayAppend(loc.models, this.sql.from);
+				
+			// add models from JOIN clauses
+			loc.iEnd = ArrayLen(this.sql.joins);
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+				if (IsObject(this.sql.joins[loc.i].table.model))
+					ArrayAppend(loc.models, this.sql.joins[loc.i].table);
+			
+			return loc.models;
 		</cfscript>
 	</cffunction>
 	
