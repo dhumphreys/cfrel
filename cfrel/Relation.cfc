@@ -460,18 +460,31 @@
 				
 			// if a text clause was passed
 			} else if (StructKeyExists(arguments.args, "$clause")) {
+						
+				// get data type of clause
+				loc.type = typeOf(arguments.args.$clause);
 				
-				// make sure clause fragment is a string
-				if (NOT IsSimpleValue(arguments.args.$clause) OR Len(arguments.args.$clause) EQ 0)
-					throwException(message="#UCase(arguments.clause)# clause must be a string with length > 0");
-					
-				// count the number of placeholders in clause and argument array
-				loc.placeholderCount = Len(arguments.args.$clause) - Len(Replace(arguments.args.$clause, "?", "", "ALL"));
+				// get count of parameters passed in
 				loc.parameterCount = iif(StructKeyExists(arguments.args, "$params"), "ArrayLen(arguments.args.$params)", DE(0));
+					
+				// if argument is not a valid type
+				if (ListFindNoCase("simple,cfrel.nodes.literal", loc.type) EQ 0)
+					throwException(message="#UCase(arguments.clause)# clause only accepts strings or literals");
 				
-				// make sure the numbers are equal
-				if (loc.placeholderCount NEQ loc.parameterCount)
-					throwException(message="Parameter count does not match number of placeholders in #UCase(arguments.clause)# clause");
+				// go ahead and confirm parameter count unless clause is literal
+				if (loc.type EQ "simple") {
+				
+					// make sure string has length
+					if (Len(arguments.args.$clause) EQ 0)
+						throwException(message="#UCase(arguments.clause)# clause strings must have length > 0");
+					
+					// count the number of placeholders in clause and argument array
+					loc.placeholderCount = Len(arguments.args.$clause) - Len(Replace(arguments.args.$clause, "?", "", "ALL"));
+					
+					// make sure the numbers are equal
+					if (loc.placeholderCount NEQ loc.parameterCount)
+						throwException(message="Parameter count does not match number of placeholders in #UCase(arguments.clause)# clause");
+				}
 					
 				// append clause and parameters to sql options
 				ArrayAppend(this.sql[arguments.scope], _transformInput(arguments.args.$clause, arguments.clause));
@@ -527,7 +540,7 @@
 			
 			// nodes should pass straight through
 			if (REFindNoCase("^cfrel\.nodes\.", loc.type) GT 0)
-				return loc.obj;
+				return arguments.obj;
 
 			// parse simple values with parser
 			if (loc.type EQ "simple")
