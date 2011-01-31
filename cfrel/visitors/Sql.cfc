@@ -45,12 +45,20 @@
 				throwException("Either SELECT or FROM must be specified in relation");
 			}
 			
-			// generate other clauses
+			// turn aliasing off outside of SELECT clause
 			variables.aliasOff = true;
+ 			
+			// append joins
+			if (ArrayLen(obj.sql.joins) GT 0)
+				ArrayAppend(loc.fragments, ArrayToList(visit(obj.sql.joins), " "));
+			
+			// generate other clauses
 			loc.fragments = _appendConditionsClause("WHERE", loc.fragments, obj.sql.wheres);
 			loc.fragments = _appendFieldsClause("GROUP BY", loc.fragments, obj.sql.groups);
 			loc.fragments = _appendConditionsClause("HAVING", loc.fragments, obj.sql.havings);
 			loc.fragments = _appendFieldsClause("ORDER BY", loc.fragments, obj.sql.orders);
+			
+			// turn aliasing back on
 			variables.aliasOff = false;
 			
 			// generate LIMIT clause
@@ -152,6 +160,19 @@
 				return visit(obj.mapping.value) & loc.alias;
 			return obj.column & loc.alias;
 		</cfscript>
+	</cffunction>
+ 	
+	<cffunction name="visit_nodes_join" returntype="string" access="private">
+		<cfargument name="obj" type="any" required="true" />
+		<cfscript>
+			var loc = {};
+			loc.join = (obj.type EQ "outer") ? "LEFT JOIN " : "JOIN ";
+			loc.join &= visit(obj.table);
+			if (IsObject(obj.condition) OR obj.condition EQ false)
+				loc.join &= " ON #visit(obj.condition)#";
+			return loc.join;
+		</cfscript>
+		<cfreturn arguments.obj.content />
 	</cffunction>
 	
 	<cffunction name="visit_nodes_literal" returntype="string" access="private" hint="Render a literal SQL string">

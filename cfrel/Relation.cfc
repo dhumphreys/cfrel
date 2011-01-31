@@ -128,11 +128,10 @@
 					variables.qoq = true;
 					break;
 					
-				// and reject all others by throwing an errors
+				// and reject all others by throwing an error
 				default:
-					throwException(typeOf(arguments.target));
 					throwException("Only a table name or another relation can be in FROM clause");
-			}	
+			}
 			return this;
 		</cfscript>
 	</cffunction>
@@ -142,14 +141,58 @@
 			if (variables.executed)
 				return this.clone().include(argumentCollection=arguments);
 				
+			// make sure a from has been specified
+			if (NOT StructKeyExists(this.sql, "from"))
+				throwException("Includes cannot be specified before FROM clause");
+				
 			return this;
 		</cfscript>
 	</cffunction>
 	
 	<cffunction name="join" returntype="struct" access="public" hint="Add a JOIN to the relation">
+		<cfargument name="target" type="any" required="true" />
+		<cfargument name="condition" type="any" default="false" />
+		<cfargument name="params" type="array" default="#[]#" />
+		<cfargument name="type" type="string" default="inner" hint="INNER or OUTER join" />
 		<cfscript>
+			var loc = {};
 			if (variables.executed)
 				return this.clone().join(argumentCollection=arguments);
+				
+			// correctly set condition
+			if (typeOf(arguments.condition) NEQ "simple")
+				loc.condition = arguments.condition;
+			else if (arguments.condition NEQ false)
+				loc.condition = variables.parser.parse(arguments.condition);
+			else
+				loc.condition = false;
+				
+			// create table object
+			switch(typeOf(arguments.target)) {
+				
+				// assume simple values are names
+				case "simple":
+					loc.table = sqlTable(arguments.target);
+					break;
+					
+				// just use raw table object
+				case "cfrel.nodes.table":
+					loc.table = arguments.target;
+					break;
+					
+				// throw error if invalid target
+				default:
+					throwException("Only table names or table nodes can be target of JOIN");
+					
+			}
+			
+			// append join to sql structure
+			ArrayAppend(this.sql.joins, sqlJoin(loc.table, loc.condition, arguments.type));
+			
+			// handle parameters for join
+			loc.iEnd = ArrayLen(arguments.params);
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+				ArrayAppend(this.sql.joinParameters, arguments.params[loc.i]);
 				
 			return this;
 		</cfscript>
@@ -299,6 +342,11 @@
 						throwException("Cannot execute query without a datasource");
 					loc.query.setDatasource(this.datasource);
 				}
+				
+				// stack on join parameters
+				loc.iEnd = ArrayLen(this.sql.joinParameters);
+				for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+					loc.query.addParam(value=this.sql.joinParameters[loc.i]);
 				
 				// stack on where parameters
 				loc.iEnd = ArrayLen(this.sql.whereParameters);

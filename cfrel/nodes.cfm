@@ -26,6 +26,10 @@
 	<cfreturn constructObject("cfrel.nodes.Function", arguments)>
 </cffunction>
 
+<cffunction name="sqlJoin" returntype="any" access="private">
+	<cfreturn constructObject("cfrel.nodes.Join", arguments)>
+</cffunction>
+
 <cffunction name="sqlLiteral" returntype="any" access="private">
 	<cfreturn constructObject("cfrel.nodes.Literal", arguments)>
 </cffunction>
