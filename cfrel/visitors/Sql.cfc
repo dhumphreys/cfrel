@@ -109,12 +109,25 @@
 	<cffunction name="visit_nodes_alias" returntype="string" access="private">
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
-			if (variables.aliasOnly)
-				return visit(obj.alias);
-			else if (variables.aliasOff)
-				return visit(obj.subject);
-			else
-				return "#visit(obj.subject)# AS #visit(obj.alias)#";
+			var loc = {};
+			
+			// only use alias
+			if (variables.aliasOnly) {
+				loc.sql = visit(obj.alias);
+				
+			// don't use alias, only subject
+			} else if (variables.aliasOff) {
+				loc.sql = visit(obj.subject);
+				
+			// use both, but ignore any aliases inside of subject
+			} else {
+				
+				variables.aliasOff = true;
+				loc.sql = "#visit(obj.subject)# AS #visit(obj.alias)#";
+				variables.aliasOff = false;
+			}
+			
+			return loc.sql;
 		</cfscript>
 	</cffunction>
 	

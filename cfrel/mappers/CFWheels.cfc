@@ -89,11 +89,11 @@
 					
 						// map the column to the correct database column
 						if (NOT StructKeyExists(arguments.obj, "mapping") AND Len(arguments.obj.table) EQ 0) {
-							if (NOT StructKeyExists(variables.columns, arguments.obj.column))
-								throwException("Column #arguments.obj.column# not found.");
-							if (arguments.useAlias AND arguments.obj.alias EQ "")
-								arguments.obj.alias = arguments.obj.column;
-							arguments.obj.mapping = variables.columns[arguments.obj.column];
+							if (StructKeyExists(variables.columns, arguments.obj.column)) {
+								if (arguments.useAlias AND arguments.obj.alias EQ "")
+									arguments.obj.alias = arguments.obj.column;
+								arguments.obj.mapping = variables.columns[arguments.obj.column];
+							}
 						}
 						break;
 						
