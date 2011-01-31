@@ -256,7 +256,7 @@
 	<cffunction name="visit_nodes_wildcard" returntype="string" access="private">
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
-			if (StructKeyExists(obj, "mapping") AND NOT variables.aliasOff)
+			if (NOT variables.aliasOff AND StructKeyExists(obj, "mapping") AND Len(obj.mapping))
 				return obj.mapping;
 			else
 				return obj.subject NEQ "" ? "#visit(obj.subject)#.*" : "*";

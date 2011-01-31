@@ -259,6 +259,10 @@
 					expect(t.rparen);
 					return sqlFunction(name=loc.id, args=loc.args);
 					
+				// IDENTIFIER DOT WILDCARD
+				} else if (accept(t.dot) AND expect(t.star)) {
+					return sqlWildcard(subject=loc.id);
+					
 				// IDENTIFIER
 				} else {
 					loc.c = sqlColumn(column=loc.id);
