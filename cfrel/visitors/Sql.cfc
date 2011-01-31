@@ -201,9 +201,10 @@
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
 			var loc = {};
+			loc.tmpAliasOff = variables.aliasOff;
 			variables.aliasOff = true;
 			loc.fn = "#obj.name#(#ArrayToList(visit(obj.args), ', ')#)";
-			variables.aliasOff = false;
+			variables.aliasOff = loc.tmpAliasOff;
 			return loc.fn;
 		</cfscript>
 	</cffunction>
