@@ -31,10 +31,7 @@
 					ArrayAppend(obj.sql.select, sqlLiteral("ROW_NUMBER() OVER (ORDER BY #ArrayToList(visit(obj.sql.orders), ', ')#) AS rowNum"));
 					variables.aliasOff = false;
 					
-					// render order clause and then wipe out order in inner query
-					variables.aliasOnly = true;
-					loc.order = ArrayToList(visit(obj.sql.orders), ", ");
-					variables.aliasOnly = false;
+					// wipe out ORDER BY in inner query
 					obj.sql.orders = [];
 					
 					// remove LIMIT and OFFSET from inner query
@@ -42,7 +39,7 @@
 					StructDelete(obj.sql, "offset");
 					
 					// get SQL for inner query and return inside of SELECT
-					return "SELECT * FROM (#super.visit_relation(obj)#) paged_query WHERE rowNum BETWEEN #loc.start# AND #loc.end# ORDER BY #loc.order#";
+					return "SELECT * FROM (#super.visit_relation(obj)#) paged_query WHERE rowNum BETWEEN #loc.start# AND #loc.end# ORDER BY rowNum ASC";
 				
 				// use TOP to restrict dataset instead of LIMIT
 				} else {
