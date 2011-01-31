@@ -27,10 +27,14 @@
 						throwException("ORDER BY clause is required for pagination");
 					
 					// create new SELECT item from inner query
+					variables.aliasOff = true;
 					ArrayAppend(obj.sql.select, sqlLiteral("ROW_NUMBER() OVER (ORDER BY #ArrayToList(visit(obj.sql.orders), ', ')#) AS rowNum"));
+					variables.aliasOff = false;
 					
 					// render order clause and then wipe out order in inner query
+					variables.aliasOnly = true;
 					loc.order = ArrayToList(visit(obj.sql.orders), ", ");
+					variables.aliasOnly = false;
 					obj.sql.orders = [];
 					
 					// remove LIMIT and OFFSET from inner query

@@ -6,7 +6,7 @@
 			super.setup();
 			variables.cfc = "cfrel.Relation";
 			variables.datasourceRel = new(datasource="cfrel").select("id,username,password").from("users");
-			variables.sqlVisitor = CreateObject("component", "cfrel.visitors.Sql");
+			variables.sqlVisitor = CreateObject("component", "cfrel.visitors.Sql").init();
 		</cfscript>
 	</cffunction>
 	
@@ -506,7 +506,7 @@
 	<cffunction name="testSqlGeneration" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
-			loc.visitor = CreateObject("component", "cfrel.visitors.Sql");
+			loc.visitor = CreateObject("component", "cfrel.visitors.Sql").init();
 			
 			// generate a simple relation
 			loc.instance = new().select("a").from("b").where("a > 5").order("a ASC").paginate(2, 15);

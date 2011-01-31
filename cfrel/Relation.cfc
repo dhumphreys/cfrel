@@ -9,7 +9,7 @@
 			
 			// datasource and visitor to use
 			this.datasource = arguments.datasource;
-			this.visitor = CreateObject("component", "cfrel.visitors.#arguments.visitor#");
+			this.visitor = CreateObject("component", "cfrel.visitors.#arguments.visitor#").init();
 			this.mapper = CreateObject("component", "cfrel.mappers.#arguments.mapper#").init();
 			
 			// struct to hold SQL tree
@@ -30,6 +30,7 @@
 			variables.query = false;
 			variables.result = false;
 			variables.executed = false;
+			variables.mapped = false;
 			variables.qoq = false;
 			variables.paged = false;
 			variables.paginationData = false;
@@ -62,6 +63,7 @@
 				loc.private.query = false;
 				loc.private.result = false;
 				loc.private.executed = false;
+				loc.private.mapped = false;
 			}
 			
 			// remove pagination variables
@@ -245,8 +247,15 @@
 		<cfscript>
 			if (ArrayLen(this.sql.select) EQ 0)
 				ArrayAppend(this.sql.select, sqlWildcard());
-			this.mapper.buildMapping(this);
-			this.mapper.applyMapping(this);
+			
+			// map columns
+			if (NOT variables.mapped) {
+				this.mapper.clearMapping();
+				this.mapper.buildMapping(this);
+				this.mapper.applyMapping(this);
+				variables.mapped = true;
+			}
+			
 			return this.visitor.visit(this);
 		</cfscript>
 	</cffunction>

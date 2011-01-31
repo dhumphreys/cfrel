@@ -10,6 +10,14 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="clearMapping" returntype="void" access="public">
+		<cfscript>
+			variables.models = [];
+			variables.tables = {};
+			variables.columns = {};
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="buildMapping" returntype="void" access="public">
 		<cfargument name="relation" type="any" required="true" />
 		<!--- do nothing here --->
@@ -28,7 +36,7 @@
 			for (loc.key in variables.columns) {
 				loc.col = variables.columns[loc.key];
 				if (StructKeyExists(loc.col, "table") AND (Len(arguments.table) EQ 0 OR loc.col.table EQ arguments.table))
-					loc.columns = ListAppend(loc.columns, loc.key & " AS " & loc.col.table);
+					loc.columns = ListAppend(loc.columns, loc.col.value & " AS " & loc.key);
 			}
 			return loc.columns;
 		</cfscript>

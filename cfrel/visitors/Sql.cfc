@@ -1,5 +1,13 @@
 <cfcomponent extends="Visitor" output="false">
 	
+	<cffunction name="init">
+		<cfscript>
+			variables.aliasOnly = false;
+			variables.aliasOff = false;
+			return this;
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="visit_relation" returntype="any" access="private" hint="Generate general SQL for a relation">
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
@@ -38,10 +46,12 @@
 			}
 			
 			// generate other clauses
+			variables.aliasOff = true;
 			loc.fragments = _appendConditionsClause("WHERE", loc.fragments, obj.sql.wheres);
-			loc.fragments = _appendFieldsClause("ORDER BY", loc.fragments, obj.sql.orders);
 			loc.fragments = _appendFieldsClause("GROUP BY", loc.fragments, obj.sql.groups);
 			loc.fragments = _appendConditionsClause("HAVING", loc.fragments, obj.sql.havings);
+			loc.fragments = _appendFieldsClause("ORDER BY", loc.fragments, obj.sql.orders);
+			variables.aliasOff = false;
 			
 			// generate LIMIT clause
 			if (StructKeyExists(obj.sql, "limit"))
@@ -90,7 +100,14 @@
 	
 	<cffunction name="visit_nodes_alias" returntype="string" access="private">
 		<cfargument name="obj" type="any" required="true" />
-		<cfreturn "#visit(obj.subject)# AS #visit(obj.alias)#" />
+		<cfscript>
+			if (variables.aliasOnly)
+				return visit(obj.alias);
+			else if (variables.aliasOff)
+				return visit(obj.subject);
+			else
+				return "#visit(obj.subject)# AS #visit(obj.alias)#";
+		</cfscript>
 	</cffunction>
 	
 	<cffunction name="visit_nodes_between" returntype="string" access="private">
@@ -123,7 +140,14 @@
 		<cfscript>
 			// todo: escape field correctly
 			var loc = {};
-			loc.alias = Len(obj.alias) ? " AS #obj.alias#" : "";
+			
+			// read alias unless we have them turned off
+			loc.alias = NOT variables.aliasOff AND Len(obj.alias) ? " AS #obj.alias#" : "";
+			
+			// only use alias if we have asked to do so
+			if (variables.aliasOnly AND Len(loc.alias))
+				return obj.alias;
+			
 			if (StructKeyExists(obj, "mapping"))
 				return visit(obj.mapping.value) & loc.alias;
 			return obj.column & loc.alias;
@@ -138,7 +162,11 @@
 	<cffunction name="visit_nodes_function" returntype="string" access="private">
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
-			return "#obj.name#(#ArrayToList(visit(obj.args), ', ')#)";
+			var loc = {};
+			variables.aliasOff = true;
+			loc.fn = "#obj.name#(#ArrayToList(visit(obj.args), ', ')#)";
+			variables.aliasOff = false;
+			return loc.fn;
 		</cfscript>
 	</cffunction>
 	
@@ -194,7 +222,7 @@
 	<cffunction name="visit_nodes_wildcard" returntype="string" access="private">
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
-			if (StructKeyExists(obj, "mapping"))
+			if (StructKeyExists(obj, "mapping") AND NOT variables.aliasOff)
 				return obj.mapping;
 			else
 				return obj.subject NEQ "" ? "#visit(obj.subject)#.*" : "*";

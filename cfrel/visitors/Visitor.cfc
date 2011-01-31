@@ -20,7 +20,7 @@
 			
 			// call visit_xxx_yyy method
 			var method = variables[loc.method];
-			return method(obj=arguments.obj);
+			return method(argumentCollection=arguments);
 		</cfscript>
 	</cffunction>
 </cfcomponent>

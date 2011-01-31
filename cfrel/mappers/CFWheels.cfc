@@ -36,11 +36,11 @@
 					// build column data structure
 					loc.colData = {};
 					if (loc.col.type NEQ "sql") {
-						loc.colData.value = sqlLiteral(loc.tableAlias & "." & loc.col.value);
+						loc.colData.value = loc.tableAlias & "." & loc.col.value;
 						loc.colData.table = loc.tableAlias;
 						loc.colData.cf_sql_type = loc.class.properties[loc.key].type;
 					} else {
-						loc.colData.value = sqlLiteral(loc.col.value);
+						loc.colData.value = loc.col.value;
 					}
 						
 					// deal with column name conflicts
@@ -62,7 +62,7 @@
 	<cffunction name="applyMapping" returntype="void" access="public">
 		<cfargument name="relation" type="any" required="true" />
 		<cfscript>
-			mapObject(relation.sql.select, true);
+			mapObject(relation.sql.select);
 			mapObject(relation.sql.wheres);
 			mapObject(relation.sql.groups);
 			mapObject(relation.sql.havings);
@@ -72,7 +72,7 @@
 	
 	<cffunction name="mapObject" returntype="void" access="private">
 		<cfargument name="obj" type="any" required="true" />
-		<cfargument name="useAlias" type="boolean" default="false" />
+		<cfargument name="useAlias" type="boolean" default="true" />
 		<cfscript>
 			var loc = {};
 			if (IsArray(arguments.obj)) {
@@ -89,9 +89,8 @@
 					
 						// map the column to the correct database column
 						if (NOT StructKeyExists(arguments.obj, "mapping") AND Len(arguments.obj.table) EQ 0) {
-							if (NOT StructKeyExists(variables.columns, arguments.obj.column)) {
+							if (NOT StructKeyExists(variables.columns, arguments.obj.column))
 								throwException("Column #arguments.obj.column# not found.");
-							}
 							if (arguments.useAlias AND arguments.obj.alias EQ "")
 								arguments.obj.alias = arguments.obj.column;
 							arguments.obj.mapping = variables.columns[arguments.obj.column];
@@ -104,6 +103,13 @@
 						// map the wildcard to all available table columns
 						arguments.obj.mapping = columnsFor(arguments.obj.subject);
 						break;
+						
+					// found a function call
+					case "cfrel.nodes.function":
+					
+						// turn off aliases under function calls
+						arguments.useAlias = false;
+						// dont' break here. we want execution to continue
 						
 					// else, see if we can go deeper in the tree
 					default:
