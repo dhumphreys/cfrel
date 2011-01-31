@@ -171,7 +171,11 @@
 			
 			if (StructKeyExists(obj, "mapping"))
 				return visit(obj.mapping.value) & loc.alias;
-			return obj.column & loc.alias;
+			
+			// read table specified for column
+			loc.table = Len(obj.table) ? obj.table & "." : "";
+			
+			return loc.table & obj.column & loc.alias;
 		</cfscript>
 	</cffunction>
  	

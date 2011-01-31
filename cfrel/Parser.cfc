@@ -258,15 +258,20 @@
 					loc.args = optExprs();
 					expect(t.rparen);
 					return sqlFunction(name=loc.id, args=loc.args);
-					
-				// IDENTIFIER DOT WILDCARD
-				} else if (accept(t.dot) AND expect(t.star)) {
-					return sqlWildcard(subject=loc.id);
+				
+				} else if (accept(t.dot)) {
+				
+					// IDENTIFIER DOT WILDCARD
+					if (accept(t.star))
+						return sqlWildcard(subject=loc.id);
+						
+					// TABLE DOT COLUMN
+					else if (expect(t.identifier))
+						return sqlColumn(table=loc.id, column=tokens[tokenIndex - 1]);
 					
 				// IDENTIFIER
 				} else {
-					loc.c = sqlColumn(column=loc.id);
-					return loc.c;
+					return sqlColumn(column=loc.id);
 				}
 			}
 			throwException("Invalid expression during SQL parse.");
