@@ -176,6 +176,12 @@
 				else
 					return sqlBinaryOp(left=loc.left, op="IS", right=addExpr());
 				
+			// ADD_EXPR NOT IN LPAREN EXPRS RPAREN
+			} else if (accept(t.neg) AND expect(t.inn) AND expect(t.lparen)) {
+				loc.e = sqlParen(subject=exprs());
+				expect(t.rparen);
+				return sqlBinaryOp(left=loc.left, op="NOT_IN", right=loc.e);
+				
 			// ADD_EXPR IN LPAREN EXPRS RPAREN
 			} else if (accept(t.inn) AND expect(t.lparen)) {
 				loc.e = sqlParen(subject=exprs());
