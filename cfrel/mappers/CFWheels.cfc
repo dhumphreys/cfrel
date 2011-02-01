@@ -134,12 +134,14 @@
 						
 						// create join condition
 						loc.condition = "";
+						loc.listA = loc.assoc.type NEQ "belongsTo" ? loc.class.keys : loc.assoc.foreignKey;
+						loc.listB = loc.assoc.type NEQ "belongsTo" ? loc.assoc.foreignKey : loc.otherClass.keys;
 						loc.jEnd = ListLen(loc.assoc.foreignKey);
 						for (loc.j = 1; loc.j LTE loc.jEnd; loc.j++) {
 							
 							// handle opposite join directions
-							loc.keyA = loc.assoc.type NEQ "belongsTo" ? ListGetAt(loc.class.keys, loc.j) : ListGetAt(loc.assoc.foreignKey, loc.j);
-							loc.keyB = loc.assoc.type NEQ "belongsTo" ? ListGetAt(loc.assoc.foreignKey, loc.j) : ListGetAt(loc.otherClass.keys, loc.j);
+							loc.keyA = ListGetAt(loc.listA, loc.j);
+							loc.keyB = ListGetAt(loc.listB, loc.j);
 							
 							// set up equality between the two keys
 							loc.columnA = StructKeyExists(loc.class.properties, loc.keyA) ? loc.class.properties[loc.keyA].column : loc.class.calculatedProperties[loc.keyA].sql;

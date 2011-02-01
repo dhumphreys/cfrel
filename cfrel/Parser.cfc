@@ -45,7 +45,20 @@
 		<cfargument name="clause" type="string" default="WHERE" />
 		<cfscript>
 			var loc = {};
+			loc.cacheKey = Hash("#arguments.clause#:#arguments.str#", "MD5");
+			
+			// set up parse cache
+			if (NOT StructKeyExists(application, "cfrel"))
+				application.cfrel = {parseCache={}};
+				
+			// if key exists, just return cached parse tree
+			if (StructKeyExists(application.cfrel.parseCache, loc.cacheKey))
+				return Duplicate(application.cfrel.parseCache[loc.cacheKey]);
+			
+			// break incoming string into tokens
 			tokenize(arguments.str);
+			
+			// parse string depending on clause type
 			switch (arguments.clause) {
 				case "SELECT":
 				case "GROUP BY":
@@ -57,8 +70,14 @@
 				default:
 					loc.tree = expr();
 			}
+			
+			// if tokens are still left, throw an error
 			if (tokenIndex LTE tokenLen)
 				throwException("Parsing error. Not all tokens processed. #tokenIndex - 1# of #tokenLen# processed.");
+				
+			// save the parse in the application scope
+			application.cfrel.parseCache[loc.cacheKey] = Duplicate(loc.tree);
+			
 			return loc.tree;
 		</cfscript>
 	</cffunction>
