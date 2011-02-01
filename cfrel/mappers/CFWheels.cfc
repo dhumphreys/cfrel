@@ -18,11 +18,7 @@
 				loc.class = loc.model._inspect().wheels.class;
 				
 				// create a unique table alias
-				loc.tableAlias = loc.class.modelName;
-						
-				// deal with alias conflicts
-				for (loc.j = 2; StructKeyExists(variables.tables, loc.tableAlias); loc.j++)
-					loc.tableAlias = loc.class.modelName & loc.j;
+				loc.tableAlias = uniqueScopeKey(key=loc.class.modelName, scope=variables.tables);
 				
 				// add table mapping to structure
 				variables.models[loc.i].table = loc.class.tableName;
@@ -30,27 +26,32 @@
 				variables.tables[loc.tableAlias] = loc.class.tableName;
 				
 				// loop over columns in model
-				for (loc.key in loc.class.mapping) {
-					loc.col = loc.class.mapping[loc.key];
+				for (loc.key in loc.class.properties) {
+					loc.col = loc.class.properties[loc.key];
 					
 					// build column data structure
 					loc.colData = {};
-					if (loc.col.type NEQ "sql") {
-						loc.colData.value = loc.tableAlias & "." & loc.col.value;
-						loc.colData.table = loc.tableAlias;
-						loc.colData.cf_sql_type = loc.class.properties[loc.key].type;
-					} else {
-						loc.colData.value = loc.col.value;
-					}
+					loc.colData.value = loc.tableAlias & "." & loc.col.column;
+					loc.colData.table = loc.tableAlias;
+					loc.colData.cf_sql_type = loc.col.type;
 						
 					// deal with column name conflicts
-					if (StructKeyExists(variables.columns, loc.key)) {
-						loc.key = loc.newName = loc.class.modelName & loc.key;
+					loc.key = uniqueScopeKey(key=loc.key, prefix=loc.class.modelName, scope=variables.columns);
+					
+					// add data structure to columns structure
+					variables.columns[loc.key] = loc.colData;
+				}
+				
+				// loop over calculated properties in model
+				for (loc.key in loc.class.calculatedProperties) {
+					loc.col = loc.class.calculatedProperties[loc.key];
+					
+					// build column data structure
+					loc.colData = {};
+					loc.colData.value = loc.col.sql;
 						
-						// if it still conflicts, start appending numbers
-						for (loc.j = 2; StructKeyExists(variables.columns, loc.key); loc.j++)
-							loc.key = loc.newName & loc.j;
-					}
+					// deal with column name conflicts
+					loc.key = uniqueScopeKey(key=loc.key, prefix=loc.class.modelName, scope=variables.columns);
 					
 					// add data structure to columns structure
 					variables.columns[loc.key] = loc.colData;
