@@ -182,6 +182,16 @@
 									arguments.obj.alias = arguments.obj.column;
 								arguments.obj.mapping = variables.columns[arguments.obj.column];
 							}
+							
+						// also try to map hard table names into aliases
+						} else if (Len(arguments.obj.table)) {
+							loc.iEnd = ArrayLen(variables.models);
+							for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
+								if (variables.models[loc.i].table EQ arguments.obj.table) {
+									arguments.obj.table = variables.models[loc.i].alias;
+									break;
+								}
+							}
 						}
 						break;
 						
