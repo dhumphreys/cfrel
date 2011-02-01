@@ -6,13 +6,13 @@
 			var loc = {};
 			
 			// string and numeric literals
-			variables.l = {string="'[^']*'", number="\b-?\d+(\.\d+)?\b"};
+			variables.l = {date="'{ts '\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'}'", string="'[^']*'", number="\b-?\d+(\.\d+)?\b"};
 			
 			// build regex to match literals
-			variables.literalRegex = "(#l.string#|#l.number#)";
+			variables.literalRegex = "(#l.date#|#l.string#|#l.number#)";
 			
 			// terminals (and literal placeholders)
-			variables.t = {string="::string::", number="::number::", param="\?", dot="\.", comma=",",
+			variables.t = {date="::date::", string="::string::", number="::number::", param="\?", dot="\.", comma=",",
 				lparen="\(", rparen="\)", addOp="\+|-|&|\^|\|", star="\*", mulOp="\*|/|%", as="\bAS\b",
 				unaryOp="\+|-|~|\bNOT\b", compOp="<=>|<=|>=|<>|!=|!>|!<|=|<|>|\bLIKE\b", between="\bBETWEEN\b",
 				andOp="\bAND\b", orOp="\bOR\b", neg="\bNOT\b", sortOp="\bASC\b|\bDESC\b", null="\bNULL\b",
@@ -236,6 +236,11 @@
 			// STRING
 			} else if (accept(t.string)) {
 				return popLiteral(); // wrap in nodes.literal?
+			
+			// DATE
+			} else if (accept(t.date)) {
+				loc.date = REReplace(popLiteral(), "(^'|'$)", "", "ALL");
+				return "'" & DateFormat(loc.date, "yyyy-mm-dd ") & TimeFormat(loc.date, "hh:mm:ss TT") & "'";
 				
 			// NULL
 			} else if (accept(t.null)) {
@@ -411,6 +416,7 @@
 			}
 			
 			// replace literals with placeholders
+			arguments.str = REReplaceNoCase(arguments.str, l.date, t.date, "ALL");
 			arguments.str = REReplaceNoCase(arguments.str, l.string, t.string, "ALL");
 			arguments.str = REReplaceNoCase(arguments.str, l.number, t.number, "ALL");
 			
