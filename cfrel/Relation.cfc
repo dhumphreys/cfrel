@@ -451,7 +451,7 @@
 				for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
 					loc.value = _transformInput(arguments.args[loc.i], arguments.clause);
 					
-					if (IsObject(loc.value)) {
+					if (IsStruct(loc.value)) {
 						ArrayAppend(this.sql[arguments.scope], loc.value);
 					} else if (IsArray(loc.value)) {
 						loc.jEnd = ArrayLen(loc.value);
