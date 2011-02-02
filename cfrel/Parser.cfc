@@ -283,9 +283,9 @@
 				expect(t.rparen);
 				return sqlParen(subject=loc.e);
 				
-			// CAST LPAREN EXPR AS TYPE_NAME RPAREN
+			// CAST LPAREN OR_CONDITION AS TYPE_NAME RPAREN
 			} else if (accept(t.cast) AND expect(t.lparen)) {
-				loc.e = expr();
+				loc.e = orCondition();
 				expect(t.as);
 				loc.t = typeName();
 				expect(t.rparen);
