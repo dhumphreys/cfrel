@@ -26,7 +26,7 @@
 			else
 				return "model";
 			
-		// the rest are simple
+		// a few are easy checks
 		else if (IsCustomFunction(arguments.obj))
 			return "function";
 		else if (IsBinary(arguments.obj))
@@ -35,10 +35,14 @@
 			return "array";
 		else if (IsQuery(arguments.obj))
 			return "query";
-		else if (IsStruct(arguments.obj))
-			return "struct";
 		else if (IsNull(arguments.obj))
 			return "null";
+				
+		// some will just be structs, but nodes will have $class set
+		else if (IsStruct(arguments.obj))
+			return StructKeyExists(arguments.obj, "$class") ? arguments.obj.$class : "struct";
+			
+		// everything else is a simple value
 		else
 			return "simple";
 	</cfscript>

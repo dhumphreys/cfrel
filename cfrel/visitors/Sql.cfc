@@ -185,7 +185,7 @@
 			var loc = {};
 			loc.join = (obj.type EQ "outer") ? "LEFT JOIN " : "JOIN ";
 			loc.join &= visit(obj.table);
-			if (IsObject(obj.condition) OR obj.condition EQ false)
+			if (IsStruct(obj.condition) OR obj.condition EQ false)
 				loc.join &= " ON #visit(obj.condition)#";
 			return loc.join;
 		</cfscript>

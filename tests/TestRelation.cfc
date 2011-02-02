@@ -145,13 +145,13 @@
 			loc.instance3 = new().select("a","b","c");
 			
 			// make sure nodes were added and evaluate to input strings
-			assertIsTypeOf(loc.instance1.sql.select[1], "cfrel.nodes.Wildcard");
-			assertIsTypeOf(loc.instance2.sql.select[1], "cfrel.nodes.Column");
-			assertIsTypeOf(loc.instance2.sql.select[2], "cfrel.nodes.Column");
-			assertIsTypeOf(loc.instance2.sql.select[3], "cfrel.nodes.Column");
-			assertIsTypeOf(loc.instance3.sql.select[1], "cfrel.nodes.Column");
-			assertIsTypeOf(loc.instance3.sql.select[2], "cfrel.nodes.Column");
-			assertIsTypeOf(loc.instance3.sql.select[3], "cfrel.nodes.Column");
+			assertEquals("cfrel.nodes.Wildcard", typeOf(loc.instance1.sql.select[1]));
+			assertEquals("cfrel.nodes.Column", typeOf(loc.instance2.sql.select[1]));
+			assertEquals("cfrel.nodes.Column", typeOf(loc.instance2.sql.select[2]));
+			assertEquals("cfrel.nodes.Column", typeOf(loc.instance2.sql.select[3]));
+			assertEquals("cfrel.nodes.Column", typeOf(loc.instance3.sql.select[1]));
+			assertEquals("cfrel.nodes.Column", typeOf(loc.instance3.sql.select[2]));
+			assertEquals("cfrel.nodes.Column", typeOf(loc.instance3.sql.select[3]));
 			assertEquals(["*"], visit(loc.instance1.sql.select));
 			assertEquals(loc.testVal, visit(loc.instance2.sql.select));
 			assertEquals(loc.testVal, visit(loc.instance3.sql.select));
@@ -251,7 +251,7 @@
 			loc.instance = new().where("1 = 1");
 			assertEquals(1, ArrayLen(loc.instance.sql.wheres));
 			assertEquals(0, ArrayLen(loc.instance.sql.whereParameters));
-			assertIsTypeOf(loc.instance.sql.wheres[1], "cfrel.nodes.BinaryOp");
+			assertEquals("cfrel.nodes.BinaryOp", typeOf(loc.instance.sql.wheres[1]));
 			assertEquals("1 = 1", visit(loc.instance.sql.wheres[1]));
 		</cfscript>
 	</cffunction>
@@ -349,7 +349,7 @@
 			loc.instance = new().having("a > 1");
 			assertEquals(1, ArrayLen(loc.instance.sql.havings));
 			assertEquals(0, ArrayLen(loc.instance.sql.havingParameters));
-			assertIsTypeOf(loc.instance.sql.havings[1], "cfrel.nodes.BinaryOp");
+			assertEquals("cfrel.nodes.BinaryOp", typeOf(loc.instance.sql.havings[1]));
 			assertEquals("a > 1", visit(loc.instance.sql.havings[1]));
 		</cfscript>
 	</cffunction>
@@ -358,7 +358,7 @@
 		<cfscript>
 			var loc = {};
 			loc.instance = new().having("a > 1").having("b < 0");
-			assertIsTypeOf(loc.instance.sql.havings[2], "cfrel.nodes.BinaryOp");
+			assertEquals("cfrel.nodes.BinaryOp", typeOf(loc.instance.sql.havings[2]));
 			assertEquals("b < 0", sqlVisitor.visit(loc.instance.sql.havings[2]), "having() should append the second condition");
 		</cfscript>
 	</cffunction>

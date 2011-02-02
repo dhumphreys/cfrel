@@ -10,7 +10,7 @@
 		<cfscript>
 			var loc = {};
 			loc.node = sqlLiteral("ROW_NUMBER()");
-			assertIsTypeOf(loc.node, "cfrel.nodes.Literal");
+			assertEquals("cfrel.nodes.Literal", typeOf(loc.node));
 			assertEquals("ROW_NUMBER()", loc.node.subject, "Literal node should be constructed with correct value");
 		</cfscript>
 	</cffunction>
