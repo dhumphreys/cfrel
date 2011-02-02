@@ -89,8 +89,7 @@
 			loc.select = instance.select("a");
 			loc.distinct = instance.distinct();
 			loc.from = instance.from("users");
-			loc.include = instance.include();
-			loc.join = instance.join();
+			loc.join = instance.join("posts", "post_user_id = user_id");
 			loc.group = instance.group("a");
 			loc.having = instance.having("a > ?", [0]);
 			loc.order = instance.order("a ASC");
@@ -117,8 +116,7 @@
 			loc.select = instance.select("a");
 			loc.distinct = instance.distinct();
 			loc.from = instance.from("users");
-			loc.include = instance.include();
-			loc.join = instance.join();
+			loc.join = instance.join("posts", "post_user_id = user_id");
 			loc.where = instance.where(a=5);
 			loc.group = instance.group("a");
 			loc.having = instance.having("a > ?", [0]);
@@ -128,7 +126,7 @@
 			loc.paginate = instance.paginate(1, 5);
 			
 			// chain each call together for further testing
-			loc.multiple = instance.select("b").distinct().from("posts").include().join().where(b=10).group("b").having("b >= 10").order("b DESC").limit(2).offset(8).paginate(3, 10);
+			loc.multiple = instance.select("b").distinct().from("posts").join("authors", "post_id = author_id").where(b=10).group("b").having("b >= 10").order("b DESC").limit(2).offset(8).paginate(3, 10);
 			
 			// assert that each return is still the same object
 			for (key in loc)
