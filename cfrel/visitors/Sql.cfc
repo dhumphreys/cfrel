@@ -38,7 +38,7 @@
 				else if (IsQuery(obj.sql.from))
 					ArrayAppend(loc.fragments, "FROM resultSet");
 				else
-					ArrayAppend(loc.fragments, "FROM (#visit(obj.sql.from)#)");
+					ArrayAppend(loc.fragments, "FROM (#visit(obj.sql.from)#) subquery");
 					
 			// error if neither SELECT or FROM was specified
 			} else if (loc.select EQ false) {
