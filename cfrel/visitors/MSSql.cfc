@@ -26,6 +26,10 @@
 					if (ArrayLen(obj.sql.orders) EQ 0)
 						throwException("ORDER BY clause is required for pagination");
 					
+					// force a GROUP BY if trying to get DISTINCT rows in subquery
+					if (ArrayContains(obj.sql.selectFlags, "DISTINCT") AND ArrayLen(obj.sql.groups) EQ 0)
+						obj.sql.groups = Duplicate(obj.sql.select);
+					
 					// create new SELECT item from inner query
 					variables.aliasOff = true;
 					ArrayAppend(obj.sql.select, sqlLiteral("ROW_NUMBER() OVER (ORDER BY #ArrayToList(visit(obj.sql.orders), ', ')#) AS rowNum"));
