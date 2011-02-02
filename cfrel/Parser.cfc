@@ -2,8 +2,12 @@
 	<cfinclude template="functions.cfm" />
 	
 	<cffunction name="init" returntype="struct" access="public" hint="Constructor">
+		<cfargument name="cache" type="boolean" default="false" />
 		<cfscript>
 			var loc = {};
+			
+			// set cache setting (if application scope is defined)
+			variables.cache = arguments.cache AND IsDefined("application");
 			
 			// string and numeric literals
 			variables.l = {date="'{ts '\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'}'", string="'[^']*'", number="\b-?\d+(\.\d+)?\b"};
@@ -45,15 +49,21 @@
 		<cfargument name="clause" type="string" default="WHERE" />
 		<cfscript>
 			var loc = {};
-			loc.cacheKey = Hash("#arguments.clause#:#arguments.str#", "MD5");
 			
-			// set up parse cache
-			if (NOT StructKeyExists(application, "cfrel"))
-				application.cfrel = {parseCache={}};
+			// try to read from cache if turned on
+			if (variables.cache) {
+			
+				// create key for cache
+				loc.cacheKey = Hash("#arguments.clause#:#arguments.str#", "MD5");
 				
-			// if key exists, just return cached parse tree
-			if (StructKeyExists(application.cfrel.parseCache, loc.cacheKey))
-				return Duplicate(application.cfrel.parseCache[loc.cacheKey]);
+				// set up parse cache
+				if (NOT StructKeyExists(application, "cfrel"))
+					application.cfrel = {parseCache={}};
+					
+				// if key exists, just return cached parse tree
+				if (StructKeyExists(application.cfrel.parseCache, loc.cacheKey))
+					return Duplicate(application.cfrel.parseCache[loc.cacheKey]);
+			}
 			
 			// break incoming string into tokens
 			tokenize(arguments.str);
@@ -75,8 +85,9 @@
 			if (tokenIndex LTE tokenLen)
 				throwException("Parsing error. Not all tokens processed. #tokenIndex - 1# of #tokenLen# processed.");
 				
-			// save the parse in the application scope
-			application.cfrel.parseCache[loc.cacheKey] = Duplicate(loc.tree);
+			// cache the parse tree in the application scope
+			if (variables.cache)
+				application.cfrel.parseCache[loc.cacheKey] = Duplicate(loc.tree);
 			
 			return loc.tree;
 		</cfscript>

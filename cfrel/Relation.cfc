@@ -5,12 +5,17 @@
 		<cfargument name="datasource" type="string" default="" />
 		<cfargument name="visitor" type="string" default="Sql" />
 		<cfargument name="mapper" type="string" default="Mapper" />
+		<cfargument name="cache" type="string" default="" />
+		<cfargument name="cacheParse" type="boolean" default="#ListFindNoCase(arguments.cache, 'parse')#" />
 		<cfscript>
 			
 			// datasource and visitor to use
 			this.datasource = arguments.datasource;
 			this.visitor = CreateObject("component", "cfrel.visitors.#arguments.visitor#").init();
 			this.mapper = CreateObject("component", "cfrel.mappers.#arguments.mapper#").init();
+			
+			// internal parser
+			variables.parser = CreateObject("component", "cfrel.Parser").init(cache=arguments.cacheParse);
 			
 			// struct to hold SQL tree
 			this.sql = {
@@ -34,9 +39,6 @@
 			variables.qoq = false;
 			variables.paged = false;
 			variables.paginationData = false;
-			
-			// internal parser
-			variables.parser = CreateObject("component", "cfrel.Parser").init();
 			
 			return this;
 		</cfscript>
