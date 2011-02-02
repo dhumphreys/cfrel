@@ -355,20 +355,11 @@
 					loc.query.setDatasource(this.datasource);
 				}
 				
-				// stack on join parameters
-				loc.iEnd = ArrayLen(this.sql.joinParameters);
+				// stack on parameters
+				loc.parameters = getParameters();
+				loc.iEnd = ArrayLen(loc.parameters);
 				for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
-					loc.query.addParam(value=this.sql.joinParameters[loc.i]);
-				
-				// stack on where parameters
-				loc.iEnd = ArrayLen(this.sql.whereParameters);
-				for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
-					loc.query.addParam(value=this.sql.whereParameters[loc.i]);
-				
-				// stack on having parameters
-				loc.iEnd = ArrayLen(this.sql.havingParameters);
-				for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
-					loc.query.addParam(value=this.sql.havingParameters[loc.i]);
+					loc.query.addParam(value=loc.parameters[loc.i]);
 					
 				// execute query
 				loc.result = loc.query.execute(sql=this.toSql());
@@ -426,6 +417,34 @@
 					ArrayAppend(loc.models, this.sql.joins[loc.i].table);
 			
 			return loc.models;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="getParameters" returntype="array" access="public" hint="Return array of all parameters used in query and subqueries">
+		<cfargument name="stack" type="array" default="#[]#" />
+		<cfscript>
+			var loc = {};
+				
+			// stack on parameters from subquery
+			if (StructKeyExists(this.sql, "from") AND typeOf(this.sql.from) EQ "cfrel.Relation")
+				arguments.stack = this.sql.from.getParameters(arguments.stack);
+				
+			// stack on join parameters
+			loc.iEnd = ArrayLen(this.sql.joinParameters);
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+				ArrayAppend(arguments.stack, this.sql.joinParameters[loc.i]);
+			
+			// stack on where parameters
+			loc.iEnd = ArrayLen(this.sql.whereParameters);
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+				ArrayAppend(arguments.stack, this.sql.whereParameters[loc.i]);
+			
+			// stack on having parameters
+			loc.iEnd = ArrayLen(this.sql.havingParameters);
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+				ArrayAppend(arguments.stack, this.sql.havingParameters[loc.i]);
+				
+			return arguments.stack;
 		</cfscript>
 	</cffunction>
 	
