@@ -414,8 +414,17 @@
 				// stack on parameters
 				loc.parameters = getParameters();
 				loc.iEnd = ArrayLen(loc.parameters);
-				for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
-					loc.query.addParam(value=loc.parameters[loc.i]);
+				for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
+					if (IsArray(loc.parameters[loc.i])) {
+						loc.query.addParam(value=ArrayToList(loc.parameters[loc.i]), list=true);
+					} else if (IsValid("integer", loc.parameters[loc.i])) {
+						loc.query.addParam(value=loc.parameters[loc.i], cfsqltype="cf_sql_integer");
+					} else if (IsValid("float", loc.parameters[loc.i])) {
+						loc.query.addParam(value=loc.parameters[loc.i], cfsqltype="cf_sql_float");
+					} else {
+						loc.query.addParam(value=loc.parameters[loc.i]);
+					}
+				}
 					
 				// execute query
 				loc.result = loc.query.execute(sql=this.toSql());
