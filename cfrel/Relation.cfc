@@ -329,7 +329,7 @@
 			// make sure select columns have aliases
 			loc.iEnd = ArrayLen(loc.rel.sql.select);
 			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
-				if (ListFindNoCase("Column,Alias", ListLast(typeOf(loc.rel.sql.select[loc.i]), ".")) EQ 0)
+				if (ListFindNoCase("Column,Alias,Literal,Wildcard", ListLast(typeOf(loc.rel.sql.select[loc.i]), ".")) EQ 0)
 					loc.rel.sql.select[loc.i] = sqlAlias(subject=loc.rel.sql.select[loc.i], alias="countColumn#loc.i#");
 					
 			// create new relation to contain subquery
