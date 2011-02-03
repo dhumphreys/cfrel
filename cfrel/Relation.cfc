@@ -302,13 +302,9 @@
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="countTotalRecords" returntype="numeric" access="public" hint="Calculate number of records that would be returned if pagination was not used">
+	<cffunction name="countRelation" returntype="struct" access="public" hint="Create relation to alculate number of records that would be returned if pagination was not used">
 		<cfscript>
 			var loc = {};
-			
-			// find some information about current query
-			loc.distinct = ArrayContains(this.sql.selectFlags, "DISTINCT");
-			loc.group = ArrayLen(this.sql.groups) GT 0;
 			
 			// clone query and remove unneccessary parts
 			loc.rel = this.clone();
@@ -320,38 +316,33 @@
 				StructDelete(loc.rel.sql, "offset");
 			}
 			
-			// if we are dealing with a straight select
-			if (NOT loc.distinct AND NOT loc.group) {
-				loc.rel.sql.select = ["COUNT(*) AS numberOfRows"];
-			} else {
-				
-				// eliminate aggregates from count if using GROUP BY
-				if (loc.group) {
-								
-					// make query distinct
-					loc.rel.distinct();
-								
-					// use GROUP BY as SELECT
-					loc.rel.sql.select = Duplicate(loc.rel.sql.groups);	
-				}
+			// eliminate aggregates from count if using GROUP BY
+			if (ArrayLen(this.sql.groups) GT 0) {
 					
-				// make sure select columns have aliases
-				loc.iEnd = ArrayLen(loc.rel.sql.select);
-				for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
-					if (ListFindNoCase("Column,Alias", ListLast(typeOf(loc.rel.sql.select[loc.i]), ".")) EQ 0)
-						loc.rel.sql.select[loc.i] = sqlAlias(subject=loc.rel.sql.select[loc.i], alias="countColumn#loc.i#");
-						
-				// create new relation to contain subquery
-				loc.rel2 = relation(datasource=this.datasource, mapper=variables.mapperClass, visitor=variables.visitorClass);
-				loc.rel2.select(sqlLiteral("COUNT(*) AS numberOfRows"));
-				loc.rel2.from(loc.rel);
+				// make query distinct
+				loc.rel.distinct();
 				
-				// swap variables for final calls
-				loc.rel = loc.rel2;
+				// use GROUP BY as SELECT
+				loc.rel.sql.select = Duplicate(loc.rel.sql.groups);
 			}
+					
+			// make sure select columns have aliases
+			loc.iEnd = ArrayLen(loc.rel.sql.select);
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+				if (ListFindNoCase("Column,Alias", ListLast(typeOf(loc.rel.sql.select[loc.i]), ".")) EQ 0)
+					loc.rel.sql.select[loc.i] = sqlAlias(subject=loc.rel.sql.select[loc.i], alias="countColumn#loc.i#");
+					
+			// create new relation to contain subquery
+			loc.rel2 = relation(datasource=this.datasource, mapper=variables.mapperClass, visitor=variables.visitorClass);
+			loc.rel2.select(sqlLiteral("COUNT(*) AS numberOfRows"));
+			loc.rel2.from(loc.rel);
 			
-			return loc.rel.query().numberOfRows;
+			return loc.rel2;
 		</cfscript>
+	</cffunction>
+	
+	<cffunction name="countTotalRecords" returntype="numeric" access="public" hint="Calculate number of records that would be returned if pagination was not used">
+		<cfreturn this.countRelation().query().numberOfRows />
 	</cffunction>
 	
 	<cffunction name="toSql" returntype="string" access="public" hint="Convert relational data into a SQL string">
