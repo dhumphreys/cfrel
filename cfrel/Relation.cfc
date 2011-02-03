@@ -60,7 +60,6 @@
 			
 			// duplicate object and sql
 			loc.rel = Duplicate(this);
-			loc.rel.sql = StructCopy(this.sql);
 			loc.rel.executed = false;
 			
 			// remove query values that should not be kept in new instance
