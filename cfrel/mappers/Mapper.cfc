@@ -23,8 +23,9 @@
 		<!--- do nothing here --->
 	</cffunction>
 	
-	<cffunction name="applyMapping" returntype="void" access="public">
-		<cfargument name="relation" type="any" required="true" />
+	<cffunction name="mapObject" returntype="void" access="public">
+		<cfargument name="obj" type="any" required="true" />
+		<cfargument name="useAlias" type="boolean" default="true" />
 		<!--- do nothing here --->
 	</cffunction>
 	

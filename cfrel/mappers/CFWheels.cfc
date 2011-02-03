@@ -9,7 +9,7 @@
 			// errors with calculated properties out of ambiguous column names
 			
 			// get all models for relation
-			variables.models = arguments.relation.buildModelArray();
+			variables.models = arguments.relation.getModels();
 			
 			// loop over models used in relation
 			loc.iEnd = ArrayLen(variables.models);
@@ -57,17 +57,6 @@
 					variables.columns[loc.key] = loc.colData;
 				}
 			}
-		</cfscript>
-	</cffunction>
-	
-	<cffunction name="applyMapping" returntype="void" access="public">
-		<cfargument name="relation" type="any" required="true" />
-		<cfscript>
-			mapObject(relation.sql.select);
-			mapObject(relation.sql.wheres);
-			mapObject(relation.sql.groups);
-			mapObject(relation.sql.havings);
-			mapObject(relation.sql.orders);
 		</cfscript>
 	</cffunction>
 	
@@ -159,7 +148,7 @@
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="mapObject" returntype="void" access="private">
+	<cffunction name="mapObject" returntype="void" access="public">
 		<cfargument name="obj" type="any" required="true" />
 		<cfargument name="useAlias" type="boolean" default="true" />
 		<cfscript>
@@ -172,6 +161,20 @@
 				
 			} else {
 				switch (typeOf(arguments.obj)) {
+						
+					// found a relation
+					case "cfrel.Relation":
+					
+						// map all clauses in relation
+						mapObject(arguments.obj.sql.select, arguments.useAlias);
+						if (StructKeyExists(arguments.obj.sql, "from") AND typeOf(arguments.obj.sql.from) EQ "cfrel.Relation")
+							mapObject(arguments.obj.sql.from, arguments.useAlias);
+						mapObject(arguments.obj.sql.joins, arguments.useAlias);
+						mapObject(arguments.obj.sql.wheres, arguments.useAlias);
+						mapObject(arguments.obj.sql.groups, arguments.useAlias);
+						mapObject(arguments.obj.sql.havings, arguments.useAlias);
+						mapObject(arguments.obj.sql.orders, arguments.useAlias);
+						break;
 					
 					// found a column node
 					case "cfrel.nodes.column":
@@ -219,6 +222,8 @@
 								mapObject(arguments.obj.right, arguments.useAlias);
 							if (StructKeyExists(arguments.obj, "subject"))
 								mapObject(arguments.obj.subject, arguments.useAlias);
+							if (StructKeyExists(arguments.obj, "condition"))
+								mapObject(arguments.obj.condition, arguments.useAlias);
 							if (StructKeyExists(arguments.obj, "args"))
 								mapObject(arguments.obj.args, arguments.useAlias);
 						}

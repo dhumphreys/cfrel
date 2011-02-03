@@ -353,7 +353,7 @@
 			if (NOT variables.mapped) {
 				this.mapper.clearMapping();
 				this.mapper.buildMapping(this);
-				this.mapper.applyMapping(this);
+				this.mapper.mapObject(this);
 				variables.mapped = true;
 			}
 			
@@ -447,22 +447,27 @@
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="buildModelArray" returntype="array" access="public" hint="Return array of all models involved in query">
+	<cffunction name="getModels" returntype="array" access="public" hint="Return array of all models involved in query">
+		<cfargument name="stack" type="array" default="#[]#" />
 		<cfscript>
 			var loc = {};
-			loc.models = [];
 			
 			// add model from FROM clause
-			if (StructKeyExists(this.sql, "from") AND typeOf(this.sql.from) EQ "cfrel.nodes.table" AND IsObject(this.sql.from.model))
-				ArrayAppend(loc.models, this.sql.from);
+			if (StructKeyExists(this.sql, "from")) {
+				loc.fromType = typeOf(this.sql.from);
+				if (loc.fromType EQ "cfrel.Relation")
+					arguments.stack = this.sql.from.getModels(arguments.stack);
+				else if (loc.fromType EQ "cfrel.nodes.Table" AND IsObject(this.sql.from.model))
+					ArrayAppend(arguments.stack, this.sql.from);
+			}
 				
 			// add models from JOIN clauses
 			loc.iEnd = ArrayLen(this.sql.joins);
 			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
 				if (IsObject(this.sql.joins[loc.i].table.model))
-					ArrayAppend(loc.models, this.sql.joins[loc.i].table);
+					ArrayAppend(arguments.stack, this.sql.joins[loc.i].table);
 			
-			return loc.models;
+			return arguments.stack;
 		</cfscript>
 	</cffunction>
 	
