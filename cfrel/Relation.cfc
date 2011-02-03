@@ -35,6 +35,9 @@
 				orders = []
 			};
 			
+			// set up max rows for cfquery tag
+			this.maxRows = 0;
+			
 			// internal control and value variables
 			variables.query = false;
 			variables.result = false;
@@ -263,7 +266,10 @@
 			if (variables.executed)
 				return this.clone().limit(argumentCollection=arguments);
 				
-			this.sql.limit = Int(arguments.value);
+			if (variables.qoq)
+				this.maxRows = Int(arguments.value);
+			else
+				this.sql.limit = Int(arguments.value);
 			return this;
 		</cfscript>
 	</cffunction>
@@ -388,6 +394,10 @@
 					
 				// create the new query object
 				loc.query = new query();
+				
+				// use max rows if specified
+				if (this.maxRows GT 0)
+					loc.query.setMaxRows(this.maxRows);
 				
 				// if we are using query of a query, set dbtype and resultset
 				if (variables.qoq) {
