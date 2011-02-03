@@ -307,19 +307,15 @@
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="countRelation" returntype="struct" access="public" hint="Create relation to alculate number of records that would be returned if pagination was not used">
+	<cffunction name="minimizedRelation" returntype="struct" access="public" hint="Return a new relation without aggregate selects">
 		<cfscript>
 			var loc = {};
 			
-			// clone query and remove unneccessary parts
+			// run mappings before we clone
+			_applyMappings();
+			
+			// clone query
 			loc.rel = this.clone();
-			loc.rel.sql.orders = [];
-			if (variables.paged) {
-				loc.private = injectInspector(loc.rel)._inspect();
-				loc.private.paged = false;
-				StructDelete(loc.rel.sql, "limit");
-				StructDelete(loc.rel.sql, "offset");
-			}
 			
 			// eliminate aggregates from count if using GROUP BY
 			if (ArrayLen(this.sql.groups) GT 0) {
@@ -330,12 +326,32 @@
 				// use GROUP BY as SELECT
 				loc.rel.sql.select = Duplicate(loc.rel.sql.groups);
 			}
-					
+			
 			// make sure select columns have aliases
 			loc.iEnd = ArrayLen(loc.rel.sql.select);
 			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
 				if (ListFindNoCase("Column,Alias,Literal,Wildcard", ListLast(typeOf(loc.rel.sql.select[loc.i]), ".")) EQ 0)
 					loc.rel.sql.select[loc.i] = sqlAlias(subject=loc.rel.sql.select[loc.i], alias="countColumn#loc.i#");
+					
+			return loc.rel;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="countRelation" returntype="struct" access="public" hint="Create relation to calculate number of records that would be returned if pagination was not used">
+		<cfscript>
+			var loc = {};
+			
+			// get back a relation with only columns needed
+			loc.rel = this.minimizedRelation();
+			
+			// remove order by and paging since we just care about count
+			loc.rel.sql.orders = [];
+			if (variables.paged) {
+				loc.private = injectInspector(loc.rel)._inspect();
+				loc.private.paged = false;
+				StructDelete(loc.rel.sql, "limit");
+				StructDelete(loc.rel.sql, "offset");
+			}
 					
 			// create new relation to contain subquery
 			loc.rel2 = relation(datasource=this.datasource, mapper=variables.mapperClass, visitor=variables.visitorClass);
@@ -381,52 +397,87 @@
 	</cffunction>
 	
 	<cffunction name="query" returntype="query" access="public" hint="Lazily execute and return query object">
+		<cfargument name="allowSpecialPaging" type="boolean" default="true" />
 		<cfscript>
 			var loc = {};
 			
 			// drop into query logic if we don't have a query yet
 			if (variables.executed EQ false OR NOT IsQuery(variables.query)) {
+				
+				// do some special handling for paged MSSQL queries with aggregates
+				if (arguments.allowSpecialPaging AND variables.visitorClass EQ "MSSql" AND variables.paged AND ArrayLen(this.sql.groups)) {
 					
-				// create the new query object
-				loc.query = new query();
-				
-				// use max rows if specified
-				if (this.maxRows GT 0)
-					loc.query.setMaxRows(this.maxRows);
-				
-				// if we are using query of a query, set dbtype and resultset
-				if (variables.qoq) {
-					loc.query.setAttributes(dbType="query", resultSet=this.sql.from);
+					// get values for rows that don't use aggregates
+					loc.valueRel = minimizedRelation();
+					loc.valueQuery = loc.valueRel.query(false);
 					
-				} else {
-			
-					// set up a datasource
-					if (Len(this.datasource) EQ 0)
-						throwException("Cannot execute query without a datasource");
-					loc.query.setDatasource(this.datasource);
-				}
-				
-				// stack on parameters
-				loc.parameters = getParameters();
-				loc.iEnd = ArrayLen(loc.parameters);
-				for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
-					if (IsArray(loc.parameters[loc.i])) {
-						loc.query.addParam(value=ArrayToList(loc.parameters[loc.i]), list=true);
-					} else if (IsValid("integer", loc.parameters[loc.i])) {
-						loc.query.addParam(value=loc.parameters[loc.i], cfsqltype="cf_sql_integer");
-					} else if (IsValid("float", loc.parameters[loc.i])) {
-						loc.query.addParam(value=loc.parameters[loc.i], cfsqltype="cf_sql_float");
-					} else {
-						loc.query.addParam(value=loc.parameters[loc.i]);
+					// create a new clone without pagination, but leave LIMIT alone
+					loc.dataRel = injectInspector(clone());
+					StructDelete(loc.dataRel.sql, "limit");
+					StructDelete(loc.dataRel.sql, "offset");
+					loc.dataRelPrivate = loc.dataRel._inspect();
+					loc.dataRelPrivate.paged = false;
+					
+					// loop over items that were in last select
+					loc.iEnd = ArrayLen(loc.valueRel.sql.select);
+					for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
+						
+						// get key + value list for 
+						loc.item = loc.valueRel.sql.select[loc.i];
+						loc.key = loc.item.alias;
+						loc.keyValues = Evaluate("QuotedValueList(loc.valueQuery.#loc.key#)");
+						
+						// add new where clause entries for IN statements
+						loc.dataRel.where(sqlBinaryOp(left=loc.item, op='IN', right='(#loc.keyValues#)'));
 					}
-				}
 					
-				// execute query
-				loc.result = loc.query.execute(sql=this.toSql());
+					// save objects into current relation
+					variables.query = loc.dataRel.query(false);
+					variables.result = loc.dataRel.result();
 				
-				// save objects
-				variables.query = loc.result.getResult();
-				variables.result = loc.result.getPrefix();
+				} else {
+					
+					// create the new query object
+					loc.query = new query();
+					
+					// use max rows if specified
+					if (this.maxRows GT 0)
+						loc.query.setMaxRows(this.maxRows);
+					
+					// if we are using query of a query, set dbtype and resultset
+					if (variables.qoq) {
+						loc.query.setAttributes(dbType="query", resultSet=this.sql.from);
+						
+					} else {
+				
+						// set up a datasource
+						if (Len(this.datasource) EQ 0)
+							throwException("Cannot execute query without a datasource");
+						loc.query.setDatasource(this.datasource);
+					}
+					
+					// stack on parameters
+					loc.parameters = getParameters();
+					loc.iEnd = ArrayLen(loc.parameters);
+					for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
+						if (IsArray(loc.parameters[loc.i])) {
+							loc.query.addParam(value=ArrayToList(loc.parameters[loc.i]), list=true);
+						} else if (IsValid("integer", loc.parameters[loc.i])) {
+							loc.query.addParam(value=loc.parameters[loc.i], cfsqltype="cf_sql_integer");
+						} else if (IsValid("float", loc.parameters[loc.i])) {
+							loc.query.addParam(value=loc.parameters[loc.i], cfsqltype="cf_sql_float");
+						} else {
+							loc.query.addParam(value=loc.parameters[loc.i]);
+						}
+					}
+						
+					// execute query
+					loc.result = loc.query.execute(sql=this.toSql());
+					
+					// save objects
+					variables.query = loc.result.getResult();
+					variables.result = loc.result.getPrefix();
+				}
 				
 				// build pagination data
 				// todo: lazy loading?
@@ -584,10 +635,6 @@
 				// get count of parameters passed in
 				loc.parameterCount = iif(StructKeyExists(arguments.args, "$params"), "ArrayLen(arguments.args.$params)", DE(0));
 					
-				// if argument is not a valid type
-				if (ListFindNoCase("simple,cfrel.nodes.literal", loc.type) EQ 0)
-					throwException(message="#UCase(arguments.clause)# clause only accepts strings or literals");
-				
 				// go ahead and confirm parameter count unless clause is literal
 				if (loc.type EQ "simple") {
 				
