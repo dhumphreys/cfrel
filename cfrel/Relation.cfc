@@ -355,13 +355,8 @@
 			if (ArrayLen(this.sql.select) EQ 0)
 				ArrayAppend(this.sql.select, sqlWildcard());
 			
-			// map columns
-			if (NOT variables.mapped) {
-				this.mapper.clearMapping();
-				this.mapper.buildMapping(this);
-				this.mapper.mapObject(this);
-				variables.mapped = true;
-			}
+			// run mappings before converting to SQL
+			_applyMappings();
 			
 			return this.visitor.visit(this);
 		</cfscript>
@@ -521,6 +516,17 @@
 	<!---------------------
 	--- Private Methods ---
 	---------------------->
+	
+	<cffunction name="_applyMappings" returntype="void" access="private" hint="Use Mapper to map model columns to database columns">
+		<cfscript>
+			if (NOT variables.mapped) {
+				this.mapper.clearMapping();
+				this.mapper.buildMapping(this);
+				this.mapper.mapObject(this);
+				variables.mapped = true;
+			}
+		</cfscript>
+	</cffunction>
 	
 	<cffunction name="_appendFieldsToClause" returntype="void" access="private" hint="Take either lists or name/value pairs and append to an array">
 		<cfargument name="clause" type="string" required="true" />
