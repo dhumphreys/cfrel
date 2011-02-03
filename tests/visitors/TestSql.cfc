@@ -26,7 +26,7 @@
 			loc.exp2 = "SELECT a, SUM(b) FROM example GROUP BY a HAVING SUM(b) > ?";
 			loc.exp3 = "SELECT * FROM example WHERE (c > 5 OR c < 2) AND a = ? ORDER BY c ASC";
 			loc.exp4 = "SELECT * FROM example ORDER BY a DESC LIMIT 10 OFFSET 60";
-			loc.exp5 = "SELECT * FROM (#loc.exp4#) WHERE b > ?";
+			loc.exp5 = "SELECT * FROM (#loc.exp4#) subquery WHERE b > ?";
 			loc.exp6 = "SELECT * FROM resultSet";
 			
 			// test each value
