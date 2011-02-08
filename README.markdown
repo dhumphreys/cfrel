@@ -7,25 +7,32 @@ To develop a ColdFusion engine for turning chained method calls into SQL stateme
 ### Current Features
 
 * Object-oriented, chainable syntax for creating queries
-* SELECT, FROM, WHERE, GROUP BY, HAVING, ORDER BY, LIMIT, and OFFSET
+* SELECT, FROM, JOIN, WHERE, GROUP BY, HAVING, ORDER BY, LIMIT, and OFFSET
 * Specifying another relation as the subject of FROM
 * Query-of-Query support when FROM is a ColdFusion query object
-* Generating of generic SQL based on contents of relation
+* Parsing of programmer input into complex node trees
+* Generating of generic SQL based on node tree
+* SQL generation specific to following DBMS
+  * Microsoft Sql Server
 * Automatic use of Query-of-Query when filtering a relation that has already been executed
-* SQL literal objects that pass raw SQL code
+* SQL literal objects that pass raw SQL code into queries
 * Execution directly against a datasource
 * Testing suite provided by MXUnit
+* Plugin integration for CFWheels
+  * Replaces existing findAll() model function
+  * Adds select(), where(), and other functions to models
+  * Intelligent table / column mapping and aliasing
+  * "Include" support that creates JOINs identical to CFWheels
+  * https://github.com/dhumphreys/cfwheels-cfrel
 
 ### Features In Progress
 
-* JOIN and UNION support in queries
-* Database-specific SQL generation: Sqlite, Sql Server, MySql, DB2, etc...
-* More abstraction of SQL tree
-* Parsing of programmer input into complex node trees
-* Intelligent table / column mapping, escaping, and aliasing
-* Joining across datasources using Query-of-Query and WHERE logic
 * Full ColdFusion 9 / Railo 3.1 compatibility
-* Plugin integration into CFWheels
+* Database-specific SQL generation for: Sqlite, MySql, DB2, etc...
+* Escaping of table/column identifiers
+* More abstraction of SQL tree
+* Joining across datasources using Query-of-Query and WHERE logic
+* UNION support in queries
 
 ## The Basics
 
@@ -58,6 +65,8 @@ Each method call on a relation builds an internal SQL tree that is converted int
 * from(tableName)
 * from(relation)
 * from(queryObject)
+* join(tableName, condition, conditionParams, type)
+* include(includeString)
 * where(whereClause, [arrayOfParams])
 * where(col1=value, col2=value, ..., colN=value)
 * group(fieldList)
