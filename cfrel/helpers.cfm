@@ -3,7 +3,7 @@
 ----------------------->
 
 <cffunction name="relation" returntype="struct" access="private" hint="Created a new Relation instance">
-	<cfreturn CreateObject("component", "cfrel.Relation").init(argumentCollection=arguments) />
+	<cfreturn CreateObject("component", addCfcPrefix("cfrel.Relation")).init(argumentCollection=arguments) />
 </cffunction>
 
 <cffunction name="throwException" returntype="void" access="private" hint="Throw an exception with CFTHROW">
@@ -22,7 +22,7 @@
 		// if the argument is a component/object, return its path
 		if (IsArray(loc.meta) EQ false AND StructKeyExists(loc.meta, "fullname"))
 			if (REFindNoCase("^models\.", loc.meta.fullname) EQ 0)
-				return loc.meta.fullname;
+				return stripCfcPrefix(loc.meta.fullname);
 			else
 				return "model";
 			
@@ -48,8 +48,12 @@
 	</cfscript>
 </cffunction>
 
-<cffunction name="isModel" returntype="boolean" access="private" hint="See if an object is a model">
-	<cfscript>
-		var loc = {};
-	</cfscript>
+<cffunction name="addCfcPrefix" returntype="string" access="private" hint="Append CFC prefix to path">
+	<cfargument name="path" type="string" required="true">
+	<cfreturn IsDefined("application.cfrel.cfcPrefix") ? ListAppend(application.cfrel.cfcPrefix, arguments.path, ".") : arguments.path />
+</cffunction>
+
+<cffunction name="stripCfcPrefix" returntype="string" access="private" hint="Remove CFC prefix from path">
+	<cfargument name="path" type="string" required="true">
+	<cfreturn IsDefined("application.cfrel.cfcPrefix") ? REReplace(arguments.path, "^" & application.cfrel.cfcPrefix & "\.", "") : arguments.path />
 </cffunction>

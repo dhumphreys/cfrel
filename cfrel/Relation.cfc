@@ -15,11 +15,11 @@
 			
 			// datasource and visitor to use
 			this.datasource = arguments.datasource;
-			this.visitor = CreateObject("component", "cfrel.visitors.#arguments.visitor#").init();
-			this.mapper = CreateObject("component", "cfrel.mappers.#arguments.mapper#").init();
+			this.visitor = CreateObject("component", addCfcPrefix("cfrel.visitors.#arguments.visitor#")).init();
+			this.mapper = CreateObject("component", addCfcPrefix("cfrel.mappers.#arguments.mapper#")).init();
 			
 			// internal parser
-			variables.parser = CreateObject("component", "cfrel.Parser").init(cache=arguments.cacheParse);
+			variables.parser = CreateObject("component", addCfcPrefix("cfrel.Parser")).init(cache=arguments.cacheParse);
 			
 			// struct to hold SQL tree
 			this.sql = {
