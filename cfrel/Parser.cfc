@@ -32,9 +32,15 @@
 			variables.tokenTypes = [];
 			variables.literals = [];
 			
+			// storage for parameter column references
+			variables.parameterColumns = [];
+			
 			// token index during parse
 			variables.tokenIndex = 1;
 			variables.tokenLen = 0;
+			
+			// temporary hold column name that '? 'parameters may refer to
+			variables.tmpParamColumn = "";
 			
 			return this;
 		</cfscript>
@@ -50,6 +56,9 @@
 		<cfscript>
 			var loc = {};
 			
+			// reset param reference array
+			variables.parameterColumns = [];
+			
 			// try to read from cache if turned on
 			if (variables.cache) {
 			
@@ -58,7 +67,11 @@
 				
 				// set up parse cache
 				if (NOT StructKeyExists(application, "cfrel"))
-					application.cfrel = {parseCache={}};
+					application.cfrel = {parseCache={}, paramCache={}};
+					
+				// if key exists, set the parameter columns
+				if (StructKeyExists(application.cfrel.paramCache, loc.cacheKey))
+					variables.parameterColumns = application.cfrel.paramCache[loc.cacheKey];
 					
 				// if key exists, just return cached parse tree
 				if (StructKeyExists(application.cfrel.parseCache, loc.cacheKey))
@@ -85,12 +98,18 @@
 			if (tokenIndex LTE tokenLen)
 				throwException("Parsing error. Not all tokens processed. #tokenIndex - 1# of #tokenLen# processed.");
 				
-			// cache the parse tree in the application scope
-			if (variables.cache)
+			// cache the parse tree and parameter columns in the application scope
+			if (variables.cache) {
 				application.cfrel.parseCache[loc.cacheKey] = Duplicate(loc.tree);
+				application.cfrel.paramCache[loc.cacheKey] = variables.parameterColumns;
+			}
 			
 			return loc.tree;
 		</cfscript>
+	</cffunction>
+
+	<cffunction name="getParameterColumns" returntype="array" access="public" hint="Return array of columns that parameters in string reference">
+		<cfreturn variables.parameterColumns />
 	</cffunction>
 	
 	<!-----------------------
@@ -171,41 +190,47 @@
 			var loc = {};
 			loc.left = addExpr();
 			
+			// if expression is a column, store it for use by '?' parameters
+			if (IsStruct(loc.left) AND loc.left.$class EQ "cfrel.nodes.Column")
+				variables.tmpParamColumn = loc.left.column;
+			
 			// ADD_EXPR BETWEEN TERM AND TERM
 			if (accept(t.between)) {
 				loc.start = term();
 				expect(t.andOp);
-				return sqlBetween(subject=loc.left, start=loc.start, end=term());
+				loc.left = sqlBetween(subject=loc.left, start=loc.start, end=term());
 				
 			} else if (accept(t.iss)) {
 				
 				// ADD_EXPR IS_NOT ADD_EXPR
 				if (accept(t.neg))
-					return sqlBinaryOp(left=loc.left, op="IS_NOT", right=addExpr());
+					loc.left = sqlBinaryOp(left=loc.left, op="IS_NOT", right=addExpr());
 					
 				// ADD_EXPR IS ADD_EXPR
 				else
-					return sqlBinaryOp(left=loc.left, op="IS", right=addExpr());
+					loc.left = sqlBinaryOp(left=loc.left, op="IS", right=addExpr());
 				
 			// ADD_EXPR NOT IN LPAREN EXPRS RPAREN
 			} else if (accept(t.neg) AND expect(t.inn) AND expect(t.lparen)) {
 				loc.e = sqlParen(subject=exprs());
 				expect(t.rparen);
-				return sqlBinaryOp(left=loc.left, op="NOT_IN", right=loc.e);
+				loc.left = sqlBinaryOp(left=loc.left, op="NOT_IN", right=loc.e);
 				
 			// ADD_EXPR IN LPAREN EXPRS RPAREN
 			} else if (accept(t.inn) AND expect(t.lparen)) {
 				loc.e = sqlParen(subject=exprs());
 				expect(t.rparen);
-				return sqlBinaryOp(left=loc.left, op="IN", right=loc.e);
+				loc.left = sqlBinaryOp(left=loc.left, op="IN", right=loc.e);
 				
 			// ADD_EXPR COMPOP ADD_EXPR
 			} else if (accept(t.compOp)) {
 				loc.op = tokens[tokenIndex - 1];
-				return sqlBinaryOp(left=loc.left, op=loc.op, right=addExpr());
+				loc.left = sqlBinaryOp(left=loc.left, op=loc.op, right=addExpr());
 			}
 			
-			// ADD-EXPR
+			// unset column used for parameters
+			variables.tmpParamColumn = "";
+			
 			return loc.left;
 		</cfscript>
 	</cffunction>
@@ -269,6 +294,10 @@
 				
 			// PARAM
 			} else if (accept(t.param)) {
+				
+				// store column that parameter references
+				ArrayAppend(variables.parameterColumns, variables.tmpParamColumn);
+				
 				return "?"; // todo: object? wrap in nodes.literal?
 				
 			// UNARY TERM

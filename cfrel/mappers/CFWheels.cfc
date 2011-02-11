@@ -60,6 +60,15 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="columnDataType" returntype="any" access="public">
+		<cfargument name="column" type="string" required="true" />
+		<cfscript>
+			if (StructKeyExists(variables.columns, arguments.column) AND StructKeyExists(variables.columns[arguments.column], "cf_sql_type"))
+				return variables.columns[arguments.column].cf_sql_type;
+			return "cf_sql_char";
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="mapIncludes" returntype="void" access="public">
 		<cfargument name="relation" type="any" required="true" />
 		<cfargument name="include" type="string" required="true" />

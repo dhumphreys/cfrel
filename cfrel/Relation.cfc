@@ -27,11 +27,14 @@
 				selectFlags = [],
 				joins = [],
 				joinParameters = [],
+				joinParameterColumns = [],
 				wheres = [],
 				whereParameters = [],
+				whereParameterColumns = [],
 				groups = [],
 				havings = [],
 				havingParameters = [],
+				havingParameterColumns = [],
 				orders = []
 			};
 			
@@ -172,13 +175,15 @@
 			if (variables.executed)
 				return this.clone().join(argumentCollection=arguments);
 				
-			// correctly set condition
-			if (typeOf(arguments.condition) NEQ "simple")
+			// correctly set condition of join
+			if (typeOf(arguments.condition) NEQ "simple") {
 				loc.condition = arguments.condition;
-			else if (arguments.condition NEQ false)
+			} else if (arguments.condition NEQ false) {
 				loc.condition = variables.parser.parse(arguments.condition);
-			else
+				loc.parameterColumns = variables.parser.getParameterColumns();
+			} else {
 				loc.condition = false;
+			}
 				
 			// create table object
 			switch(typeOf(arguments.target)) {
@@ -209,8 +214,20 @@
 			
 			// handle parameters for join
 			loc.iEnd = ArrayLen(arguments.params);
-			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
 				ArrayAppend(this.sql.joinParameters, arguments.params[loc.i]);
+				
+				// if we did not get parameter columns, we still need to account for this parameter
+				if (StructKeyExists(loc, "parameterColumns"))
+					ArrayAppend(this.sql.joinParameterColumns, "");
+			}
+			
+			// append parameter column mappings
+			if (StructKeyExists(loc, "parameterColumns")) {
+				loc.iEnd = ArrayLen(loc.parameterColumns);
+				for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+					ArrayAppend(this.sql.joinParameterColumns, loc.parameterColumns[loc.i]);
+			}
 				
 			return this;
 		</cfscript>
@@ -223,7 +240,7 @@
 			if (variables.executed)
 				return this.qoq().where(argumentCollection=arguments);
 				
-			_appendConditionsToClause("WHERE", "wheres", "whereParameters", arguments);
+			_appendConditionsToClause("WHERE", "wheres", "whereParameters", "whereParameterColumns", arguments);
 			return this;
 		</cfscript>
 	</cffunction>
@@ -245,7 +262,7 @@
 			if (variables.executed)
 				return this.clone().having(argumentCollection=arguments);
 				
-			_appendConditionsToClause("HAVING", "havings", "havingParameters", arguments);
+			_appendConditionsToClause("HAVING", "havings", "havingParameters", "havingParameterColumns", arguments);
 			return this;
 		</cfscript>
 	</cffunction>
@@ -440,6 +457,9 @@
 					// create the new query object
 					loc.query = new query();
 					
+					// generate SQL for query
+					loc.sql = this.toSql();
+					
 					// use max rows if specified
 					if (this.maxRows GT 0)
 						loc.query.setMaxRows(this.maxRows);
@@ -458,21 +478,26 @@
 					
 					// stack on parameters
 					loc.parameters = getParameters();
+					loc.parameterColumns = getParameterColumns();
 					loc.iEnd = ArrayLen(loc.parameters);
 					for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
-						if (IsArray(loc.parameters[loc.i])) {
-							loc.query.addParam(value=ArrayToList(loc.parameters[loc.i]), list=true);
-						} else if (IsValid("integer", loc.parameters[loc.i])) {
-							loc.query.addParam(value=loc.parameters[loc.i], cfsqltype="cf_sql_integer");
-						} else if (IsValid("float", loc.parameters[loc.i])) {
-							loc.query.addParam(value=loc.parameters[loc.i], cfsqltype="cf_sql_float");
-						} else {
-							loc.query.addParam(value=loc.parameters[loc.i]);
-						}
+						
+						// see if param is an array
+						loc.paramIsList = IsArray(loc.parameters[loc.i]);
+						
+						// find type based on column name
+						if (variables.qoq)
+							loc.paramType = _queryColumnDataType(loc.parameterColumns[loc.i]);
+						else
+							loc.paramType = this.mapper.columnDataType(loc.parameterColumns[loc.i]);
+						
+						// add parameter, converting to list if necessary
+						loc.paramValue = loc.paramIsList ? ArrayToList(loc.parameters[loc.i], Chr(7)) : loc.parameters[loc.i];
+						loc.query.addParam(value=loc.paramValue, cfsqltype=loc.paramType, list=loc.paramIsList, separator=Chr(7));
 					}
 						
 					// execute query
-					loc.result = loc.query.execute(sql=this.toSql());
+					loc.result = loc.query.execute(sql=loc.sql);
 					
 					// save objects
 					variables.query = loc.result.getResult();
@@ -564,6 +589,34 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="getParameterColumns" returntype="array" access="public" hint="Return array of all columns referenced by parameters">
+		<cfargument name="stack" type="array" default="#[]#" />
+		<cfscript>
+			var loc = {};
+				
+			// stack on parameters columns from subquery
+			if (StructKeyExists(this.sql, "from") AND typeOf(this.sql.from) EQ "cfrel.Relation")
+				arguments.stack = this.sql.from.getParameterColumns(arguments.stack);
+				
+			// stack on join parameter columns
+			loc.iEnd = ArrayLen(this.sql.joinParameterColumns);
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+				ArrayAppend(arguments.stack, this.sql.joinParameterColumns[loc.i]);
+			
+			// stack on where parameter columns
+			loc.iEnd = ArrayLen(this.sql.whereParameterColumns);
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+				ArrayAppend(arguments.stack, this.sql.whereParameterColumns[loc.i]);
+			
+			// stack on having parameter columns
+			loc.iEnd = ArrayLen(this.sql.havingParameterColumns);
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+				ArrayAppend(arguments.stack, this.sql.havingParameterColumns[loc.i]);
+				
+			return arguments.stack;
+		</cfscript>
+	</cffunction>
+	
 	<!---------------------
 	--- Private Methods ---
 	---------------------->
@@ -615,6 +668,7 @@
 		<cfargument name="clause" type="string" required="true" />
 		<cfargument name="scope" type="string" required="true" />
 		<cfargument name="parameterScope" type="string" required="true" />
+		<cfargument name="parameterColumnScope" type="string" required="true" />
 		<cfargument name="args" type="struct" required="true" />
 		<cfscript>
 			var loc = {};
@@ -654,6 +708,14 @@
 				ArrayAppend(this.sql[arguments.scope], _transformInput(arguments.args.$clause, arguments.clause));
 				for (loc.i = 1; loc.i LTE loc.parameterCount; loc.i++)
 					ArrayAppend(this.sql[arguments.parameterScope], arguments.args.$params[loc.i]);
+			
+				// append parameter column mappings
+				if (loc.type EQ "simple") {
+					loc.parameterColumns = variables.parser.getParameterColumns();
+					loc.iEnd = ArrayLen(loc.parameterColumns);
+					for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+						ArrayAppend(this.sql[arguments.parameterColumnScope], loc.parameterColumns[loc.i]);
+				}
 				
 			} else {
 				
@@ -686,6 +748,7 @@
 					// append clause and parameters
 					ArrayAppend(this.sql[arguments.scope], _transformInput(loc.clause, arguments.clause));
 					ArrayAppend(this.sql[arguments.parameterScope], loc.value);
+					ArrayAppend(this.sql[arguments.parameterColumnScope], loc.key);
 				}
 				
 				// FIXME: (3) throw an error if a good value was not found
@@ -712,6 +775,29 @@
 				
 			// throw error if we havent found it yet
 			throwException("Invalid object type passed into #UCase(arguments.clause)#");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="_queryColumnDataType" returntype="string" access="private" hint="Use query properties to return datatype of column">
+		<cfargument name="column" type="string" required="true" />
+		<cfscript>
+			var loc = {};
+			
+			// return default type if no qoq or column
+			if (NOT variables.qoq OR arguments.column EQ "")
+				return "cf_sql_char";
+			
+			// look at metadata for query
+			loc.meta = GetMetaData(this.sql.from);
+			
+			// try to find correct column
+			loc.iEnd = ArrayLen(loc.meta);
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+				if (loc.meta[loc.i].name EQ arguments.column)
+					return "cf_sql_" & loc.meta[loc.i].typeName;
+			
+			// return default type if no column match
+			return "cf_sql_char";
 		</cfscript>
 	</cffunction>
 </cfcomponent>

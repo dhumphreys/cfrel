@@ -35,6 +35,13 @@
 		<cfset throwException("Current mapper does not support includes") />
 	</cffunction>
 	
+	<cffunction name="columnDataType" returntype="string" access="public">
+		<cfargument name="column" type="string" required="true" />
+		<cfscript>
+			return "cf_sql_char";
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="columnsFor" returntype="string" access="private">
 		<cfargument name="table" type="string" default="" />
 		<cfscript>
