@@ -792,9 +792,26 @@
 			
 			// try to find correct column
 			loc.iEnd = ArrayLen(loc.meta);
-			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
-				if (loc.meta[loc.i].name EQ arguments.column)
-					return "cf_sql_" & loc.meta[loc.i].typeName;
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
+				if (loc.meta[loc.i].name EQ arguments.column) {
+					loc.type = ListFirst(loc.meta[loc.i].typeName, " ");
+					
+					// deal with type mismatches
+					switch (loc.type) {
+						case "datetime":
+							return "cf_sql_date";
+							break;
+						case "int":
+							return "cf_sql_integer";
+							break;
+						case "nchar":
+							return "cf_sql_char";
+							break;
+						default:
+							return "cf_sql_" & loc.type;
+					}
+				}
+			}
 			
 			// return default type if no column match
 			return "cf_sql_char";
