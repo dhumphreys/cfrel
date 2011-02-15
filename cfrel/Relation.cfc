@@ -444,6 +444,10 @@
 						loc.key = loc.item.alias;
 						loc.keyValues = Evaluate("QuotedValueList(loc.valueQuery.#loc.key#)");
 						
+						// consider that value list could be empty
+						if (loc.keyValues EQ "")
+							loc.keyValues = "NULL";
+						
 						// add new where clause entries for IN statements
 						loc.dataRel.where(sqlBinaryOp(left=loc.item, op='IN', right='(#loc.keyValues#)'));
 					}
@@ -486,7 +490,7 @@
 						loc.paramIsList = IsArray(loc.parameters[loc.i]);
 						
 						// see if param should be NULL
-						loc.paramIsNull = (loc.paramIsList AND ArrayLen(loc.parameters[loc.i]));
+						loc.paramIsNull = (loc.paramIsList AND ArrayLen(loc.parameters[loc.i]) EQ 0);
 						
 						// find type based on column name
 						if (variables.qoq)
