@@ -485,6 +485,9 @@
 						// see if param is an array
 						loc.paramIsList = IsArray(loc.parameters[loc.i]);
 						
+						// see if param should be NULL
+						loc.paramIsNull = (loc.paramIsList AND ArrayLen(loc.parameters[loc.i]));
+						
 						// find type based on column name
 						if (variables.qoq)
 							loc.paramType = _queryColumnDataType(loc.parameterColumns[loc.i]);
@@ -493,7 +496,7 @@
 						
 						// add parameter, converting to list if necessary
 						loc.paramValue = loc.paramIsList ? ArrayToList(loc.parameters[loc.i], Chr(7)) : loc.parameters[loc.i];
-						loc.query.addParam(value=loc.paramValue, cfsqltype=loc.paramType, list=loc.paramIsList, separator=Chr(7));
+						loc.query.addParam(value=loc.paramValue, cfsqltype=loc.paramType, list=loc.paramIsList, null=loc.paramIsNull, separator=Chr(7));
 					}
 						
 					// execute query
