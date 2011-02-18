@@ -11,6 +11,7 @@
  testSuite = createObject("component","mxunit.framework.TestSuite").TestSuite(); //TestSuite() is the constructor
  testSuite.addAll("tests.TestCase");
  testSuite.addAll("tests.TestHelpers");
+ testSuite.addAll("tests.TestInspection");
  testSuite.addAll("tests.TestRelation");
  testSuite.addAll("tests.visitors.TestVisitor");
  testSuite.addAll("tests.visitors.TestSql");
