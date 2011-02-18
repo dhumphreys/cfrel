@@ -47,4 +47,23 @@
 			assertEquals("cfrel.nodes.Literal", typeOf(sqlLiteral("SELECT a FROM b")));
 		</cfscript>
 	</cffunction>
+	
+	<cffunction name="testAddCfcPrefix" returntype="void" access="public">
+		<cfscript>
+			assertEquals("com.component", addCfcPrefix("com.component"));
+			application.cfrel.cfcPrefix = "something";
+			assertEquals("something.com.component", addCfcPrefix("com.component"));
+			StructDelete(application, "cfrel", false);
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testStripCfcPrefix" returntype="void" access="public">
+		<cfscript>
+			assertEquals("com.component", stripCfcPrefix("com.component"));
+			application.cfrel.cfcPrefix = "something";
+			assertEquals("com.component", stripCfcPrefix("something.com.component"));
+			StructDelete(application, "cfrel", false);
+		</cfscript>
+	</cffunction>
+	
 </cfcomponent>

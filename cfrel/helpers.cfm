@@ -35,8 +35,9 @@
 			return "array";
 		else if (IsQuery(arguments.obj))
 			return "query";
-		else if (IsNull(arguments.obj))
-			return "null";
+		// this function requires a value for arguments.obj so we could never return null	
+		// else if (!StructKeyExists(arguments, "obj"))
+		// 	return "null";
 				
 		// some will just be structs, but nodes will have $class set
 		else if (IsStruct(arguments.obj))
@@ -50,10 +51,18 @@
 
 <cffunction name="addCfcPrefix" returntype="string" access="private" hint="Append CFC prefix to path">
 	<cfargument name="path" type="string" required="true">
-	<cfreturn IsDefined("application.cfrel.cfcPrefix") ? ListAppend(application.cfrel.cfcPrefix, arguments.path, ".") : arguments.path />
+	<cfscript>
+		if (IsDefined("application.cfrel.cfcPrefix"))
+			arguments.path = ListAppend(application.cfrel.cfcPrefix, arguments.path, ".");
+	</cfscript>
+	<cfreturn arguments.path />
 </cffunction>
 
 <cffunction name="stripCfcPrefix" returntype="string" access="private" hint="Remove CFC prefix from path">
 	<cfargument name="path" type="string" required="true">
-	<cfreturn IsDefined("application.cfrel.cfcPrefix") ? REReplace(arguments.path, "^" & application.cfrel.cfcPrefix & "\.", "") : arguments.path />
+	<cfscript>
+		if (IsDefined("application.cfrel.cfcPrefix"))
+			arguments.path = REReplace(arguments.path, "^" & application.cfrel.cfcPrefix & "\.", "");
+	</cfscript>
+	<cfreturn arguments.path />
 </cffunction>
