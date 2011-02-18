@@ -421,8 +421,8 @@
 			// drop into query logic if we don't have a query yet
 			if (variables.executed EQ false OR NOT IsQuery(variables.query)) {
 				
-				// do some special handling for paged MSSQL queries with aggregates
-				if (arguments.allowSpecialPaging AND variables.visitorClass EQ "MSSql" AND variables.paged AND ArrayLen(this.sql.groups)) {
+				// do some special handling for paged SqlServer queries with aggregates
+				if (arguments.allowSpecialPaging AND variables.visitorClass EQ "SqlServer" AND variables.paged AND ArrayLen(this.sql.groups)) {
 					
 					// get values for rows that don't use aggregates
 					loc.valueRel = minimizedRelation();

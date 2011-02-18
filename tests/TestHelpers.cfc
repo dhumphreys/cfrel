@@ -18,9 +18,9 @@
 	<cffunction name="testRelation" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
-			loc.rel = relation(datasource="cfrel", visitor="MSSql");
+			loc.rel = relation(datasource="cfrel", visitor="SqlServer");
 			assertIsTypeOf(loc.rel, "cfrel.Relation");
-			assertIsTypeOf(loc.rel.visitor, "cfrel.visitors.MSSql");
+			assertIsTypeOf(loc.rel.visitor, "cfrel.visitors.SqlServer");
 			assertEquals("cfrel", loc.rel.datasource);
 		</cfscript>
 	</cffunction>

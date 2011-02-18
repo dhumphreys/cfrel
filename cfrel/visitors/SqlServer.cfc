@@ -1,6 +1,6 @@
 <cfcomponent extends="Sql" output="false">
 
-	<cffunction name="visit_relation" returntype="any" access="private" hint="Generate SQL for a relation specific to MSSQL">
+	<cffunction name="visit_relation" returntype="any" access="private" hint="Generate SQL for a relation specific to SqlServer">
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
 			var loc = {};

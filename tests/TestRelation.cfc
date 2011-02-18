@@ -37,11 +37,11 @@
 			var loc = {};
 			
 			// create a new item with some options
-			loc.instance = new(init=false).init(datasource="test", visitor="MSSql");
+			loc.instance = new(init=false).init(datasource="test", visitor="SqlServer");
 			
 			// make sure datasource and visitor were correctly set
 			assertEquals("test", loc.instance.datasource, "Datasource should be set through constructor");
-			assertIsTypeOf(loc.instance.visitor, "cfrel.visitors.MSSql");
+			assertIsTypeOf(loc.instance.visitor, "cfrel.visitors.SqlServer");
 		</cfscript>
 	</cffunction>
 	

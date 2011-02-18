@@ -15,7 +15,7 @@
  testSuite.addAll("tests.TestRelation");
  testSuite.addAll("tests.visitors.TestVisitor");
  testSuite.addAll("tests.visitors.TestSql");
- testSuite.addAll("tests.visitors.TestMSSql");
+ testSuite.addAll("tests.visitors.TestSqlServer");
  //Create mxunit.framework.TestResult object
  results = testSuite.run();
 </cfscript>
