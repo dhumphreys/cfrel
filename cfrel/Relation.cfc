@@ -218,7 +218,7 @@
 				ArrayAppend(this.sql.joinParameters, arguments.params[loc.i]);
 				
 				// if we did not get parameter columns, we still need to account for this parameter
-				if (StructKeyExists(loc, "parameterColumns"))
+				if (NOT StructKeyExists(loc, "parameterColumns"))
 					ArrayAppend(this.sql.joinParameterColumns, "");
 			}
 			
