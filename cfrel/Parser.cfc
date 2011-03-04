@@ -139,8 +139,19 @@
 		<cfscript>
 			var loc = {};
 			loc.expr = orCondition();
-			if (accept(t.as) AND expect(t.identifier))
+			
+			// EXPR AS IDENTIFIER
+			if (accept(t.as) AND expect(t.identifier)) {
 				return sqlAlias(subject=loc.expr, alias=tokens[tokenIndex - 1]);
+			
+			// EXPR DOT IDENTIFIER LPAREN OPT_EXPRS RPAREN
+			} else if (accept(t.dot) AND expect(t.identifier) AND expect(t.lparen)) {
+				loc.id = tokens[tokenIndex - 2];
+				loc.args = optExprs();
+				expect(t.rparen);
+				return sqlFunction(name=loc.id, scope=loc.expr, args=loc.args);
+			}
+			
 			return loc.expr;
 		</cfscript>
 	</cffunction>
@@ -332,12 +343,22 @@
 				} else if (accept(t.dot)) {
 				
 					// IDENTIFIER DOT WILDCARD
-					if (accept(t.star))
+					if (accept(t.star)) {
 						return sqlWildcard(subject=loc.id);
+					
+					} else if (expect(t.identifier)) {
+						loc.id2 = tokens[tokenIndex - 1];
 						
-					// TABLE DOT COLUMN
-					else if (expect(t.identifier))
-						return sqlColumn(table=loc.id, column=tokens[tokenIndex - 1]);
+						// IDENTIFIER DOT IDENTIFIER LPAREN OPT_EXPRS RPAREN				
+						if (accept(t.lparen)) {
+							loc.args = optExprs();
+							expect(t.rparen);
+							return sqlFunction(name=loc.id2, scope=sqlColumn(column=loc.id), args=loc.args);
+						}
+						
+						// TABLE DOT COLUMN
+						return sqlColumn(table=loc.id, column=loc.id2);
+					}
 					
 				// IDENTIFIER
 				} else {

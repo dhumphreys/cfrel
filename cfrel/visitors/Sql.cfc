@@ -201,9 +201,12 @@
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
 			var loc = {};
+			loc.fn = "";
 			loc.tmpAliasOff = variables.aliasOff;
 			variables.aliasOff = true;
-			loc.fn = "#obj.name#(#ArrayToList(visit(obj.args), ', ')#)";
+			if (NOT IsSimpleValue(obj.scope) OR obj.scope NEQ "")
+				loc.fn = visit(obj.scope) & ".";
+			loc.fn &= "#obj.name#(#ArrayToList(visit(obj.args), ', ')#)";
 			variables.aliasOff = loc.tmpAliasOff;
 			return loc.fn;
 		</cfscript>

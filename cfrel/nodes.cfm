@@ -37,6 +37,7 @@
 
 <cffunction name="sqlFunction" returntype="any" access="private">
 	<cfargument name="name" type="string" required="true" />
+	<cfargument name="scope" type="any" default="" />
 	<cfargument name="args" type="array" default="#[]#" />
 	<cfreturn constructObject("cfrel.nodes.Function", arguments)>
 </cffunction>
