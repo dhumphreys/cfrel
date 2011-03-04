@@ -141,16 +141,8 @@
 			loc.expr = orCondition();
 			
 			// EXPR AS IDENTIFIER
-			if (accept(t.as) AND expect(t.identifier)) {
+			if (accept(t.as) AND expect(t.identifier))
 				return sqlAlias(subject=loc.expr, alias=tokens[tokenIndex - 1]);
-			
-			// EXPR DOT IDENTIFIER LPAREN OPT_EXPRS RPAREN
-			} else if (accept(t.dot) AND expect(t.identifier) AND expect(t.lparen)) {
-				loc.id = tokens[tokenIndex - 2];
-				loc.args = optExprs();
-				expect(t.rparen);
-				return sqlFunction(name=loc.id, scope=loc.expr, args=loc.args);
-			}
 			
 			return loc.expr;
 		</cfscript>
@@ -284,24 +276,24 @@
 			
 			// NUMBER
 			if (accept(t.number)) {
-				return popLiteral(); // wrap in nodes.literal?
+				loc.term = popLiteral(); // wrap in nodes.literal?
 			
 			// STRING
 			} else if (accept(t.string)) {
-				return popLiteral(); // wrap in nodes.literal?
+				loc.term = popLiteral(); // wrap in nodes.literal?
 			
 			// DATE
 			} else if (accept(t.date)) {
 				loc.date = REReplace(popLiteral(), "(^'|'$)", "", "ALL");
-				return "'" & DateFormat(loc.date, "yyyy-mm-dd ") & TimeFormat(loc.date, "hh:mm:ss TT") & "'";
+				loc.term = "'" & DateFormat(loc.date, "yyyy-mm-dd ") & TimeFormat(loc.date, "hh:mm:ss TT") & "'";
 				
 			// NULL
 			} else if (accept(t.null)) {
-				return "NULL"; // wrap in nodes.literal? or nodes.null?
+				loc.term = "NULL"; // wrap in nodes.literal? or nodes.null?
 				
 			// WILDCARD
 			} else if (accept(t.star)) {
-				return sqlWildcard();
+				loc.term = sqlWildcard();
 				
 			// PARAM
 			} else if (accept(t.param)) {
@@ -309,19 +301,19 @@
 				// store column that parameter references
 				ArrayAppend(variables.parameterColumns, variables.tmpParamColumn);
 				
-				return "?"; // todo: object? wrap in nodes.literal?
+				loc.term = "?"; // todo: object? wrap in nodes.literal?
 				
 			// UNARY TERM
 			} else if (accept(t.unaryOp)) {
 				loc.op = tokens[tokenIndex - 1];
 				loc.e = term();
-				return sqlUnaryOp(op=loc.op, subject=loc.e);
+				loc.term = sqlUnaryOp(op=loc.op, subject=loc.e);
 			
 			// LPAREN EXPR RPAREN
 			} else if (accept(t.lparen)) {
 				loc.e = expr();
 				expect(t.rparen);
-				return sqlParen(subject=loc.e);
+				loc.term = sqlParen(subject=loc.e);
 				
 			// CAST LPAREN OR_CONDITION AS TYPE_NAME RPAREN
 			} else if (accept(t.cast) AND expect(t.lparen)) {
@@ -329,22 +321,22 @@
 				expect(t.as);
 				loc.t = typeName();
 				expect(t.rparen);
-				return sqlCast(subject=loc.e, type=loc.t);
+				loc.term = sqlCast(subject=loc.e, type=loc.t);
 			
-			} else if (accept(t.identifier)) {
+			} else if (expect(t.identifier)) {
 				loc.id = tokens[tokenIndex - 1];
 				
 				// IDENTIFIER LPAREN OPT_EXPRS RPAREN
 				if (accept(t.lparen)) {
 					loc.args = optExprs();
 					expect(t.rparen);
-					return sqlFunction(name=loc.id, args=loc.args);
+					loc.term = sqlFunction(name=loc.id, args=loc.args);
 				
 				} else if (accept(t.dot)) {
 				
 					// IDENTIFIER DOT WILDCARD
 					if (accept(t.star)) {
-						return sqlWildcard(subject=loc.id);
+						loc.term = sqlWildcard(subject=loc.id);
 					
 					} else if (expect(t.identifier)) {
 						loc.id2 = tokens[tokenIndex - 1];
@@ -353,19 +345,29 @@
 						if (accept(t.lparen)) {
 							loc.args = optExprs();
 							expect(t.rparen);
-							return sqlFunction(name=loc.id2, scope=sqlColumn(column=loc.id), args=loc.args);
-						}
-						
+							loc.term = sqlFunction(name=loc.id2, scope=sqlColumn(column=loc.id), args=loc.args);
+							
 						// TABLE DOT COLUMN
-						return sqlColumn(table=loc.id, column=loc.id2);
+						} else {
+							loc.term = sqlColumn(table=loc.id, column=loc.id2);
+						}
 					}
 					
 				// IDENTIFIER
 				} else {
-					return sqlColumn(column=loc.id);
+					loc.term = sqlColumn(column=loc.id);
 				}
 			}
-			throwException("Invalid expression during SQL parse.");
+			
+			// TERM DOT IDENTIFIER LPAREN OPT_EXPRS RPAREN
+			if (accept(t.dot) AND expect(t.identifier) AND expect(t.lparen)) {
+				loc.id = tokens[tokenIndex - 2];
+				loc.args = optExprs();
+				expect(t.rparen);
+				loc.term = sqlFunction(name=loc.id, scope=loc.term, args=loc.args);
+			}
+			
+			return loc.term;
 		</cfscript>
 	</cffunction>
 	
