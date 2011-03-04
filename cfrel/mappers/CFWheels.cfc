@@ -235,6 +235,8 @@
 								mapObject(arguments.obj.condition, arguments.useAlias);
 							if (StructKeyExists(arguments.obj, "args"))
 								mapObject(arguments.obj.args, arguments.useAlias);
+							if (StructKeyExists(arguments.obj, "scope"))
+								mapObject(arguments.obj.scope, arguments.useAlias);
 						}
 				}
 			}
