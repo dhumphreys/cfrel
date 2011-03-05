@@ -187,6 +187,19 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="testSelectCaseStatement" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.pass = true;
+			loc.s1 = "ISNULL(SUM(CASE WHEN ledger.type = 'debit' THEN -amount ELSE amount END), 0) AS total";
+			loc.s2 = "ISNULL(SUM(CASE ledger.type WHEN 'debit' THEN -amount ELSE amount END), 0) AS total";
+			loc.s3 = "ISNULL(SUM(CASE ledger.type WHEN 'debit' THEN -amount WHEN 'credit' THEN amount - 200 END), 0) AS total";
+			assertEquals("SELECT #loc.s1#", new().select(loc.s1).toSql());
+			assertEquals("SELECT #loc.s2#", new().select(loc.s2).toSql());
+			assertEquals("SELECT #loc.s3#", new().select(loc.s3).toSql());
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="testDistinct" returntype="void" access="public">
 		<cfscript>
 			var loc = {};

@@ -20,7 +20,8 @@
 				lparen="\(", rparen="\)", addOp="\+|-|&|\^|\|", star="\*", mulOp="\*|/|%", as="\bAS\b",
 				unaryOp="\+|-|~|\bNOT\b", compOp="<=>|<=|>=|<>|!=|!>|!<|=|<|>|\bLIKE\b", between="\bBETWEEN\b",
 				andOp="\bAND\b", orOp="\bOR\b", neg="\bNOT\b", sortOp="\bASC\b|\bDESC\b", null="\bNULL\b",
-				cast="\bCAST\b", iss="\bIS\b", inn="\bIN\b", identifier="\w+"};
+				cast="\bCAST\b", iss="\bIS\b", inn="\bIN\b", identifier="\w+", kase="\bCASE\b", when="\bWHEN\b",
+				then="\bTHEN\b", els="\bELSE\b", end="\bEND\b"};
 			
 			// build regex to match any of the terminals above
 			variables.terminalRegex = "";
@@ -322,6 +323,10 @@
 				loc.t = typeName();
 				expect(t.rparen);
 				loc.term = sqlCast(subject=loc.e, type=loc.t);
+				
+			// CASE
+			} else if (peek(t.kase)) {
+				loc.term = castStmt();
 			
 			} else if (expect(t.identifier)) {
 				loc.id = tokens[tokenIndex - 1];
@@ -368,6 +373,38 @@
 			}
 			
 			return loc.term;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="castStmt" returntype="any" access="private" hint="Match SQL case statement">
+		<cfscript>
+			var loc = {};
+			loc.subject = "";
+			loc.els = "";
+			loc.cases = ArrayNew(1);
+			
+			// CASE
+			if (expect(t.kase)) {
+				
+				// CASE EXPR
+				if (NOT peek(t.when))
+					loc.subject = expr();
+					
+				// WHEN EXPR THEN EXPR
+				while (accept(t.when)) {
+					loc.condition = expr();
+					expect(t.then);
+					ArrayAppend(loc.cases, sqlCaseCondition(condition=loc.condition, subject=expr()));
+				}
+				
+				// ELSE EXPR
+				if (accept(t.els))
+					loc.els = expr();
+					
+				// END
+				expect(t.end);
+				return sqlCase(subject=loc.subject, cases=loc.cases, els=loc.els);
+			}
 		</cfscript>
 	</cffunction>
 	

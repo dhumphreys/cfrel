@@ -22,6 +22,19 @@
 	<cfreturn constructObject("cfrel.nodes.BinaryOp", arguments)>
 </cffunction>
 
+<cffunction name="sqlCase" returntype="any" access="private">
+	<cfargument name="subject" type="any" default="" />
+	<cfargument name="cases" type="any" required="true" />
+	<cfargument name="els" type="any" default="" />
+	<cfreturn constructObject("cfrel.nodes.Case", arguments)>
+</cffunction>
+
+<cffunction name="sqlCaseCondition" returntype="any" access="private">
+	<cfargument name="condition" type="any" default="" />
+	<cfargument name="subject" type="any" required="true" />
+	<cfreturn constructObject("cfrel.nodes.CaseCondition", arguments)>
+</cffunction>
+
 <cffunction name="sqlCast" returntype="any" access="private">
 	<cfargument name="subject" type="any" required="true" />
 	<cfargument name="type" type="any" required="true" />

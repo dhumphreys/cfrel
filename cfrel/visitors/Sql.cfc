@@ -149,6 +149,29 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="visit_nodes_case" returntype="string" access="private">
+		<cfargument name="obj" type="any" required="true" />
+		<cfscript>
+			var loc = {};
+			loc.output = "CASE ";
+			if (NOT IsSimpleValue(obj.subject) OR obj.subject NEQ "")
+				loc.output &= visit(obj.subject) & " ";
+			if (ArrayLen(obj.cases))
+				loc.output &= ArrayToList(visit(obj.cases), " ") & " ";
+			if (NOT IsSimpleValue(obj.els) OR obj.els NEQ "")
+				loc.output &= "ELSE " & visit(obj.els) & " ";
+			return loc.output & "END";
+			return "CAST(#visit(obj.subject)# AS #visit(obj.type)#)";
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="visit_nodes_caseCondition" returntype="string" access="private">
+		<cfargument name="obj" type="any" required="true" />
+		<cfscript>
+			return "WHEN #visit(obj.condition)# THEN #visit(obj.subject)#";
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="visit_nodes_cast" returntype="string" access="private">
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
@@ -258,7 +281,7 @@
 	
 	<cffunction name="visit_nodes_unaryOp" returntype="string" access="private">
 		<cfargument name="obj" type="any" required="true" />
-		<cfreturn "#obj.op# #visit(obj.subject)#" />
+		<cfreturn obj.op & visit(obj.subject) />
 	</cffunction>
 	
 	<cffunction name="visit_nodes_wildcard" returntype="string" access="private">
