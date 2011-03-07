@@ -442,14 +442,10 @@
 						// get key + value list for 
 						loc.item = loc.valueRel.sql.select[loc.i];
 						loc.key = loc.item.alias;
-						loc.keyValues = Evaluate("QuotedValueList(loc.valueQuery.#loc.key#)");
-						
-						// consider that value list could be empty
-						if (loc.keyValues EQ "")
-							loc.keyValues = "NULL";
+						loc.keyValues = ListToArray(Evaluate("ValueList(loc.valueQuery.#loc.key#, Chr(7))"), Chr(7));
 						
 						// add new where clause entries for IN statements
-						loc.dataRel.where(sqlBinaryOp(left=loc.item, op='IN', right='(#loc.keyValues#)'));
+						loc.dataRel.where(sqlBinaryOp(left=loc.item, op='IN', right='(?)'), [loc.keyValues]);
 					}
 					
 					// save objects into current relation
@@ -713,8 +709,11 @@
 					
 				// append clause and parameters to sql options
 				ArrayAppend(this.sql[arguments.scope], _transformInput(arguments.args.$clause, arguments.clause));
-				for (loc.i = 1; loc.i LTE loc.parameterCount; loc.i++)
+				for (loc.i = 1; loc.i LTE loc.parameterCount; loc.i++) {
 					ArrayAppend(this.sql[arguments.parameterScope], arguments.args.$params[loc.i]);
+					if (loc.type NEQ "simple")
+						ArrayAppend(this.sql[arguments.parameterColumnScope], "");
+				}
 			
 				// append parameter column mappings
 				if (loc.type EQ "simple") {
