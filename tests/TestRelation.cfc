@@ -190,7 +190,6 @@
 	<cffunction name="testSelectCaseStatement" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
-			loc.pass = true;
 			loc.s1 = "ISNULL(SUM(CASE WHEN ledger.type = 'debit' THEN -amount ELSE amount END), 0) AS total";
 			loc.s2 = "ISNULL(SUM(CASE ledger.type WHEN 'debit' THEN -amount ELSE amount END), 0) AS total";
 			loc.s3 = "ISNULL(SUM(CASE ledger.type WHEN 'debit' THEN -amount WHEN 'credit' THEN amount - 200 END), 0) AS total";
@@ -309,6 +308,14 @@
 			loc.instance = new().where(a=45, b="BBB", c=[1,2,3]);
 			assertEquals(["a = ?", "b = ?", "c IN (?)"], visit(loc.instance.sql.wheres), "Named arguments should be in WHERE clause");
 			assertEquals([45, "BBB", [1,2,3]], loc.instance.sql.whereParameters, "Parameters should be set and in correct order");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testWhereNotLike" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.where = "a NOT LIKE '[0-9]%'";
+			assertEquals("SELECT * FROM tableA WHERE #loc.where#", new().from("tableA").where(loc.where).toSql());
 		</cfscript>
 	</cffunction>
 	

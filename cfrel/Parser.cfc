@@ -21,7 +21,7 @@
 				unaryOp="\+|-|~|\bNOT\b", compOp="<=>|<=|>=|<>|!=|!>|!<|=|<|>|\bLIKE\b", between="\bBETWEEN\b",
 				andOp="\bAND\b", orOp="\bOR\b", neg="\bNOT\b", sortOp="\bASC\b|\bDESC\b", null="\bNULL\b",
 				cast="\bCAST\b", iss="\bIS\b", inn="\bIN\b", identifier="\w+", kase="\bCASE\b", when="\bWHEN\b",
-				then="\bTHEN\b", els="\bELSE\b", end="\bEND\b"};
+				then="\bTHEN\b", els="\bELSE\b", end="\bEND\b", like="\bLIKE\b"};
 			
 			// build regex to match any of the terminals above
 			variables.terminalRegex = "";
@@ -214,11 +214,19 @@
 				else
 					loc.left = sqlBinaryOp(left=loc.left, op="IS", right=addExpr());
 				
-			// ADD_EXPR NOT IN LPAREN EXPRS RPAREN
-			} else if (accept(t.neg) AND expect(t.inn) AND expect(t.lparen)) {
-				loc.e = sqlParen(subject=exprs());
-				expect(t.rparen);
-				loc.left = sqlBinaryOp(left=loc.left, op="NOT_IN", right=loc.e);
+			} else if (accept(t.neg)) {
+						
+				// ADD_EXPR NOT IN LPAREN EXPRS RPAREN
+				if (accept(t.inn) AND expect(t.lparen)) {
+					loc.e = sqlParen(subject=exprs());
+					expect(t.rparen);
+					loc.left = sqlBinaryOp(left=loc.left, op="NOT_IN", right=loc.e);
+				}
+						
+				// ADD_EXPR NOT LIKE ADD_EXPR
+				if (accept(t.like)) {
+					loc.left = sqlBinaryOp(left=loc.left, op="NOT_LIKE", right=addExpr());
+				}
 				
 			// ADD_EXPR IN LPAREN EXPRS RPAREN
 			} else if (accept(t.inn) AND expect(t.lparen)) {
