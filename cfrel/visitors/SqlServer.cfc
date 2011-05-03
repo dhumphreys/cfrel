@@ -59,4 +59,17 @@
 			return super.visit_relation(obj);
 		</cfscript>
 	</cffunction>
+	
+	<cffunction name="_escapeSqlEntity" returntype="string" access="private"  hint="Escape SQL column and table names">
+		<cfargument name="subject" type="string" required="true" />
+		<cfscript>
+			var loc = {};
+			loc.reg = "[^ \t'.,\]\[\(\)]+";
+			if (REFind("^(#loc.reg#)(\.#loc.reg#)*$", arguments.subject) EQ 0)
+				return arguments.subject;
+			loc.subject = REReplace(arguments.subject, "^(#loc.reg#)", "[\1]");
+			loc.subject = REReplace(loc.subject, "\.(#loc.reg#)", ".[\1]", "ALL");
+			return loc.subject;
+		</cfscript>
+	</cffunction>
 </cfcomponent>
