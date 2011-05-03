@@ -324,6 +324,27 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="clearPagination" returntype="struct" access="public" hint="Remove all limits, offsets, and pagination from the current relation">
+		<cfscript>
+			if (variables.executed)
+				return this.clone().clearPagination(argumentCollection=arguments);
+			
+			// remove limits and offsets
+			if (StructKeyExists(this.sql, "limit"))
+				StructDelete(this.sql, "limit");
+			if (StructKeyExists(this.sql, "offset"))
+				StructDelete(this.sql, "offset");
+			
+			// reset max rows variable
+			this.maxRows = 0;
+			
+			// unset variable showing this is paged
+			variables.paged = false;
+			
+			return this;
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="minimizedRelation" returntype="struct" access="public" hint="Return a new relation without aggregate selects">
 		<cfscript>
 			var loc = {};
