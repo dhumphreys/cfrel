@@ -491,6 +491,7 @@
 			assertTrue(StructKeyExists(loc.instance.sql, "offset"), "OFFSET should be set in SQL");
 			assertEquals(10, loc.instance.sql.limit, "LIMIT should be equal to value set");
 			assertEquals(40, loc.instance.sql.offset, "OFFSET should equal (page - 1) * per-page");
+			assertEquals(true, loc.instance._inspect().paged, "Paged flag should be set");
 		</cfscript>
 	</cffunction>
 	
@@ -518,6 +519,23 @@
 			// make sure errors are thrown
 			assertTrue(loc.pass1, "paginate() should throw error when page < 1");
 			assertTrue(loc.pass1, "paginate() should throw error when perPage < 1");
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testClearPagination" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			
+			// call paginate
+			loc.instance = new().paginate(5, 10);
+			
+			// and then clear pagination
+			loc.instance.clearPagination();
+			
+			// make sure proper values were set in LIMIT and OFFSET clauses
+			assertFalse(StructKeyExists(loc.instance.sql, "limit"), "LIMIT should not be set in SQL");
+			assertFalse(StructKeyExists(loc.instance.sql, "offset"), "OFFSET should not be set in SQL");
+			assertEquals(false, loc.instance._inspect().paged, "Paged flag should not be set");
 		</cfscript>
 	</cffunction>
 	
