@@ -1,6 +1,7 @@
 <cfcomponent extends="Mapper" displayName="CFWheels" output="false">
 	
 	<cffunction name="buildMapping" returntype="void" access="public">
+		<cfargument name="table" type="any" required="true" />
 		<cfargument name="relation" type="any" required="true" />
 		<cfscript>
 			var loc = {};
@@ -8,54 +9,51 @@
 			// TODO: a bug here will cause multiple joins on the same table to generate
 			// errors with calculated properties out of ambiguous column names
 			
-			// get all models for relation
-			variables.models = arguments.relation.getModels();
+			// append model to mapper
+			ArrayAppend(variables.models, arguments.table);
 			
-			// loop over models used in relation
-			loc.iEnd = ArrayLen(variables.models);
-			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
-				loc.model = injectInspector(variables.models[loc.i].model);
-				loc.class = loc.model._inspect().wheels.class;
+			// pull model and class name from table parameter
+			loc.model = injectInspector(arguments.table.model);
+			loc.class = loc.model._inspect().wheels.class;
 				
-				// create a unique table alias
-				loc.tableAlias = uniqueScopeKey(key=loc.class.modelName, scope=variables.tables);
+			// create a unique table alias
+			loc.tableAlias = uniqueScopeKey(key=loc.class.modelName, scope=variables.tables);
+			
+			// add table mapping to structure
+			arguments.table.table = loc.class.tableName;
+			arguments.table.alias = loc.tableAlias;
+			variables.tables[loc.tableAlias] = loc.class.tableName;
+			
+			// loop over columns in model
+			for (loc.key in loc.class.properties) {
+				loc.col = loc.class.properties[loc.key];
 				
-				// add table mapping to structure
-				variables.models[loc.i].table = loc.class.tableName;
-				variables.models[loc.i].alias = loc.tableAlias;
-				variables.tables[loc.tableAlias] = loc.class.tableName;
+				// build column data structure
+				loc.colData = {};
+				loc.colData.value = loc.tableAlias & "." & loc.col.column;
+				loc.colData.table = loc.tableAlias;
+				loc.colData.cf_sql_type = loc.col.type;
+					
+				// deal with column name conflicts
+				loc.key = uniqueScopeKey(key=loc.key, prefix=loc.class.modelName, scope=variables.columns);
 				
-				// loop over columns in model
-				for (loc.key in loc.class.properties) {
-					loc.col = loc.class.properties[loc.key];
-					
-					// build column data structure
-					loc.colData = {};
-					loc.colData.value = loc.tableAlias & "." & loc.col.column;
-					loc.colData.table = loc.tableAlias;
-					loc.colData.cf_sql_type = loc.col.type;
-						
-					// deal with column name conflicts
-					loc.key = uniqueScopeKey(key=loc.key, prefix=loc.class.modelName, scope=variables.columns);
-					
-					// add data structure to columns structure
-					variables.columns[loc.key] = loc.colData;
-				}
+				// add data structure to columns structure
+				variables.columns[loc.key] = loc.colData;
+			}
+			
+			// loop over calculated properties in model
+			for (loc.key in loc.class.calculatedProperties) {
+				loc.col = loc.class.calculatedProperties[loc.key];
 				
-				// loop over calculated properties in model
-				for (loc.key in loc.class.calculatedProperties) {
-					loc.col = loc.class.calculatedProperties[loc.key];
+				// build column data structure
+				loc.colData = {};
+				loc.colData.value = loc.col.sql;
 					
-					// build column data structure
-					loc.colData = {};
-					loc.colData.value = loc.col.sql;
-						
-					// deal with column name conflicts
-					loc.key = uniqueScopeKey(key=loc.key, prefix=loc.class.modelName, scope=variables.columns);
-					
-					// add data structure to columns structure
-					variables.columns[loc.key] = loc.colData;
-				}
+				// deal with column name conflicts
+				loc.key = uniqueScopeKey(key=loc.key, prefix=loc.class.modelName, scope=variables.columns);
+				
+				// add data structure to columns structure
+				variables.columns[loc.key] = loc.colData;
 			}
 		</cfscript>
 	</cffunction>
@@ -130,11 +128,21 @@
 						loc.assoc = loc.class.associations[loc.key];
 						loc.model = injectInspector(relation.sql.from.model.model(loc.assoc.modelName));
 						loc.otherClass = loc.model._inspect().wheels.class;
+					
+						// build mapping for current model
+						loc.table = sqlTable(model=loc.model);
+						buildMapping(loc.table, arguments.relation);
+						
+						// determine table aliases to use
+						loc.tableA = getLastTableAlias(loc.class.tableName, loc.class.modelName);
+						loc.tableB = getLastTableAlias(loc.otherClass.tableName, loc.otherClass.modelName);
+						
+						// determine join keys to use
+						loc.listA = loc.assoc.type NEQ "belongsTo" ? loc.class.keys : loc.assoc.foreignKey;
+						loc.listB = loc.assoc.type NEQ "belongsTo" ? loc.assoc.foreignKey : loc.otherClass.keys;
 						
 						// create join condition
 						loc.condition = "";
-						loc.listA = loc.assoc.type NEQ "belongsTo" ? loc.class.keys : loc.assoc.foreignKey;
-						loc.listB = loc.assoc.type NEQ "belongsTo" ? loc.assoc.foreignKey : loc.otherClass.keys;
 						loc.jEnd = ListLen(loc.assoc.foreignKey);
 						for (loc.j = 1; loc.j LTE loc.jEnd; loc.j++) {
 							
@@ -145,12 +153,12 @@
 							// set up equality between the two keys
 							loc.columnA = StructKeyExists(loc.class.properties, loc.keyA) ? loc.class.properties[loc.keyA].column : loc.class.calculatedProperties[loc.keyA].sql;
 							loc.columnB = StructKeyExists(loc.otherClass.properties, loc.keyB) ? loc.otherClass.properties[loc.keyB].column : loc.otherClass.calculatedProperties[loc.keyB].sql;
-							loc.condition =  ListAppend(loc.condition, "#loc.class.modelName#.#loc.columnA# = #loc.otherClass.modelName#.#loc.columnB#", Chr(7));
+							loc.condition =  ListAppend(loc.condition, "#loc.tableA#.#loc.columnA# = #loc.tableB#.#loc.columnB#", Chr(7));
 						}
 						loc.condition = Replace(loc.condition, Chr(7), " AND ", "ALL");
 						
 						// call join on relation
-						relation.join(loc.model, sqlLiteral(loc.condition), [], loc.assoc.joinType);
+						relation.join(loc.table, sqlLiteral(loc.condition), [], loc.assoc.joinType, true);
 				}
 			}
 			
@@ -244,6 +252,18 @@
 						}
 				}
 			}
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="getLastTableAlias" returntype="string" access="public" hint="Search registered models for latest generated alias">
+		<cfargument name="tableName" type="string" required="true" />
+		<cfargument name="modelName" type="string" required="true" />
+		<cfscript>
+			var loc = {};
+			for (loc.i = ArrayLen(variables.models); loc.i GT 0; loc.i--)
+				if (variables.models[loc.i].table EQ arguments.tableName)
+					return variables.models[loc.i].alias;
+			return arguments.modelName;
 		</cfscript>
 	</cffunction>
 </cfcomponent>

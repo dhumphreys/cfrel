@@ -124,9 +124,11 @@
 				case "cfrel.Relation":
 					this.sql.from = arguments.target;
 					break;
-					
+				
+				// accept model and add model to mapping
 				case "model":
 					this.sql.from = sqlTable(model=arguments.target);
+					this.mapper.buildMapping(this.sql.from, this);
 					break;
 					
 				case "simple":
@@ -170,6 +172,7 @@
 		<cfargument name="condition" type="any" default="false" />
 		<cfargument name="params" type="array" default="#[]#" />
 		<cfargument name="type" type="string" default="inner" hint="INNER or OUTER join" />
+		<cfargument name="$skipMapping" type="boolean" default="false" />
 		<cfscript>
 			var loc = {};
 			if (variables.executed)
@@ -196,6 +199,10 @@
 				// add a model to a new table object
 				case "model":
 					loc.table = sqlTable(model=arguments.target);
+					
+					// map the models using the mapper
+					if (NOT arguments.$skipMapping)
+						this.mapper.buildMapping(loc.table, this);
 					break;
 					
 				// just use raw table object
@@ -645,11 +652,11 @@
 	--- Private Methods ---
 	---------------------->
 	
-	<cffunction name="_applyMappings" returntype="void" access="private" hint="Use Mapper to map model columns to database columns">
+	<cffunction name="_applyMappings" returntype="void" access="public" hint="Use Mapper to map model columns to database columns">
 		<cfscript>
 			if (NOT variables.mapped) {
-				this.mapper.clearMapping();
-				this.mapper.buildMapping(this);
+				if (typeOf(this.sql.from) EQ "cfrel.Relation")
+					this.sql.from._applyMappings();
 				this.mapper.mapObject(this);
 				variables.mapped = true;
 			}
