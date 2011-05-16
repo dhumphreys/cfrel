@@ -413,8 +413,6 @@
 	
 	<cffunction name="toSql" returntype="string" access="public" hint="Convert relational data into a SQL string">
 		<cfscript>
-			if (ArrayLen(this.sql.select) EQ 0)
-				ArrayAppend(this.sql.select, sqlWildcard());
 			
 			// run mappings before converting to SQL
 			_applyMappings();
@@ -655,8 +653,16 @@
 	<cffunction name="_applyMappings" returntype="void" access="public" hint="Use Mapper to map model columns to database columns">
 		<cfscript>
 			if (NOT variables.mapped) {
-				if (typeOf(this.sql.from) EQ "cfrel.Relation")
+				
+				// map any subquery relations
+				if (StructKeyExists(this.sql, "from") AND typeOf(this.sql.from) EQ "cfrel.Relation")
 					this.sql.from._applyMappings();
+				
+				// default to a wildcard selector
+				if (ArrayLen(this.sql.select) EQ 0)
+					ArrayAppend(this.sql.select, sqlWildcard());
+					
+				// map the relation columns
 				this.mapper.mapObject(this);
 				variables.mapped = true;
 			}

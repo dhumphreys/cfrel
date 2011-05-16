@@ -184,8 +184,6 @@
 					
 						// map all clauses in relation
 						mapObject(arguments.obj.sql.select, arguments.useAlias);
-						if (StructKeyExists(arguments.obj.sql, "from") AND typeOf(arguments.obj.sql.from) EQ "cfrel.Relation")
-							mapObject(arguments.obj.sql.from, arguments.useAlias);
 						mapObject(arguments.obj.sql.joins, arguments.useAlias);
 						mapObject(arguments.obj.sql.wheres, arguments.useAlias);
 						mapObject(arguments.obj.sql.groups, arguments.useAlias);
