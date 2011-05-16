@@ -504,7 +504,7 @@
 					
 					// stack on parameters
 					loc.parameters = getParameters();
-					loc.parameterColumns = getParameterColumns();
+					loc.parameterColumnTypes = getParameterColumnTypes();
 					loc.iEnd = ArrayLen(loc.parameters);
 					for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
 						
@@ -514,17 +514,11 @@
 						// see if param should be NULL
 						loc.paramIsNull = (loc.paramIsList AND ArrayLen(loc.parameters[loc.i]) EQ 0);
 						
-						// find type based on column name
-						if (variables.qoq)
-							loc.paramType = _queryColumnDataType(loc.parameterColumns[loc.i]);
-						else
-							loc.paramType = this.mapper.columnDataType(loc.parameterColumns[loc.i]);
-						
 						// add parameter, converting to list if necessary
 						loc.paramValue = loc.paramIsList ? ArrayToList(loc.parameters[loc.i], Chr(7)) : loc.parameters[loc.i];
-						loc.query.addParam(value=loc.paramValue, cfsqltype=loc.paramType, list=loc.paramIsList, null=loc.paramIsNull, separator=Chr(7));
+						loc.query.addParam(value=loc.paramValue, cfsqltype=loc.parameterColumnTypes[loc.i], list=loc.paramIsList, null=loc.paramIsNull, separator=Chr(7));
 					}
-						
+					
 					// execute query
 					loc.result = loc.query.execute(sql=loc.sql);
 					
@@ -641,6 +635,38 @@
 			loc.iEnd = ArrayLen(this.sql.havingParameterColumns);
 			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
 				ArrayAppend(arguments.stack, this.sql.havingParameterColumns[loc.i]);
+				
+			return arguments.stack;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="getParameterColumnTypes" returntype="array" access="public" hint="Return array of all columns types used as parameters">
+		<cfargument name="stack" type="array" default="#[]#" />
+		<cfscript>
+			var loc = {};
+				
+			// stack on parameters columns from subquery
+			if (StructKeyExists(this.sql, "from") AND typeOf(this.sql.from) EQ "cfrel.Relation")
+				arguments.stack = this.sql.from.getParameterColumnTypes(arguments.stack);
+				
+			// stack on join parameter columns
+			loc.iEnd = ArrayLen(this.sql.joinParameterColumns);
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+				ArrayAppend(arguments.stack, this.mapper.columnDataType(this.sql.joinParameterColumns[loc.i]));
+			
+			// stack on where parameter columns
+			loc.iEnd = ArrayLen(this.sql.whereParameterColumns);
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
+				if (variables.qoq)
+					ArrayAppend(arguments.stack, _queryColumnDataType(this.sql.whereParameterColumns[loc.i]));
+				else
+					ArrayAppend(arguments.stack, this.mapper.columnDataType(this.sql.whereParameterColumns[loc.i]));
+			}
+			
+			// stack on having parameter columns
+			loc.iEnd = ArrayLen(this.sql.havingParameterColumns);
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+				ArrayAppend(arguments.stack, this.mapper.columnDataType(this.sql.havingParameterColumns[loc.i]));
 				
 			return arguments.stack;
 		</cfscript>
