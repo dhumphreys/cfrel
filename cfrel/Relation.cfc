@@ -391,12 +391,7 @@
 			
 			// remove order by and paging since we just care about count
 			loc.rel.sql.orders = [];
-			if (variables.paged) {
-				loc.private = injectInspector(loc.rel)._inspect();
-				loc.private.paged = false;
-				StructDelete(loc.rel.sql, "limit");
-				StructDelete(loc.rel.sql, "offset");
-			}
+			loc.rel.clearPagination();
 					
 			// create new relation to contain subquery
 			loc.rel2 = relation(datasource=this.datasource, mapper=variables.mapperClass, visitor=variables.visitorClass);
@@ -454,12 +449,8 @@
 					loc.valueRel = minimizedRelation();
 					loc.valueQuery = loc.valueRel.query(false);
 					
-					// create a new clone without pagination, but leave LIMIT alone
-					loc.dataRel = injectInspector(clone());
-					StructDelete(loc.dataRel.sql, "limit");
-					StructDelete(loc.dataRel.sql, "offset");
-					loc.dataRelPrivate = loc.dataRel._inspect();
-					loc.dataRelPrivate.paged = false;
+					// create a new clone without pagination
+					loc.dataRel = clone().clearPagination();
 					
 					// loop over items that were in last select
 					loc.iEnd = ArrayLen(loc.valueRel.sql.select);
