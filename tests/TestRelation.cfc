@@ -257,6 +257,20 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="testJoinTypes" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.instance = new().from("tableA")
+				.join("tableB", "a = b", [], 'inner')
+				.join("tableC", "b = c", [], 'outer')
+				.join("tableD", false, [], 'cross')
+				.join("tableE", false, [], 'natural');
+			loc.expected = "SELECT * FROM tableA JOIN tableB ON a = b LEFT JOIN tableC ON b = c CROSS JOIN tableD NATURAL JOIN tableE";
+			assertEquals(4, ArrayLen(loc.instance.sql.joins));
+			assertEquals(loc.expected, loc.instance.toSql());
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="testSingleWhere" returntype="void" access="public">
 		<cfscript>
 			var loc = {};

@@ -205,9 +205,14 @@
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
 			var loc = {};
-			loc.join = (obj.type EQ "outer") ? "LEFT JOIN " : "JOIN ";
+			loc.join = "JOIN ";
+			switch(obj.type) {
+				case "outer": loc.join = "LEFT JOIN "; break;
+				case "cross": loc.join = "CROSS JOIN "; break;
+				case "natural": loc.join = "NATURAL JOIN "; break;
+			}
 			loc.join &= visit(obj.table);
-			if (IsStruct(obj.condition) OR obj.condition EQ false)
+			if (IsStruct(obj.condition) OR obj.condition NEQ false)
 				loc.join &= " ON #visit(obj.condition)#";
 			return loc.join;
 		</cfscript>
