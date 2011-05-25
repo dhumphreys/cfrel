@@ -73,9 +73,6 @@
 		<cfscript>
 			var loc = {};
 			
-			// remove any spaces
-			arguments.include = REReplace(arguments.include, "\s", "", "ALL");
-			
 			// throw error if FROM is not a model
 			if (typeOf(relation.sql.from.model) NEQ "model")
 				throwException("Includes can only be used with models");
@@ -92,8 +89,9 @@
 				// look at next character in include string
 				switch(Mid(arguments.include, loc.pos, 1)) {
 					
-					// skip commas
+					// skip commas and spaces
 					case ",":
+					case " ":
 						loc.pos++;
 						break;
 					
@@ -156,9 +154,16 @@
 							loc.condition =  ListAppend(loc.condition, "#loc.tableA#.#loc.columnA# = #loc.tableB#.#loc.columnB#", Chr(7));
 						}
 						loc.condition = Replace(loc.condition, Chr(7), " AND ", "ALL");
+				
+						// if additional conditioning is specified, parse it out
+						loc.condPos = Find("[", arguments.include, loc.pos);
+						if (loc.condPos EQ loc.pos) {
+							loc.pos = Find("]", arguments.include, loc.condPos + 1) + 1;
+							loc.condition &= " AND " & Mid(arguments.include, loc.condPos + 1, loc.pos - loc.condPos - 2);
+						}
 						
 						// call join on relation
-						relation.join(loc.table, sqlLiteral(loc.condition), [], loc.assoc.joinType, true);
+						relation.join(loc.table, loc.condition, [], loc.assoc.joinType, true);
 				}
 			}
 			

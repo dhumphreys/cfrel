@@ -151,6 +151,7 @@
 	
 	<cffunction name="include" returntype="struct" access="public" hint="Add a JOIN to the relation using predefined relationships">
 		<cfargument name="include" type="string" required="true" />
+		<cfargument name="params" type="array" default="#[]#" />
 		<cfscript>
 			var loc = {};
 			if (variables.executed)
@@ -162,6 +163,12 @@
 				
 			// let mapper do the work with includes
 			this.mapper.mapIncludes(this, arguments.include);
+			
+			// handle parameters for join
+			loc.iEnd = ArrayLen(arguments.params);
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
+				ArrayAppend(this.sql.joinParameters, arguments.params[loc.i]);
+			}
 				
 			return this;
 		</cfscript>
