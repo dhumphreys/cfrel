@@ -210,7 +210,7 @@
 	
 	<cffunction name="testEmptyFrom" returntype="void" access="public">
 		<cfscript>
-			assertFalse(StructKeyExists(new().sql, "from"), "FROM clause should not be set initially");
+			assertEquals(0, ArrayLen(new().sql.froms), "FROM clause should not be set initially");
 		</cfscript>
 	</cffunction>
 	
@@ -218,7 +218,7 @@
 		<cfscript>
 			var loc = {};
 			loc.instance = new().from("users");
-			assertEquals("users", loc.instance.sql.from.table, "FROM clause should be set to passed value");
+			assertEquals("users", loc.instance.sql.froms[1].table, "FROM clause should be set to passed value");
 		</cfscript>
 	</cffunction>
 	
@@ -227,7 +227,7 @@
 			var loc = {};
 			loc.instance = new();
 			loc.instance2 = new().from(loc.instance);
-			assertSame(loc.instance, loc.instance2.sql.from, "FROM clause should be set to passed relation");
+			assertSame(loc.instance, loc.instance2.sql.froms[1], "FROM clause should be set to passed relation");
 		</cfscript>
 	</cffunction>
 	
@@ -239,7 +239,7 @@
 			loc.private = loc.instance._inspect();
 			assertFalse(loc.private.qoq, "QOQ should be false initially");
 			loc.instance.from(loc.query);
-			assertSame(loc.query, loc.instance.sql.from, "FROM clause should be set to passed query");
+			assertSame(loc.query, loc.instance.sql.froms[1], "FROM clause should be set to passed query");
 			assertTrue(loc.private.qoq, "QOQ should be true after using from(query)");
 		</cfscript>
 	</cffunction>
@@ -642,8 +642,23 @@
 			loc.qoq2 = loc.rel.where("1 = 1");
 			assertNotSame(loc.rel, loc.qoq1);
 			assertNotSame(loc.qoq1, loc.qoq2);
-			assertSame(loc.query, loc.qoq1.sql.from);
-			assertSame(loc.query, loc.qoq2.sql.from);
+			assertSame(loc.query, loc.qoq1.sql.froms[1]);
+			assertSame(loc.query, loc.qoq2.sql.froms[1]);
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testQueryOfQueryJoins" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.pass = true;
+			loc.q1 = QueryNew('id,yourId');
+			loc.q2 = QueryNew('id,name');
+			try {
+				loc.rel = new().from(loc.q1).join(loc.q2, "query1.yourId = query2.id").query();
+			} catch (Any e) {
+				loc.pass = false;
+			}
+			assertTrue(loc.pass);
 		</cfscript>
 	</cffunction>
 </cfcomponent>

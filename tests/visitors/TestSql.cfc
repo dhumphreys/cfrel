@@ -20,17 +20,21 @@
 			loc.rel4 = loc.factory.new().from("example").order("a DESC").paginate(7, 10);
 			loc.rel5 = loc.factory.new().from(loc.rel4).where("b > ?", [10]);
 			loc.rel6 = loc.factory.new().from(QueryNew(''));
+			loc.rel7 = loc.factory.new().from(QueryNew('')).from(QueryNew(''));
+			loc.rel8 = loc.factory.new().from(QueryNew('')).join(QueryNew(''), "a = b");
 			
 			// set expected values
 			loc.exp1 = "SELECT DISTINCT 1 + 2, 3, 4";
 			loc.exp2 = "SELECT a, SUM(b) FROM example GROUP BY a HAVING SUM(b) > ?";
 			loc.exp3 = "SELECT * FROM example WHERE (c > 5 OR c < 2) AND a = ? ORDER BY c ASC";
 			loc.exp4 = "SELECT * FROM example ORDER BY a DESC LIMIT 10 OFFSET 60";
-			loc.exp5 = "SELECT * FROM (#loc.exp4#) subquery WHERE b > ?";
-			loc.exp6 = "SELECT * FROM resultSet";
+			loc.exp5 = "SELECT * FROM (#loc.exp4#) subquery1 WHERE b > ?";
+			loc.exp6 = "SELECT * FROM query1";
+			loc.exp7 = "SELECT * FROM query1, query2";
+			loc.exp8 = "SELECT * FROM query1, query2 WHERE a = b";
 			
 			// test each value
-			for (loc.i = 1; loc.i LTE 6; loc.i++)
+			for (loc.i = 1; loc.i LTE 8; loc.i++)
 				assertEquals(loc["exp#loc.i#"], loc.sql.visit(loc["rel#loc.i#"]));
 		</cfscript>
 	</cffunction>

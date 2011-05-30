@@ -25,6 +25,7 @@
 			this.sql = {
 				select = [],
 				selectFlags = [],
+				froms = [],
 				joins = [],
 				joinParameters = [],
 				joinParameterColumns = [],
@@ -120,24 +121,24 @@
 			// make decision based on argument type
 			switch(typeOf(arguments.target)) {
 				
-				// accept relations, models, and stings
+				// accept relations
 				case "cfrel.Relation":
-					this.sql.from = arguments.target;
+				
+					// let the defaults fall through
 					break;
 				
 				// accept model and add model to mapping
 				case "model":
-					this.sql.from = sqlTable(model=arguments.target);
-					this.mapper.buildMapping(this.sql.from, this);
+					arguments.target = sqlTable(model=arguments.target);
+					this.mapper.buildMapping(arguments.target, this);
 					break;
 					
 				case "simple":
-					this.sql.from = sqlTable(arguments.target);
+					arguments.target = sqlTable(table=arguments.target);
 					break;
 				
 				// accept queries for QoQ operations
 				case "query":
-					this.sql.from = arguments.target;
 					variables.qoq = true;
 					break;
 					
@@ -145,6 +146,9 @@
 				default:
 					throwException("Only a table name or another relation can be in FROM clause");
 			}
+			
+			// put the target onto the FROM stack
+			ArrayAppend(this.sql.froms, arguments.target);
 			return this;
 		</cfscript>
 	</cffunction>
@@ -215,6 +219,18 @@
 				// just use raw table object
 				case "cfrel.nodes.table":
 					loc.table = arguments.target;
+					break;
+					
+				// if using a query
+				case "query":
+					if (variables.qoq EQ false)
+						throwException("Cannot join a query object if relation is not a QoQ");
+						
+					// add the query as an addition from, and put conditions in where clause
+					ArrayAppend(this.sql.froms, arguments.target);
+					this.where(arguments.condition, arguments.params);
+					return this;
+					
 					break;
 					
 				// throw error if invalid target
@@ -490,7 +506,11 @@
 					
 					// if we are using query of a query, set dbtype and resultset
 					if (variables.qoq) {
-						loc.query.setAttributes(dbType="query", resultSet=this.sql.from);
+						loc.queryArgs = {};
+						loc.iEnd = ArrayLen(this.sql.froms);
+						for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+							loc.queryArgs["query" & loc.i] = this.sql.froms[loc.i];
+						loc.query.setAttributes(dbType="query", argumentCollection=loc.queryArgs);
 						
 					} else {
 				
@@ -563,13 +583,14 @@
 		<cfscript>
 			var loc = {};
 			
-			// add model from FROM clause
-			if (StructKeyExists(this.sql, "from")) {
-				loc.fromType = typeOf(this.sql.from);
+			// add models from FROM clause
+			loc.iEnd = ArrayLen(this.sql.froms);
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
+				loc.fromType = typeOf(this.sql.froms[loc.i]);
 				if (loc.fromType EQ "cfrel.Relation")
-					arguments.stack = this.sql.from.getModels(arguments.stack);
-				else if (loc.fromType EQ "cfrel.nodes.Table" AND IsObject(this.sql.from.model))
-					ArrayAppend(arguments.stack, this.sql.from);
+					arguments.stack = this.sql.froms[loc.i].getModels(arguments.stack);
+				else if (loc.fromType EQ "cfrel.nodes.Table" AND IsObject(this.sql.froms[loc.i].model))
+					ArrayAppend(arguments.stack, this.sql.froms[loc.i]);
 			}
 				
 			// add models from JOIN clauses
@@ -587,9 +608,11 @@
 		<cfscript>
 			var loc = {};
 				
-			// stack on parameters from subquery
-			if (StructKeyExists(this.sql, "from") AND typeOf(this.sql.from) EQ "cfrel.Relation")
-				arguments.stack = this.sql.from.getParameters(arguments.stack);
+			// stack on parameters from subqueries
+			loc.iEnd = ArrayLen(this.sql.froms);
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+				if (typeOf(this.sql.froms[loc.i]) EQ "cfrel.Relation")
+					arguments.stack = this.sql.froms[loc.i].getParameters(arguments.stack);
 				
 			// stack on join parameters
 			loc.iEnd = ArrayLen(this.sql.joinParameters);
@@ -615,9 +638,11 @@
 		<cfscript>
 			var loc = {};
 				
-			// stack on parameters columns from subquery
-			if (StructKeyExists(this.sql, "from") AND typeOf(this.sql.from) EQ "cfrel.Relation")
-				arguments.stack = this.sql.from.getParameterColumns(arguments.stack);
+			// stack on parameters from subqueries
+			loc.iEnd = ArrayLen(this.sql.froms);
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+				if (typeOf(this.sql.froms[loc.i]) EQ "cfrel.Relation")
+					arguments.stack = this.sql.froms[loc.i].getParameterColumns(arguments.stack);
 				
 			// stack on join parameter columns
 			loc.iEnd = ArrayLen(this.sql.joinParameterColumns);
@@ -643,9 +668,11 @@
 		<cfscript>
 			var loc = {};
 				
-			// stack on parameters columns from subquery
-			if (StructKeyExists(this.sql, "from") AND typeOf(this.sql.from) EQ "cfrel.Relation")
-				arguments.stack = this.sql.from.getParameterColumnTypes(arguments.stack);
+			// stack on parameters from subqueries
+			loc.iEnd = ArrayLen(this.sql.froms);
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+				if (typeOf(this.sql.froms[loc.i]) EQ "cfrel.Relation")
+					arguments.stack = this.sql.froms[loc.i].getParameterColumnTypes(arguments.stack);
 				
 			// stack on join parameter columns
 			loc.iEnd = ArrayLen(this.sql.joinParameterColumns);
@@ -679,8 +706,10 @@
 			if (NOT variables.mapped) {
 				
 				// map any subquery relations
-				if (StructKeyExists(this.sql, "from") AND typeOf(this.sql.from) EQ "cfrel.Relation")
-					this.sql.from._applyMappings();
+				loc.iEnd = ArrayLen(this.sql.froms);
+				for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+					if (typeOf(this.sql.froms[loc.i]) EQ "cfrel.Relation")
+						this.sql.froms[loc.i]._applyMappings();
 				
 				// default to a wildcard selector
 				if (ArrayLen(this.sql.select) EQ 0)
@@ -852,7 +881,7 @@
 				return "cf_sql_char";
 			
 			// look at metadata for query
-			loc.meta = GetMetaData(this.sql.from);
+			loc.meta = GetMetaData(this.sql.froms[1]);
 			
 			// try to find correct column
 			loc.iEnd = ArrayLen(loc.meta);

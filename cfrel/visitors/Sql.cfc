@@ -31,14 +31,19 @@
 			}
 			ArrayAppend(loc.fragments, loc.clause);
 			
-			// generate FROM clause, evaluating another relation if neccessary
-			if (StructKeyExists(obj.sql, "from")) {
-				if (IsSimpleValue(obj.sql.from) OR typeOf(obj.sql.from) EQ "cfrel.nodes.table")
-					ArrayAppend(loc.fragments, "FROM #visit(obj.sql.from)#");
-				else if (IsQuery(obj.sql.from))
-					ArrayAppend(loc.fragments, "FROM resultSet");
-				else
-					ArrayAppend(loc.fragments, "FROM (#visit(obj.sql.from)#) subquery");
+			// generate FROM arguments, either as tables, QoQ references, or subqueries
+			loc.iEnd = ArrayLen(obj.sql.froms);
+			if (loc.iEnd GT 0) {
+				loc.froms = "";
+				for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
+					if (IsSimpleValue(obj.sql.froms[loc.i]) OR typeOf(obj.sql.froms[loc.i]) EQ "cfrel.nodes.table")
+						loc.froms = ListAppend(loc.froms, visit(obj.sql.froms[loc.i]), Chr(7));
+					else if (IsQuery(obj.sql.froms[loc.i]))
+						loc.froms = ListAppend(loc.froms, "query" & loc.i, Chr(7));
+					else
+						loc.froms = ListAppend(loc.froms, "(#visit(obj.sql.froms[loc.i])#) subquery#loc.i#", Chr(7));
+				}
+				ArrayAppend(loc.fragments, "FROM " & Replace(loc.froms, Chr(7), ", ", "ALL"));
 					
 			// error if neither SELECT or FROM was specified
 			} else if (loc.select EQ false) {
