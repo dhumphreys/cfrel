@@ -196,7 +196,7 @@
 			
 			// if expression is a column, store it for use by '?' parameters
 			if (IsStruct(loc.left) AND loc.left.$class EQ "cfrel.nodes.Column") {
-				if (StructKeyExists(loc.left, "table"))
+				if (IsStruct(loc.left.table) OR loc.left.table NEQ "")
 					variables.tmpParamColumn = loc.left.table & "." & loc.left.column;
 				else
 					variables.tmpParamColumn = loc.left.column;
