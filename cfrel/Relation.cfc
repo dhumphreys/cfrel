@@ -458,7 +458,7 @@
 	</cffunction>
 	
 	<cffunction name="query" returntype="query" access="public" hint="Lazily execute and return query object">
-		<cfargument name="allowSpecialPaging" type="boolean" default="true" />
+		<cfargument name="allowSpecialPaging" type="boolean" default="false" />
 		<cfscript>
 			var loc = {};
 			
