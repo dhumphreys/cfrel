@@ -76,13 +76,16 @@
 		<cfscript>
 			var loc = {};
 			
+			// get last FROM item
+			loc.from = relation.sql.froms[ArrayLen(relation.sql.froms)];
+			
 			// throw error if FROM is not a model
-			if (typeOf(relation.sql.from.model) NEQ "model")
+			if (typeOf(loc.from.model) NEQ "model")
 				throwException("Includes can only be used with models");
 			
 			// set up join level tracking and current model class
-			loc.levels = [relation.sql.from.model];
-			loc.private = injectInspector(relation.sql.from.model)._inspect();
+			loc.levels = [loc.from.model];
+			loc.private = injectInspector(loc.from.model)._inspect();
 			loc.class = loc.private.wheels.class;
 			
 			// loop over joined items
@@ -127,7 +130,7 @@
 						
 						// look up association and model
 						loc.assoc = loc.class.associations[loc.key];
-						loc.model = injectInspector(relation.sql.from.model.model(loc.assoc.modelName));
+						loc.model = injectInspector(loc.from.model.model(loc.assoc.modelName));
 						loc.otherClass = loc.model._inspect().wheels.class;
 					
 						// build mapping for current model

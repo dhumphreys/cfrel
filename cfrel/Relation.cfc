@@ -162,7 +162,7 @@
 				return this.clone().include(argumentCollection=arguments);
 				
 			// make sure a from has been specified
-			if (NOT StructKeyExists(this.sql, "from"))
+			if (ArrayLen(this.sql.froms) EQ 0)
 				throwException("Includes cannot be specified before FROM clause");
 				
 			// let mapper do the work with includes
@@ -895,7 +895,7 @@
 			// try to find correct column
 			loc.iEnd = ArrayLen(loc.meta);
 			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
-				if (loc.meta[loc.i].name EQ arguments.column AND StructKeyExists(loc.meta[loc.i], "type")) {
+				if (loc.meta[loc.i].name EQ arguments.column AND StructKeyExists(loc.meta[loc.i], "typeName")) {
 					loc.type = ListFirst(loc.meta[loc.i].typeName, " ");
 					
 					// deal with type mismatches
