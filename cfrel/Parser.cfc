@@ -195,8 +195,12 @@
 			loc.left = addExpr();
 			
 			// if expression is a column, store it for use by '?' parameters
-			if (IsStruct(loc.left) AND loc.left.$class EQ "cfrel.nodes.Column")
-				variables.tmpParamColumn = loc.left.column;
+			if (IsStruct(loc.left) AND loc.left.$class EQ "cfrel.nodes.Column") {
+				if (StructKeyExists(loc.left, "table"))
+					variables.tmpParamColumn = loc.left.table & "." & loc.left.column;
+				else
+					variables.tmpParamColumn = loc.left.column;
+			}
 			
 			// ADD_EXPR BETWEEN TERM AND TERM
 			if (accept(t.between)) {

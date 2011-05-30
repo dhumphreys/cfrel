@@ -876,17 +876,26 @@
 		<cfscript>
 			var loc = {};
 			
-			// return default type if no qoq or column
-			if (NOT variables.qoq OR arguments.column EQ "")
+			// determine which query in the FROM clause the column is in
+			if (REFind("^query\d+\.", arguments.column) EQ 1)
+				loc.queryIndex = REReplace(arguments.column, "^query(\d+)\..+$", "\1");
+			else
+				loc.queryIndex = 1;
+				
+			// grab only column from arguments
+			arguments.column = ListLast(arguments.column, ".");
+			
+			// return default type if no qoq, no column, or invalid query index
+			if (NOT variables.qoq OR arguments.column EQ "" OR loc.queryIndex LT 1 OR loc.queryIndex GT ArrayLen(this.sql.froms))
 				return "cf_sql_char";
 			
 			// look at metadata for query
-			loc.meta = GetMetaData(this.sql.froms[1]);
+			loc.meta = GetMetaData(this.sql.froms[loc.queryIndex]);
 			
 			// try to find correct column
 			loc.iEnd = ArrayLen(loc.meta);
 			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
-				if (loc.meta[loc.i].name EQ arguments.column) {
+				if (loc.meta[loc.i].name EQ arguments.column AND StructKeyExists(loc.meta[loc.i], "type")) {
 					loc.type = ListFirst(loc.meta[loc.i].typeName, " ");
 					
 					// deal with type mismatches

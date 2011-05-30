@@ -61,6 +61,9 @@
 	<cffunction name="columnDataType" returntype="any" access="public">
 		<cfargument name="column" type="string" required="true" />
 		<cfscript>
+			// todo: make tableName.columnName work here
+			arguments.column = ListLast(arguments.column, ".");
+			
 			if (StructKeyExists(variables.columns, arguments.column) AND StructKeyExists(variables.columns[arguments.column], "cf_sql_type"))
 				return variables.columns[arguments.column].cf_sql_type;
 			return "cf_sql_char";
