@@ -155,9 +155,9 @@
 							loc.keyB = ListGetAt(loc.listB, loc.j);
 							
 							// set up equality between the two keys
-							loc.columnA = StructKeyExists(loc.class.properties, loc.keyA) ? loc.class.properties[loc.keyA].column : loc.class.calculatedProperties[loc.keyA].sql;
-							loc.columnB = StructKeyExists(loc.otherClass.properties, loc.keyB) ? loc.otherClass.properties[loc.keyB].column : loc.otherClass.calculatedProperties[loc.keyB].sql;
-							loc.condition =  ListAppend(loc.condition, "#loc.tableA#.#loc.columnA# = #loc.tableB#.#loc.columnB#", Chr(7));
+							loc.columnA = StructKeyExists(loc.class.properties, loc.keyA) ? "#loc.tableA#." & loc.class.properties[loc.keyA].column : loc.class.calculatedProperties[loc.keyA].sql;
+							loc.columnB = StructKeyExists(loc.otherClass.properties, loc.keyB) ? "#loc.tableB#." & loc.otherClass.properties[loc.keyB].column : loc.otherClass.calculatedProperties[loc.keyB].sql;
+							loc.condition =  ListAppend(loc.condition, "#loc.columnA# = #loc.columnB#", Chr(7));
 						}
 						loc.condition = Replace(loc.condition, Chr(7), " AND ", "ALL");
 				
