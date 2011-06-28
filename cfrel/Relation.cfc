@@ -7,6 +7,7 @@
 		<cfargument name="mapper" type="string" default="Mapper" />
 		<cfargument name="cache" type="string" default="" />
 		<cfargument name="cacheParse" type="boolean" default="#ListFindNoCase(arguments.cache, 'parse')#" />
+		<cfargument name="includeSoftDeletes" type="boolean" default="false" />
 		<cfscript>
 			
 			// store classes used for mapper and visitor
@@ -16,7 +17,7 @@
 			// datasource and visitor to use
 			this.datasource = arguments.datasource;
 			this.visitor = CreateObject("component", addCfcPrefix("cfrel.visitors.#arguments.visitor#")).init();
-			this.mapper = CreateObject("component", addCfcPrefix("cfrel.mappers.#arguments.mapper#")).init();
+			this.mapper = CreateObject("component", addCfcPrefix("cfrel.mappers.#arguments.mapper#")).init(arguments.includeSoftDeletes);
 			
 			// internal parser
 			variables.parser = CreateObject("component", addCfcPrefix("cfrel.Parser")).init(cache=arguments.cacheParse);

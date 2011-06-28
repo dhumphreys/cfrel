@@ -2,10 +2,12 @@
 	<cfinclude template="../functions.cfm" />
 	
 	<cffunction name="init" returntype="struct" access="public" hint="Constructor">
+		<cfargument name="includeSoftDeletes" type="boolean" default="false" />
 		<cfscript>
 			variables.models = [];
 			variables.tables = {};
 			variables.columns = {};
+			variables.includeSoftDeletes = arguments.includeSoftDeletes;
 			return this;
 		</cfscript>
 	</cffunction>

@@ -55,6 +55,10 @@
 				// add data structure to columns structure
 				variables.columns[loc.key] = loc.colData;
 			}
+			
+			// if the option is set, and the model has soft delete, consider it in the WHERE clause
+			if (NOT variables.includeSoftDeletes AND loc.model.$softDeletion())
+				arguments.relation.where(loc.tableAlias & "." & loc.model.$softDeleteColumn() & " IS NULL");
 		</cfscript>
 	</cffunction>
 	
