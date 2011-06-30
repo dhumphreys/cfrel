@@ -77,6 +77,7 @@
 	<cffunction name="mapIncludes" returntype="void" access="public">
 		<cfargument name="relation" type="any" required="true" />
 		<cfargument name="include" type="string" required="true" />
+		<cfargument name="joinType" type="string" default="" />
 		<cfscript>
 			var loc = {};
 			
@@ -172,8 +173,11 @@
 							loc.condition &= " AND " & Mid(arguments.include, loc.condPos + 1, loc.pos - loc.condPos - 2);
 						}
 						
+						// use the passed in join type, or the default for this association
+						loc.joinType = (arguments.joinType EQ "") ? loc.assoc.joinType : arguments.joinType;
+						
 						// call join on relation
-						relation.join(loc.table, loc.condition, [], loc.assoc.joinType, true);
+						relation.join(loc.table, loc.condition, [], loc.joinType, true);
 				}
 			}
 			

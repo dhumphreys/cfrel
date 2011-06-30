@@ -34,6 +34,7 @@
 	<cffunction name="mapIncludes" returntype="void" access="public">
 		<cfargument name="relation" type="any" required="true" />
 		<cfargument name="include" type="string" required="true" />
+		<cfargument name="joinType" type="string" default="" />
 		<cfset throwException("Current mapper does not support includes") />
 	</cffunction>
 	

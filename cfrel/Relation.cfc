@@ -157,6 +157,7 @@
 	<cffunction name="include" returntype="struct" access="public" hint="Add a JOIN to the relation using predefined relationships">
 		<cfargument name="include" type="string" required="true" />
 		<cfargument name="params" type="array" default="#[]#" />
+		<cfargument name="joinType" type="string" default="" />
 		<cfscript>
 			var loc = {};
 			if (variables.executed)
@@ -167,7 +168,7 @@
 				throwException("Includes cannot be specified before FROM clause");
 				
 			// let mapper do the work with includes
-			this.mapper.mapIncludes(this, arguments.include);
+			this.mapper.mapIncludes(this, arguments.include, arguments.joinType);
 			
 			// handle parameters for join
 			loc.iEnd = ArrayLen(arguments.params);
