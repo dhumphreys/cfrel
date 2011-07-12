@@ -492,6 +492,10 @@
 		<cfreturn this.countRelation().query().numberOfRows />
 	</cffunction>
 	
+	<!---------------------
+	--- Query Execution ---
+	---------------------->
+	
 	<cffunction name="toSql" returntype="string" access="public" hint="Convert relational data into a SQL string">
 		<cfscript>
 			
@@ -640,6 +644,10 @@
 			return variables.paginationData;
 		</cfscript>
 	</cffunction>
+	
+	<!---------------------
+	--- Other Accessors ---
+	---------------------->
 	
 	<cffunction name="getModels" returntype="array" access="public" hint="Return array of all models involved in query">
 		<cfargument name="stack" type="array" default="#[]#" />
