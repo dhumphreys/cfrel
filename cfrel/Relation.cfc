@@ -89,6 +89,10 @@
 		</cfscript>
 	</cffunction>
 	
+	<!---------------------
+	--- Query Interface ---
+	---------------------->
+	
 	<cffunction name="select" returntype="struct" access="public" hint="Append to the SELECT clause of the relation">
 		<cfscript>
 			if (variables.executed)
@@ -356,6 +360,58 @@
 		</cfscript>
 	</cffunction>
 	
+	<!---------------------
+	--- Option Clearing ---
+	---------------------->
+	
+	<cffunction name="clearSelect" returntype="struct" access="public" hint="Remove all SELECT options">
+		<cfscript>
+			if (variables.executed)
+				return this.clone().clearSelect(argumentCollection=arguments);
+			this.sql.select = [];
+			this.sql.selectFlags = [];
+			return this;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="clearWhere" returntype="struct" access="public" hint="Remove all WHERE options">
+		<cfscript>
+			if (variables.executed)
+				return this.clone().clearWhere(argumentCollection=arguments);
+			this.sql.wheres = [];
+			this.sql.whereParameters = [];
+			return this;
+		</cfscript>
+	</cffunction>
+	select
+	<cffunction name="clearGroup" returntype="struct" access="public" hint="Remove all GROUP BY options">
+		<cfscript>
+			if (variables.executed)
+				return this.clone().clearGroup(argumentCollection=arguments);
+			this.sql.groups = [];
+			return this;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="clearHaving" returntype="struct" access="public" hint="Remove all HAVING options">
+		<cfscript>
+			if (variables.executed)
+				return this.clone().clearHaving(argumentCollection=arguments);
+			this.sql.havings = [];
+			this.sql.havingParameters = [];
+			return this;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="clearOrder" returntype="struct" access="public" hint="Remove all ORDER BY options">
+		<cfscript>
+			if (variables.executed)
+				return this.clone().clearOrder(argumentCollection=arguments);
+			this.sql.orders = [];
+			return this;
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="clearPagination" returntype="struct" access="public" hint="Remove all limits, offsets, and pagination from the current relation">
 		<cfscript>
 			if (variables.executed)
@@ -376,6 +432,11 @@
 			return this;
 		</cfscript>
 	</cffunction>
+	
+	
+	<!-------------------------
+	--- Alternate Relations ---
+	-------------------------->
 	
 	<cffunction name="minimizedRelation" returntype="struct" access="public" hint="Return a new relation without aggregate selects">
 		<cfscript>

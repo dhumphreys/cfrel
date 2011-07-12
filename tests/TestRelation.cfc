@@ -536,6 +536,28 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="testClearing" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			
+			// set up options
+			loc.r1 = new().select("a,b,c").clearSelect();
+			loc.r2 = new().where("a = ?", [5]).clearWhere();
+			loc.r3 = new().group("a,b,c").clearGroup();
+			loc.r4 = new().having("COUNT(b) < ?", [10]).clearHaving();
+			loc.r5 = new().order("a ASC,b ASC,c DESC").clearOrder();
+			
+			// make sure proper values were set in LIMIT and OFFSET clauses
+			assertEquals(0, ArrayLen(loc.r1.sql.select));
+			assertEquals(0, ArrayLen(loc.r2.sql.wheres));
+			assertEquals(0, ArrayLen(loc.r2.sql.whereParameters));
+			assertEquals(0, ArrayLen(loc.r3.sql.groups));
+			assertEquals(0, ArrayLen(loc.r4.sql.havings));
+			assertEquals(0, ArrayLen(loc.r4.sql.havingParameters));
+			assertEquals(0, ArrayLen(loc.r5.sql.orders));
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="testClearPagination" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
