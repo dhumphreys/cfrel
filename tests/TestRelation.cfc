@@ -74,8 +74,8 @@
 			assertNotSame(loc.clone1.sql, loc.instance.sql, "clone() should copy the sql struct, not reference it");
 			assertNotSame(loc.clone1.sql, loc.clone2.sql);
 			assertEquals(loc.clone1.datasource, loc.clone2.datasource);
-			assertTrue(IsQuery(loc.private1.query));
-			assertFalse(loc.private2.query);
+			assertTrue(IsQuery(loc.private1.cache.query));
+			assertFalse(StructKeyExists(loc.private2.cache, "query"));
 		</cfscript>
 	</cffunction>
 	
@@ -101,7 +101,7 @@
 			for (key in loc) {
 				injectInspector(loc[key]);
 				assertNotSame(instance, loc[key], "Operation #key#() should auto-clone");
-				assertFalse(loc[key]._inspect().query);
+				assertEquals(0, StructCount(loc[key]._inspect().cache));
 			}
 		</cfscript>
 	</cffunction>
@@ -609,7 +609,7 @@
 			loc.rel = injectInspector(datasourceRel.clone());
 			loc.variables = loc.rel._inspect();
 			loc.query1 = loc.rel.query();
-			loc.query0 = loc.variables.query;
+			loc.query0 = loc.variables.cache.query;
 			loc.query2 = loc.rel.query();
 			assertTrue(loc.variables.executed, "Calling query() should set executed flag");
 			assertTrue(IsQuery(loc.query1), "query() should return a recordset");
@@ -624,7 +624,7 @@
 			loc.rel = injectInspector(datasourceRel.clone());
 			loc.variables = loc.rel._inspect();
 			loc.result1 = loc.rel.result();
-			loc.result0 = loc.variables.result;
+			loc.result0 = loc.variables.cache.result;
 			loc.result2 = loc.rel.result();
 			assertTrue(IsStruct(loc.result1), "result() should return query result data");
 			assertSame(loc.result0, loc.result1, "result() should store result inside of the relation");
@@ -637,7 +637,7 @@
 			var loc = {};
 			loc.rel = injectInspector(datasourceRel.clone()).exec();
 			loc.variables = loc.rel._inspect();
-			loc.query1 = loc.variables.query;
+			loc.query1 = loc.variables.cache.query;
 			assertTrue(IsQuery(loc.query1), "Execute should populate query field");
 			loc.query2 = loc.rel.query();
 			assertSame(loc.query1, loc.query2, "exec() should run and store the query for calls to query()");
