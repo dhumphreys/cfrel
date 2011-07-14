@@ -635,6 +635,22 @@
 			return variables.cache.result;
 		</cfscript>
 	</cffunction>
+
+	<cffunction name="struct" returntype="struct" access="public" hint="Return struct representation of current query row">
+		<cfscript>
+			if (NOT StructKeyExists(variables.cache, "struct"))
+				variables.cache.struct = this.mapper.queryRowToStruct(this.query());
+			return variables.cache.struct;
+		</cfscript>
+	</cffunction>
+
+	<cffunction name="structs" returntype="array" access="public" hint="Return struct representation of entire query recordset">
+		<cfscript>
+			if (NOT StructKeyExists(variables.cache, "structs"))
+				variables.cache.structs = this.mapper.queryToStructs(this.query());
+			return variables.cache.structs;
+		</cfscript>
+	</cffunction>
 	
 	<cffunction name="pagination" returntype="struct" access="public" hint="Return structure describing pagination state">
 		<cfscript>

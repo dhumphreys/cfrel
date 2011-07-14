@@ -45,6 +45,32 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="queryRowToStruct" returntype="struct" access="public">
+		<cfargument name="query" type="query" required="true" />
+		<cfargument name="index" type="numeric" default="#arguments.query.currentRow#" />
+		<cfscript>
+			var loc = {};
+			loc.returnVal = {};
+			loc.columns = ListToArray(arguments.query.columnList);
+			loc.iEnd = ArrayLen(loc.columns);
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+				loc.returnVal[loc.columns[loc.i]] = arguments.query[loc.columns[loc.i]][arguments.index];
+			return loc.returnVal;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="queryToStructs" returntype="array" access="public">
+		<cfargument name="query" type="query" required="true" />
+		<cfscript>
+			var loc = {};
+			loc.returnVal = [];
+			loc.iEnd = arguments.query.recordCount;
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+				ArrayAppend(loc.returnVal, queryRowToStruct(arguments.query, loc.i));
+			return loc.returnVal;
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="columnsFor" returntype="any" access="private">
 		<cfargument name="table" type="string" default="" />
 		<cfscript>

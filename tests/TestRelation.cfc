@@ -632,6 +632,31 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="testStructs" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.rel = injectInspector(datasourceRel.clone());
+			loc.variables = loc.rel._inspect();
+			
+			// call struct methods and read from cache
+			loc.struct0 = loc.rel.struct();
+			loc.struct1 = loc.variables.cache.struct;
+			loc.struct2 = loc.rel.struct();
+			loc.structs0 = loc.rel.structs();
+			loc.structs1 = loc.variables.cache.structs;
+			loc.structs2 = loc.rel.structs();
+			
+			// test that return was created and cached
+			assertTrue(loc.variables.executed);
+			assertTrue(IsStruct(loc.struct0));
+			assertSame(loc.struct0, loc.struct1);
+			assertSame(loc.struct1, loc.struct2);
+			assertTrue(IsArray(loc.structs0));
+			assertEquals(loc.structs0, loc.structs1);
+			assertEquals(loc.structs1, loc.structs2);
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="testExecution" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
