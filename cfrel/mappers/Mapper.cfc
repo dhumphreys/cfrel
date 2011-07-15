@@ -59,15 +59,14 @@
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="queryToStructs" returntype="array" access="public">
-		<cfargument name="query" type="query" required="true" />
+	<cffunction name="structToObject" returntype="struct" access="public">
+		<cfargument name="data" type="struct" required="true" />
 		<cfscript>
 			var loc = {};
-			loc.returnVal = [];
-			loc.iEnd = arguments.query.recordCount;
-			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
-				ArrayAppend(loc.returnVal, queryRowToStruct(arguments.query, loc.i));
-			return loc.returnVal;
+			loc.comp = CreateObject("component", "component");
+			for (loc.key in arguments.data)
+				loc.comp[loc.key] = arguments.data[loc.key];
+			return loc.comp;
 		</cfscript>
 	</cffunction>
 	

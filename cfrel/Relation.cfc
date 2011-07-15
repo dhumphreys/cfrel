@@ -45,6 +45,7 @@
 			
 			// internal control and value variables
 			variables.cache = {};
+			variables.currentRow = 0;
 			variables.executed = false;
 			variables.mapped = false;
 			variables.qoq = false;
@@ -529,7 +530,7 @@
 			
 			// drop into query logic if we don't have a query yet
 			if (variables.executed EQ false OR NOT StructKeyExists(variables.cache, "query")) {
-				variables.cache = {};
+				clearCache();
 				
 				// do some special handling for paged SqlServer queries with aggregates
 				if (arguments.allowSpecialPaging AND variables.visitorClass EQ "SqlServer" AND variables.paged AND ArrayLen(this.sql.groups)) {
@@ -609,6 +610,9 @@
 					// save objects
 					variables.cache.query = loc.result.getResult();
 					variables.cache.result = loc.result.getPrefix();
+					
+					// set up looping counter
+					variables.currentRow = 0;
 				}
 				
 				// build pagination data
@@ -637,18 +641,48 @@
 	</cffunction>
 
 	<cffunction name="struct" returntype="struct" access="public" hint="Return struct representation of current query row">
+		<cfargument name="index" type="numeric" default="#this.currentRow()#" />
 		<cfscript>
-			if (NOT StructKeyExists(variables.cache, "struct"))
-				variables.cache.struct = this.mapper.queryRowToStruct(this.query());
-			return variables.cache.struct;
+			buildStructCache();
+			if (ArrayLen(variables.cache.structs) LT arguments.index OR NOT ArrayIsDefined(variables.cache.structs, arguments.index)) {
+				var obj = this.mapper.queryRowToStruct(this.query(), arguments.index);
+				ArraySet(variables.cache.structs, arguments.index, arguments.index, obj);
+			}
+			return variables.cache.structs[arguments.index];
 		</cfscript>
 	</cffunction>
 
 	<cffunction name="structs" returntype="array" access="public" hint="Return struct representation of entire query recordset">
 		<cfscript>
-			if (NOT StructKeyExists(variables.cache, "structs"))
-				variables.cache.structs = this.mapper.queryToStructs(this.query());
+			var loc = {};
+			buildStructCache();
+			loc.iEnd = recordCount();
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+				struct(loc.i);
 			return variables.cache.structs;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="object" returntype="struct" access="public" hint="Return object representation of current query row">
+		<cfargument name="index" type="numeric" default="#this.currentRow()#" />
+		<cfscript>
+			buildObjectCache();
+			if (ArrayLen(variables.cache.objects) LT arguments.index OR NOT ArrayIsDefined(variables.cache.objects, arguments.index)) {
+				var obj = this.mapper.structToObject(struct(arguments.index));
+				ArraySet(variables.cache.objects, arguments.index, arguments.index, obj);
+			}
+			return variables.cache.objects[arguments.index];
+		</cfscript>
+	</cffunction>
+
+	<cffunction name="objects" returntype="array" access="public" hint="Return object representation of entire query recordset">
+		<cfscript>
+			var loc = {};
+			buildObjectCache();
+			loc.iEnd = recordCount();
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+				object(loc.i);
+			return variables.cache.objects;
 		</cfscript>
 	</cffunction>
 	
@@ -657,6 +691,60 @@
 			if (variables.paged EQ false OR NOT IsStruct(variables.paginationData))
 				return false;
 			return variables.paginationData;
+		</cfscript>
+	</cffunction>
+	
+	<!-------------
+	--- Looping ---
+	-------------->
+	
+	<cffunction name="recordCount" returntype="numeric" access="public" hint="Get count of rows in recordset">
+		<cfreturn query().recordCount />
+	</cffunction>
+	
+	<cffunction name="currentRow" returntype="numeric" access="public" hint="Get current row of loop">
+		<cfscript>
+			if (variables.currentRow EQ 0)
+				variables.currentRow++;
+			return variables.currentRow;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="reset" returntype="void" access="public" hint="Reset row counter">
+		<cfset variables.currentRow = 0 />
+	</cffunction>
+	
+	<cffunction name="curr" returntype="any" access="public" hint="Get current object, or false if no more rows">
+		<cfargument name="format" type="string" default="object" hint="Format of record to be returned: struct or object" />
+		<cfscript>
+			if (variables.currentRow GT recordCount())
+				return false;
+			switch (arguments.format) {
+				case "struct":
+					return struct(variables.currentRow);
+					break;
+				case "object":
+					return object(variables.currentRow);
+					break;
+			}
+			return false;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="next" returntype="boolean" access="public" hint="Move counter to next row. Return false if no more rows.">
+		<cfscript>
+			var count = recordCount();
+			if (variables.currentRow LTE count)
+				variables.currentRow += 1;
+			return (variables.currentRow LTE count);
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="prev" returntype="boolean" access="public" hint="Move counter to previous row. Return false if no more rows.">
+		<cfscript>
+			if (variables.currentRow GT 0)
+				variables.currentRow -= 1;
+			return (variables.currentRow GT 0);
 		</cfscript>
 	</cffunction>
 	
@@ -780,6 +868,32 @@
 				ArrayAppend(arguments.stack, this.mapper.columnDataType(this.sql.havingParameterColumns[loc.i]));
 				
 			return arguments.stack;
+		</cfscript>
+	</cffunction>
+
+	<!--------------------
+	--- Internal Cache ---
+	--------------------->
+	
+	<cffunction name="clearCache" returntype="void" access="public" hint="Clear query, result, struct, and object cache">
+		<cfset variables.cache = {} />
+	</cffunction>
+	
+	<cffunction name="buildStructCache" returntype="void" access="private" hint="Build internal cache for row structs">
+		<cfscript>
+			if (NOT StructKeyExists(variables.cache, "structs")) {
+				exec();
+				variables.cache.structs = [];
+			}
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="buildObjectCache" returntype="void" access="private" hint="Build internal cache for row objects">
+		<cfscript>
+			if (NOT StructKeyExists(variables.cache, "objects")) {
+				exec();
+				variables.cache.objects = [];
+			}
 		</cfscript>
 	</cffunction>
 	

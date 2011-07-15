@@ -639,9 +639,10 @@
 			loc.variables = loc.rel._inspect();
 			
 			// call struct methods and read from cache
-			loc.struct0 = loc.rel.struct();
-			loc.struct1 = loc.variables.cache.struct;
-			loc.struct2 = loc.rel.struct();
+			loc.struct0 = loc.rel.struct(5);
+			loc.struct1 = loc.variables.cache.structs[5];
+			loc.struct2 = loc.rel.struct(5);
+			loc.struct3 = loc.rel.struct(2);
 			loc.structs0 = loc.rel.structs();
 			loc.structs1 = loc.variables.cache.structs;
 			loc.structs2 = loc.rel.structs();
@@ -651,9 +652,100 @@
 			assertTrue(IsStruct(loc.struct0));
 			assertSame(loc.struct0, loc.struct1);
 			assertSame(loc.struct1, loc.struct2);
+			assertNotSame(loc.struct0, loc.struct3);
 			assertTrue(IsArray(loc.structs0));
 			assertEquals(loc.structs0, loc.structs1);
 			assertEquals(loc.structs1, loc.structs2);
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testObjects" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.rel = injectInspector(datasourceRel.clone());
+			loc.variables = loc.rel._inspect();
+			
+			// call struct methods and read from cache
+			loc.obj0 = loc.rel.object(3);
+			loc.obj1 = loc.variables.cache.objects[3];
+			loc.obj2 = loc.rel.object(3);
+			loc.obj3 = loc.rel.object(7);
+			loc.objs0 = loc.rel.objects();
+			loc.objs1 = loc.variables.cache.objects;
+			loc.objs2 = loc.rel.objects();
+			
+			// test that return was created and cached
+			assertTrue(loc.variables.executed);
+			assertTrue(IsObject(loc.obj1));
+			assertSame(loc.obj0, loc.obj1);
+			assertSame(loc.obj1, loc.obj2);
+			assertNotSame(loc.obj0, loc.obj3);
+			assertTrue(IsArray(loc.objs0));
+			assertEquals(loc.objs0, loc.objs1);
+			assertEquals(loc.objs1, loc.objs2);
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testLooping" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.rel = injectInspector(datasourceRel.clone().limit(10));
+			loc.variables = loc.rel._inspect();
+			
+			// test that current row is correctly initialized
+			assertEquals(0, loc.variables.currentRow);
+			loc.rel.exec();
+			assertEquals(0, loc.variables.currentRow);
+			
+			// loop forwards
+			loc.i = 0;
+			while (loc.rel.next()) {
+				
+				// test current row advancement
+				loc.i++;
+				assertEquals(loc.i, loc.variables.currentRow);
+				assertEquals(loc.i, loc.rel.currentRow());
+				
+				// test curr method against structs
+				loc.curr = loc.rel.curr("struct");
+				assertSame(loc.curr, loc.variables.cache.structs[loc.i]);
+				assertSame(loc.curr, loc.rel.struct(loc.i));
+				
+				// test curr method against objects
+				loc.curr = loc.rel.curr("object");
+				assertSame(loc.curr, loc.variables.cache.objects[loc.i]);
+				assertSame(loc.curr, loc.rel.object(loc.i));
+			}
+			
+			// test that current row has reached the end
+			assertEquals(11, loc.variables.currentRow);
+			
+			// loop backwards
+			loc.i = 11;
+			while (loc.rel.prev()) {
+				
+				// test current row advancement
+				loc.i--;
+				assertEquals(loc.i, loc.variables.currentRow);
+				assertEquals(loc.i, loc.rel.currentRow());
+				
+				// test curr method against structs
+				loc.curr = loc.rel.curr("struct");
+				assertSame(loc.curr, loc.variables.cache.structs[loc.i]);
+				assertSame(loc.curr, loc.rel.struct(loc.i));
+				
+				// test curr method against objects
+				loc.curr = loc.rel.curr("object");
+				assertSame(loc.curr, loc.variables.cache.objects[loc.i]);
+				assertSame(loc.curr, loc.rel.object(loc.i));
+			}
+			
+			// test that current row has reached the beginning
+			assertEquals(0, loc.variables.currentRow);
+			
+			// test that accessing currentRow() sets internal counter to 1
+			assertEquals(1, loc.rel.currentRow());
+			assertEquals(1, loc.variables.currentRow);
 		</cfscript>
 	</cffunction>
 	
