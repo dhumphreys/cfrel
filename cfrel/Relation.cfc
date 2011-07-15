@@ -726,7 +726,7 @@
 	<cffunction name="curr" returntype="any" access="public" hint="Get current object, or false if no more rows">
 		<cfargument name="format" type="string" default="object" hint="Format of record to be returned: struct or object" />
 		<cfscript>
-			if (variables.currentRow GT recordCount())
+			if (this.currentRow() GT recordCount())
 				return false;
 			switch (arguments.format) {
 				case "struct":
