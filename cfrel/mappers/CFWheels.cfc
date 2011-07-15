@@ -272,6 +272,29 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="queryRowToStruct" returntype="struct" access="public">
+		<cfargument name="query" type="query" required="true" />
+		<cfargument name="index" type="numeric" default="#arguments.query.currentRow#" />
+		<cfargument name="model" type="any" default="false" />
+		<cfscript>
+			if (IsObject(arguments.model))
+				return arguments.model.$queryRowToStruct(arguments.query, arguments.index);
+			else
+				return super.queryRowToStruct(argumentCollection=arguments);
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="structToObject" returntype="struct" access="public">
+		<cfargument name="data" type="struct" required="true" />
+		<cfargument name="model" type="any" default="false" />
+		<cfscript>
+			if (IsObject(arguments.model))
+				return arguments.model.$createInstance(properties=arguments.data, persisted=true, callbacks=arguments.callbacks);
+			else
+				return super.structToObject(argumentCollection=arguments);
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="getLastTableAlias" returntype="string" access="public" hint="Search registered models for latest generated alias">
 		<cfargument name="tableName" type="string" required="true" />
 		<cfargument name="modelName" type="string" required="true" />

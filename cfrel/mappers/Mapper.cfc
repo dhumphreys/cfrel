@@ -48,6 +48,7 @@
 	<cffunction name="queryRowToStruct" returntype="struct" access="public">
 		<cfargument name="query" type="query" required="true" />
 		<cfargument name="index" type="numeric" default="#arguments.query.currentRow#" />
+		<cfargument name="model" type="any" default="false" />
 		<cfscript>
 			var loc = {};
 			loc.returnVal = {};
@@ -61,6 +62,7 @@
 	
 	<cffunction name="structToObject" returntype="struct" access="public">
 		<cfargument name="data" type="struct" required="true" />
+		<cfargument name="model" type="any" default="false" />
 		<cfscript>
 			var loc = {};
 			loc.comp = CreateObject("component", "component");

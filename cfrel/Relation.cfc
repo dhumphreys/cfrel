@@ -19,6 +19,9 @@
 			this.visitor = CreateObject("component", addCfcPrefix("cfrel.visitors.#arguments.visitor#")).init();
 			this.mapper = CreateObject("component", addCfcPrefix("cfrel.mappers.#arguments.mapper#")).init(arguments.includeSoftDeletes);
 			
+			// store model that this relation deals with
+			this.model = false;
+			
 			// internal parser
 			variables.parser = CreateObject("component", addCfcPrefix("cfrel.Parser")).init(cache=arguments.cacheParse);
 			
@@ -133,6 +136,12 @@
 				
 				// accept model and add model to mapping
 				case "model":
+				
+					// set model for mapper behavior
+					if (NOT IsObject(this.model))
+						this.model = arguments.target;
+					
+					// set up table node to wrap model
 					arguments.target = sqlTable(model=arguments.target);
 					this.mapper.buildMapping(arguments.target, this);
 					break;
@@ -645,7 +654,7 @@
 		<cfscript>
 			buildStructCache();
 			if (ArrayLen(variables.cache.structs) LT arguments.index OR NOT ArrayIsDefined(variables.cache.structs, arguments.index)) {
-				var obj = this.mapper.queryRowToStruct(this.query(), arguments.index);
+				var obj = this.mapper.queryRowToStruct(this.query(), arguments.index, this.model);
 				ArraySet(variables.cache.structs, arguments.index, arguments.index, obj);
 			}
 			return variables.cache.structs[arguments.index];
@@ -668,7 +677,7 @@
 		<cfscript>
 			buildObjectCache();
 			if (ArrayLen(variables.cache.objects) LT arguments.index OR NOT ArrayIsDefined(variables.cache.objects, arguments.index)) {
-				var obj = this.mapper.structToObject(struct(arguments.index));
+				var obj = this.mapper.structToObject(struct(arguments.index), this.model);
 				ArraySet(variables.cache.objects, arguments.index, arguments.index, obj);
 			}
 			return variables.cache.objects[arguments.index];
