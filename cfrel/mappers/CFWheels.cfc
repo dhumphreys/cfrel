@@ -289,7 +289,7 @@
 		<cfargument name="model" type="any" default="false" />
 		<cfscript>
 			if (IsObject(arguments.model))
-				return arguments.model.$createInstance(properties=arguments.data, persisted=true, callbacks=arguments.callbacks);
+				return arguments.model.$createInstance(properties=arguments.data, persisted=true, callbacks=true);
 			else
 				return super.structToObject(argumentCollection=arguments);
 		</cfscript>
