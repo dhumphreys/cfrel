@@ -686,6 +686,19 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="testCurr" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.rel = injectInspector(datasourceRel.clone());
+			loc.variables = loc.rel._inspect();
+			
+			// make sure calling curr can load the first object
+			// and lazy load execution properly
+			loc.curr = loc.rel.curr();
+			assertSame(loc.variables.cache.objects[1], loc.curr);
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="testLooping" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
