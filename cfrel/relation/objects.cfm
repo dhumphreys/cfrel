@@ -1,3 +1,46 @@
+<cffunction name="get" returntype="any" access="public" hint="Get object by index, or false if no record">
+	<cfargument name="index" type="numeric" default="#this.currentRow()#" />
+	<cfargument name="format" type="string" default="object" hint="Format of record to be returned: struct or object" />
+	<cfscript>
+		if (arguments.index LT 0 OR arguments.index GT recordCount())
+			return false;
+		switch (arguments.format) {
+			case "struct":
+				return struct(arguments.index);
+				break;
+			case "object":
+				return object(arguments.index);
+				break;
+		}
+		return false;
+	</cfscript>
+</cffunction>
+
+<cffunction name="first" returntype="any" access="public" hint="Get current object, or false if no records">
+	<cfargument name="format" type="string" default="object" hint="Format of record to be returned: struct or object" />
+	<cfreturn get(index=1, format=arguments.format) />
+</cffunction>
+
+<cffunction name="last" returntype="any" access="public" hint="Get current object, or false if no records">
+	<cfargument name="format" type="string" default="object" hint="Format of record to be returned: struct or object" />
+	<cfreturn get(index=recordCount(), format=arguments.format) />
+</cffunction>
+
+<cffunction name="all" returntype="array" access="public" hint="Get all objects">
+	<cfargument name="format" type="string" default="objects" hint="Format of record to be returned: structs or objects" />
+	<cfscript>
+		switch (arguments.format) {
+			case "structs":
+				return structs();
+				break;
+			case "objects":
+				return objects();
+				break;
+		}
+		return ArrayNew(1);
+	</cfscript>
+</cffunction>
+
 <cffunction name="struct" returntype="struct" access="public" hint="Return struct representation of current query row">
 	<cfargument name="index" type="numeric" default="#this.currentRow()#" />
 	<cfscript>

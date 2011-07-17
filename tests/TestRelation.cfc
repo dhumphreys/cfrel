@@ -656,6 +656,16 @@
 			assertTrue(IsArray(loc.structs0));
 			assertEquals(loc.structs0, loc.structs1);
 			assertEquals(loc.structs1, loc.structs2);
+			
+			// test first() and last() functions
+			assertSame(loc.rel.struct(1), loc.rel.first("struct"));
+			assertSame(loc.rel.struct(loc.rel.recordCount()), loc.rel.last("struct"));
+			
+			// test all() function
+			assertEquals(loc.structs1, loc.rel.all("structs"));
+			
+			// test get() function
+			assertSame(loc.rel.struct(5), loc.rel.get(5, "struct"));
 		</cfscript>
 	</cffunction>
 	
@@ -683,6 +693,16 @@
 			assertTrue(IsArray(loc.objs0));
 			assertEquals(loc.objs0, loc.objs1);
 			assertEquals(loc.objs1, loc.objs2);
+			
+			// test get() function
+			assertSame(loc.rel.object(5), loc.rel.get(5));
+			
+			// test first() and last() functions
+			assertSame(loc.rel.object(1), loc.rel.first());
+			assertSame(loc.rel.object(loc.rel.recordCount()), loc.rel.last());
+			
+			// test all() function
+			assertEquals(loc.objs1, loc.rel.all());
 		</cfscript>
 	</cffunction>
 	

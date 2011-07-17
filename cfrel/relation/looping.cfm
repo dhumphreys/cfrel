@@ -4,9 +4,13 @@
 
 <cffunction name="currentRow" returntype="numeric" access="public" hint="Get current row of loop">
 	<cfscript>
+		
+		// if query has not been executed, we will get the wrong value
 		exec();
+		
+		// if the counter has not been initialized, set it to 1
 		if (variables.currentRow EQ 0)
-			variables.currentRow++;
+			variables.currentRow = 1;
 		return variables.currentRow;
 	</cfscript>
 </cffunction>
@@ -18,18 +22,7 @@
 <cffunction name="curr" returntype="any" access="public" hint="Get current object, or false if no more rows">
 	<cfargument name="format" type="string" default="object" hint="Format of record to be returned: struct or object" />
 	<cfscript>
-		exec();
-		if (this.currentRow() GT recordCount())
-			return false;
-		switch (arguments.format) {
-			case "struct":
-				return struct(variables.currentRow);
-				break;
-			case "object":
-				return object(variables.currentRow);
-				break;
-		}
-		return false;
+		return get(index=this.currentRow(), format=arguments.format);
 	</cfscript>
 </cffunction>
 
@@ -44,7 +37,6 @@
 
 <cffunction name="prev" returntype="boolean" access="public" hint="Move counter to previous row. Return false if no more rows.">
 	<cfscript>
-		exec();
 		if (variables.currentRow GT 0)
 			variables.currentRow -= 1;
 		return (variables.currentRow GT 0);
