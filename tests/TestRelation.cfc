@@ -208,6 +208,18 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="testCountDistinct" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.a = new().select("COUNT(DISTINCT *)").from("a");
+			loc.b = new().select("COUNT(DISTINCT a)").from("b");
+			loc.c = new().select("COUNT(a)").from("b");
+			assertEquals("SELECT COUNT(DISTINCT *) FROM a", loc.a.toSql());
+			assertEquals("SELECT COUNT(DISTINCT a) FROM b", loc.b.toSql());
+			assertEquals("SELECT COUNT(a) FROM b", loc.c.toSql());
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="testEmptyFrom" returntype="void" access="public">
 		<cfscript>
 			assertEquals(0, ArrayLen(new().sql.froms), "FROM clause should not be set initially");

@@ -238,7 +238,10 @@
 			variables.aliasOff = true;
 			if (NOT IsSimpleValue(obj.scope) OR obj.scope NEQ "")
 				loc.fn = visit(obj.scope) & ".";
-			loc.fn &= "#obj.name#(#ArrayToList(visit(obj.args), ', ')#)";
+			loc.fn &= "#obj.name#(";
+			if (obj.distinct)
+				loc.fn &= "DISTINCT ";
+			loc.fn &= "#ArrayToList(visit(obj.args), ', ')#)";
 			variables.aliasOff = loc.tmpAliasOff;
 			return loc.fn;
 		</cfscript>

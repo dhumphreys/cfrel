@@ -52,6 +52,7 @@
 	<cfargument name="name" type="string" required="true" />
 	<cfargument name="scope" type="any" default="" />
 	<cfargument name="args" type="array" default="#[]#" />
+	<cfargument name="distinct" type="boolean" default="false" />
 	<cfreturn constructObject("cfrel.nodes.Function", arguments)>
 </cffunction>
 

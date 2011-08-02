@@ -21,7 +21,7 @@
 				unaryOp="\+|-|~|\bNOT\b", compOp="<=>|<=|>=|<>|!=|!>|!<|=|<|>|\bLIKE\b", between="\bBETWEEN\b",
 				andOp="\bAND\b", orOp="\bOR\b", neg="\bNOT\b", sortOp="\bASC\b|\bDESC\b", null="\bNULL\b",
 				cast="\bCAST\b", iss="\bIS\b", inn="\bIN\b", identifier="\w+", kase="\bCASE\b", when="\bWHEN\b",
-				then="\bTHEN\b", els="\bELSE\b", end="\bEND\b", like="\bLIKE\b"};
+				then="\bTHEN\b", els="\bELSE\b", end="\bEND\b", like="\bLIKE\b", distinct="\bDISTINCT\b"};
 			
 			// build regex to match any of the terminals above
 			variables.terminalRegex = "";
@@ -345,9 +345,10 @@
 				
 				// IDENTIFIER LPAREN OPT_EXPRS RPAREN
 				if (accept(t.lparen)) {
+					loc.distinct = (loc.id EQ "COUNT" AND accept(t.distinct));
 					loc.args = optExprs();
 					expect(t.rparen);
-					loc.term = sqlFunction(name=loc.id, args=loc.args);
+					loc.term = sqlFunction(name=loc.id, args=loc.args, distinct=loc.distinct);
 				
 				} else if (accept(t.dot)) {
 				
