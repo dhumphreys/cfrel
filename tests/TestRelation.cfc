@@ -4,9 +4,9 @@
 	<cffunction name="setup" returntype="void" access="public">
 		<cfscript>
 			super.setup();
-			variables.cfc = "cfrel.Relation";
+			variables.cfc = "src.Relation";
 			variables.datasourceRel = new(datasource="cfrel").select("id,username,password").from("users");
-			variables.sqlVisitor = CreateObject("component", "cfrel.visitors.Sql").init();
+			variables.sqlVisitor = CreateObject("component", "src.visitors.Sql").init();
 		</cfscript>
 	</cffunction>
 	
@@ -26,7 +26,7 @@
 			loc.varCount2 = StructCount(loc.instance);
 			
 			// make sure init modifies instance, not creating a new one
-			assertIsTypeOf(loc.instance, "cfrel.Relation");
+			assertIsTypeOf(loc.instance, "src.Relation");
 			assertSame(loc.obj, loc.instance, "init() should return same instance");
 			assertTrue(loc.varCount2 GT loc.varCount1, "init() should define private variables");
 		</cfscript>
@@ -41,7 +41,7 @@
 			
 			// make sure datasource and visitor were correctly set
 			assertEquals("test", loc.instance.datasource, "Datasource should be set through constructor");
-			assertIsTypeOf(loc.instance.visitor, "cfrel.visitors.SqlServer");
+			assertIsTypeOf(loc.instance.visitor, "src.visitors.SqlServer");
 		</cfscript>
 	</cffunction>
 	
@@ -50,7 +50,7 @@
 			var loc = {};
 			loc.factory = new(init=false);
 			loc.instance = loc.factory.new();
-			assertIsTypeOf(loc.instance, "cfrel.Relation");
+			assertIsTypeOf(loc.instance, "src.Relation");
 			assertNotSame(loc.instance, loc.factory, "new() should create a new instance");
 		</cfscript>
 	</cffunction>
@@ -68,7 +68,7 @@
 			loc.private2 = loc.clone2._inspect();
 			
 			// make sure that call returns a different relation object
-			assertIsTypeOf(loc.clone1, "cfrel.Relation");
+			assertIsTypeOf(loc.clone1, "src.Relation");
 			assertNotSame(loc.clone1, loc.instance, "clone() should return copy of object, not same one");
 			assertNotSame(loc.clone1, loc.clone2);
 			assertNotSame(loc.clone1.sql, loc.instance.sql, "clone() should copy the sql struct, not reference it");
@@ -590,7 +590,7 @@
 	<cffunction name="testSqlGeneration" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
-			loc.visitor = CreateObject("component", "cfrel.visitors.Sql").init();
+			loc.visitor = CreateObject("component", "src.visitors.Sql").init();
 			
 			// generate a simple relation
 			loc.instance = new().select("a").from("b").where("a > 5").order("a ASC").paginate(2, 15);

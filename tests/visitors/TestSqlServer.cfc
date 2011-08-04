@@ -3,7 +3,7 @@
 	<cffunction name="setup" returntype="void" access="public">
 		<cfscript>
 			super.setup();
-			variables.cfc = "cfrel.visitors.SqlServer";
+			variables.cfc = "src.visitors.SqlServer";
 		</cfscript>
 	</cffunction>
 	
@@ -11,7 +11,7 @@
 		<cfscript>
 			var loc = {};
 			loc.visitor = new();
-			loc.relation = new("cfrel.Relation").select("a,b,c,SUM(e)").from("tableD").where(a=5).group("a,b,c").order("b ASC");
+			loc.relation = new("src.Relation").select("a,b,c,SUM(e)").from("tableD").where(a=5).group("a,b,c").order("b ASC");
 			
 			// set expected value
 			loc.expected = "SELECT [a], [b], [c], SUM([e]) FROM [tableD] WHERE [a] = ? GROUP BY [a], [b], [c] ORDER BY [b] ASC";
@@ -25,7 +25,7 @@
 		<cfscript>
 			var loc = {};
 			loc.visitor = new();
-			loc.factory = CreateObject("component", "cfrel.Relation");
+			loc.factory = CreateObject("component", "src.Relation");
 			
 			// build a variety of queries
 			loc.rel1 = loc.factory.new().select("a,b,c,d").distinct().from("example").limit(15);
@@ -46,7 +46,7 @@
 			var loc = {};
 			loc.pass = false;
 			loc.visitor = new();
-			loc.rel = new("cfrel.Relation").select("c").offset(5);
+			loc.rel = new("src.Relation").select("c").offset(5);
 			
 			// should not allow OFFSET without LIMIT
 			try {
@@ -63,7 +63,7 @@
 			var loc = {};
 			loc.pass = false;
 			loc.visitor = new();
-			loc.rel = new("cfrel.Relation").select("c").paginate(2, 10);
+			loc.rel = new("src.Relation").select("c").paginate(2, 10);
 			
 			// should not allow empty ORDER BY
 			try {
@@ -81,8 +81,8 @@
 			loc.visitor = new();
 			
 			// perform TOP and ROW_NUMBER() style limits on data
-			loc.rel1 = new("cfrel.Relation").select("a").order("a ASC").limit(5);
-			loc.rel2 = new("cfrel.Relation").select("b").order("b DESC").limit(5).offset(10);
+			loc.rel1 = new("src.Relation").select("a").order("a ASC").limit(5);
+			loc.rel2 = new("src.Relation").select("b").order("b DESC").limit(5).offset(10);
 			
 			// generate sql string
 			loc.visitor.visit(loc.rel1);

@@ -19,8 +19,8 @@
 		<cfscript>
 			var loc = {};
 			loc.rel = relation(datasource="cfrel", visitor="SqlServer");
-			assertIsTypeOf(loc.rel, "cfrel.Relation");
-			assertIsTypeOf(loc.rel.visitor, "cfrel.visitors.SqlServer");
+			assertIsTypeOf(loc.rel, "src.Relation");
+			assertIsTypeOf(loc.rel.visitor, "src.visitors.SqlServer");
 			assertEquals("cfrel", loc.rel.datasource);
 		</cfscript>
 	</cffunction>
@@ -50,19 +50,23 @@
 	
 	<cffunction name="testAddCfcPrefix" returntype="void" access="public">
 		<cfscript>
-			assertEquals("com.component", addCfcPrefix("com.component"));
-			application.cfrel.cfcPrefix = "something";
-			assertEquals("something.com.component", addCfcPrefix("com.component"));
-			StructDelete(application, "cfrel", false);
+			oldPrefix = application.cfrel.cfcPrefix;
+			StructDelete(application.cfrel, "cfcPrefix");
+			assertEquals("cfrel.component", addCfcPrefix("cfrel.component"));
+			application.cfrel.cfcPrefix = "something.else";
+			assertEquals("something.else.component", addCfcPrefix("cfrel.component"));
+			application.cfrel.cfcPrefix = oldPrefix;
 		</cfscript>
 	</cffunction>
 	
 	<cffunction name="testStripCfcPrefix" returntype="void" access="public">
 		<cfscript>
-			assertEquals("com.component", stripCfcPrefix("com.component"));
-			application.cfrel.cfcPrefix = "something";
-			assertEquals("com.component", stripCfcPrefix("something.com.component"));
-			StructDelete(application, "cfrel", false);
+			oldPrefix = application.cfrel.cfcPrefix;
+			StructDelete(application.cfrel, "cfcPrefix");
+			assertEquals("cfrel.component", stripCfcPrefix("cfrel.component"));
+			application.cfrel.cfcPrefix = "something.else";
+			assertEquals("cfrel.component", stripCfcPrefix("something.else.component"));
+			application.cfrel.cfcPrefix = oldPrefix;
 		</cfscript>
 	</cffunction>
 	

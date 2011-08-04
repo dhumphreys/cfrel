@@ -49,11 +49,11 @@
 	</cfscript>
 </cffunction>
 
-<cffunction name="addCfcPrefix" returntype="string" access="private" hint="Append CFC prefix to path">
+<cffunction name="addCfcPrefix" returntype="string" access="private" hint="Prepend CFC prefix to path">
 	<cfargument name="path" type="string" required="true">
 	<cfscript>
 		if (IsDefined("application.cfrel.cfcPrefix"))
-			arguments.path = ListAppend(application.cfrel.cfcPrefix, arguments.path, ".");
+			arguments.path = REReplace(arguments.path, "^cfrel", application.cfrel.cfcPrefix);
 	</cfscript>
 	<cfreturn arguments.path />
 </cffunction>
@@ -62,7 +62,7 @@
 	<cfargument name="path" type="string" required="true">
 	<cfscript>
 		if (IsDefined("application.cfrel.cfcPrefix"))
-			arguments.path = REReplace(arguments.path, "^" & application.cfrel.cfcPrefix & "\.", "");
+			arguments.path = REReplace(arguments.path, "^" & application.cfrel.cfcPrefix, "cfrel");
 	</cfscript>
 	<cfreturn arguments.path />
 </cffunction>

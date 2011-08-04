@@ -11,7 +11,7 @@
 		<cfscript>
 			var loc = {};
 			loc.sql = new();
-			loc.factory = CreateObject("component", "cfrel.Relation");
+			loc.factory = CreateObject("component", "src.Relation");
 			
 			// build a variety of queries
 			loc.rel1 = loc.factory.new().select("1 + 2", 3, 4).distinct();
@@ -54,7 +54,7 @@
 		<cfscript>
 			var loc = {};
 			loc.visitor = new();
-			loc.rel = new("cfrel.Relation").select(1).from("a");
+			loc.rel = new("src.Relation").select(1).from("a");
 			loc.input = [5, "a", sqlLiteral("b"), loc.rel];
 			loc.output = [5, "a", "b", "SELECT 1 FROM a"];
 			assertEquals(loc.output, loc.visitor.visit(loc.input));
