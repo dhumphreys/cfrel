@@ -1,4 +1,7 @@
 .project
 *.db
 *.sqlite3
+*~
+build
 WEB-INF
+plugins/cfwheels/lib

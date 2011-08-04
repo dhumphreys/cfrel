@@ -7,10 +7,8 @@
 			this.version = "1.1.1";
 			
 			// set up cfrel cfc mappings
-			if (NOT StructKeyExists(application, "cfrel"))
-				application.cfrel = {};
-			if (NOT StructKeyExists(application.cfrel, "cfcPrefix"))
-				application.cfrel.cfcPrefix = "plugins.cfrel.cfrel";
+			application.cfrel = {};
+			application.cfrel.cfcPrefix = "plugins.cfrel.lib";
 				
 			return this;
 		</cfscript>
@@ -155,7 +153,7 @@
 		<cfargument name="includeSoftDeletes" type="boolean" default="false" />
 		<cfscript>
 			var loc = {};
-			loc.rel = CreateObject("component", "plugins.cfrel.cfrel.cfrel.Relation");
+			loc.rel = CreateObject("component", "plugins.cfrel.lib.Relation");
 			loc.rel.init(datasource=variables.wheels.class.connection.datasource, visitor="SqlServer", mapper="CFWheels", argumentCollection=arguments);
 			loc.rel.from(this);
 			return loc.rel;
