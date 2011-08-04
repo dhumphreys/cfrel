@@ -1,0 +1,6 @@
+In order to develop this plugin:
+1.) Set up plugin settings according to cfwheels plugin development docs
+2.) Create a symlink in this folder to the cfrel core
+    $ ln -s ../../src lib
+3.) Create a symlink in your cfwheels app's plugins folder to this folder
+    $ ln -s <path_to_repo>/plugins/cfwheels <path_to_app>/plugins/cfrel
