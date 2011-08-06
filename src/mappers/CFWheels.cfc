@@ -306,4 +306,13 @@
 			return arguments.modelName;
 		</cfscript>
 	</cffunction>
+	
+	<cffunction name="afterFind" returntype="query" access="public" hint="Do after-find query processing">
+		<cfargument name="model" type="any" required="true" />
+		<cfargument name="query" type="query" required="true" />
+		<cfscript>
+			arguments.model.$callback("afterFind", true, arguments.query);
+			return arguments.query;
+		</cfscript>
+	</cffunction>
 </cfcomponent>

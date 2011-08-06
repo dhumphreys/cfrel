@@ -72,6 +72,12 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="afterFind" returntype="query" access="public" hint="Do after-find query processing">
+		<cfargument name="model" type="any" required="true" />
+		<cfargument name="query" type="query" required="true" />
+		<cfreturn arguments.query />
+	</cffunction>
+	
 	<cffunction name="columnsFor" returntype="any" access="private">
 		<cfargument name="table" type="string" default="" />
 		<cfscript>

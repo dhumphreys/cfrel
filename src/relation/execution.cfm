@@ -9,20 +9,23 @@
 </cffunction>
 
 <cffunction name="exec" returntype="struct" access="public" hint="Run query() but return the relation">
+	<cfargument name="callbacks" type="boolean" default="true" />
 	<cfscript>
-		this.query();
+		this.query(argumentCollection=arguments);
 		return this;
 	</cfscript>
 </cffunction>
 
 <cffunction name="reload" returntype="struct" access="public" hint="Execute again to reload dataset">
+	<cfargument name="callbacks" type="boolean" default="true" />
 	<cfscript>
 		variables.executed = false;
-		return this.exec();
+		return this.exec(argumentCollection=arguments);
 	</cfscript>
 </cffunction>
 
 <cffunction name="query" returntype="query" access="public" hint="Lazily execute and return query object">
+	<cfargument name="callbacks" type="boolean" default="true" />
 	<cfargument name="allowSpecialPaging" type="boolean" default="false" />
 	<cfscript>
 		var loc = {};
@@ -36,7 +39,7 @@
 				
 				// get values for rows that don't use aggregates
 				loc.valueRel = minimizedRelation();
-				loc.valueQuery = loc.valueRel.query(false);
+				loc.valueQuery = loc.valueRel.query(false, false);
 				
 				// create a new clone without pagination
 				loc.dataRel = clone().clearPagination();
@@ -55,7 +58,7 @@
 				}
 				
 				// save objects into current relation
-				variables.cache.query = loc.dataRel.query(false);
+				variables.cache.query = loc.dataRel.query(arguments.callbacks, false);
 				variables.cache.result = loc.dataRel.result();
 			
 			} else {
@@ -109,6 +112,10 @@
 				// save objects
 				variables.cache.query = loc.result.getResult();
 				variables.cache.result = loc.result.getPrefix();
+				
+				// run after find callbacks on query
+				if (arguments.callbacks)
+					this.mapper.afterFind(this.model, variables.cache.query);
 				
 				// set up looping counter
 				variables.currentRow = 0;

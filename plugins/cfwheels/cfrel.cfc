@@ -82,7 +82,7 @@
 					loc.rel.order(primaryKey());
 					
 				// execute query
-				loc.rel.exec();
+				loc.rel.exec(callbacks=arguments.callbacks);
 				
 				// store in request cache so we never run the exact same query twice in the same request
 				request.wheels[loc.queryKey] = loc.rel;
@@ -115,9 +115,6 @@
 				switch (arguments.returnAs) {
 					case "query":
 						loc.returnValue = loc.query;
-						// execute callbacks unless we're currently running the count or primary key pagination queries (we only want the callback to run when we have the actual data)
-						if (loc.returnValue.columnList != "wheelsqueryresult" && !arguments.$limit && !arguments.$offset)
-							$callback("afterFind", arguments.callbacks, loc.returnValue);
 						break;
 						
 					case "relation":
