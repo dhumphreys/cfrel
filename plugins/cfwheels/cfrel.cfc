@@ -153,9 +153,28 @@
 		<cfargument name="includeSoftDeletes" type="boolean" default="false" />
 		<cfscript>
 			var loc = {};
+			
+			// determine visitor for relation
+			if (NOT StructKeyExists(variables.wheels.class, "cfrelVisitor")) {
+				loc.adapterMeta = GetMetaData($adapter());
+				loc.visitor = ListLast(loc.adapterMeta.fullName, ".");
+				switch (loc.visitor) {
+					case "MicrosoftSQLServer": loc.visitor = "SqlServer"; break;
+					case "MySQL": loc.visitor = "MySql"; break;
+				}
+				variables.wheels.class.cfrelVisitor = loc.visitor;
+			}
+			
+			// create relation object
 			loc.rel = CreateObject("component", "plugins.cfrel.lib.Relation");
-			loc.rel.init(datasource=variables.wheels.class.connection.datasource, visitor="SqlServer", mapper="CFWheels", argumentCollection=arguments);
+			loc.rel.init(
+				datasource=variables.wheels.class.connection.datasource,
+				visitor=variables.wheels.class.cfrelVisitor,
+				mapper="CFWheels",
+				argumentCollection=arguments
+			);
 			loc.rel.from(this);
+			
 			return loc.rel;
 		</cfscript>
 	</cffunction>
