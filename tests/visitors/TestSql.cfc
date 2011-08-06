@@ -3,7 +3,7 @@
 	<cffunction name="setup" returntype="void" access="public">
 		<cfscript>
 			super.setup();
-			variables.cfc = "cfrel.visitors.Sql";
+			variables.cfc = "src.visitors.Sql";
 		</cfscript>
 	</cffunction>
 	
