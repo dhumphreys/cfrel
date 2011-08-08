@@ -1,3 +1,35 @@
+<cffunction name="findByKey" returntype="any" access="public" hint="Find a scoped record by key">
+	<cfargument name="key" type="string" required="true" />
+	<cfscript>
+		var loc = {};
+		loc.args = {};
+		
+		// get primary keys from mapper
+		loc.keys = ListToArray(arguments.key);
+		loc.primaryKey = this.mapper.primaryKey(this.model);
+		loc.iEnd = ArrayLen(loc.primaryKey);
+		
+		// check for errors
+		if (loc.iEnd EQ 0)
+			throwException("No primary key structure found.");
+		else if (loc.iEnd NEQ ArrayLen(loc.keys))
+			throwException("Invalid key list. Does not match primary key for this table.");
+		
+		// add each key / value to arguments
+		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+			loc.args[loc.primaryKey[loc.i]] = loc.keys[loc.i];
+		
+		// execute WHERE to find record matching key
+		loc.rel = clone().where(argumentCollection=loc.args).clearPagination().limit(1);
+		
+		// if records are found, return object
+		if (loc.rel.recordCount() GT 0)
+			return loc.rel.object(1);
+		
+		return false;
+	</cfscript>
+</cffunction>
+
 <cffunction name="select" returntype="struct" access="public" hint="Append to the SELECT clause of the relation">
 	<cfscript>
 		if (variables.executed)
@@ -268,7 +300,7 @@
 		return this;
 	</cfscript>
 </cffunction>
-select
+
 <cffunction name="clearGroup" returntype="struct" access="public" hint="Remove all GROUP BY options">
 	<cfscript>
 		if (variables.executed)

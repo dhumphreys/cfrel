@@ -78,6 +78,11 @@
 		<cfreturn arguments.query />
 	</cffunction>
 	
+	<cffunction name="primaryKey" returntype="array" access="public" hint="Get primary key array from model">
+		<cfargument name="model" type="any" required="true" />
+		<cfreturn ArrayNew(1) />
+	</cffunction>
+	
 	<cffunction name="columnsFor" returntype="any" access="private">
 		<cfargument name="table" type="string" default="" />
 		<cfscript>
