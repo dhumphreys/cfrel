@@ -90,6 +90,7 @@
 			
 			// set up join level tracking and current model class
 			loc.levels = [loc.from.model];
+			loc.lastModel = loc.from.model;
 			loc.private = injectInspector(loc.from.model)._inspect();
 			loc.class = loc.private.wheels.class;
 			
@@ -112,6 +113,7 @@
 						// push the last model onto the stack
 						ArrayAppend(loc.levels, loc.model);
 						loc.class = loc.model._inspect().wheels.class;
+						loc.lastModel = loc.model;
 						loc.pos++;
 						break;
 						
@@ -120,7 +122,8 @@
 					
 						// pop the last model off of the stack
 						ArrayDeleteAt(loc.levels, ArrayLen(loc.levels));
-						loc.class = loc.levels[ArrayLen(loc.levels)]._inspect().wheels.class;
+						loc.lastModel = loc.levels[ArrayLen(loc.levels)];
+						loc.class = loc.lastModel._inspect().wheels.class;
 						loc.pos++;
 						break;
 						
@@ -151,7 +154,7 @@
 							
 							// guess foreign key if not set
 							if (loc.assoc.foreignKey EQ "")
-								loc.assoc.foreignKey = loc.otherClass.modelName & "id";
+								loc.assoc.foreignKey = REReplace(loc.model.primaryKey(), "(^|,)", "\1#loc.otherClass.modelName#", "ALL");
 								
 							// set keys in reverse order
 							loc.listA = loc.assoc.foreignKey;
@@ -161,7 +164,7 @@
 							
 							// guess foreign key if not set
 							if (loc.assoc.foreignKey EQ "")
-								loc.assoc.foreignKey = loc.class.modelName & "id";
+								loc.assoc.foreignKey = REReplace(loc.lastModel.primaryKey(), "(^|,)", "\1#loc.class.modelName#", "ALL");
 								
 							// set keys in regular order
 							loc.listA = loc.class.keys;
