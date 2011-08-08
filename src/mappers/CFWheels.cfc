@@ -147,8 +147,26 @@
 						loc.tableB = getLastTableAlias(loc.otherClass.tableName, loc.otherClass.modelName);
 						
 						// determine join keys to use
-						loc.listA = loc.assoc.type NEQ "belongsTo" ? loc.class.keys : loc.assoc.foreignKey;
-						loc.listB = loc.assoc.type NEQ "belongsTo" ? loc.assoc.foreignKey : loc.otherClass.keys;
+						if (loc.assoc.type EQ "belongsTo") {
+							
+							// guess foreign key if not set
+							if (loc.assoc.foreignKey EQ "")
+								loc.assoc.foreignKey = loc.otherClass.modelName & "id";
+								
+							// set keys in reverse order
+							loc.listA = loc.assoc.foreignKey;
+							loc.listB = loc.class.keys;
+							
+						} else {
+							
+							// guess foreign key if not set
+							if (loc.assoc.foreignKey EQ "")
+								loc.assoc.foreignKey = loc.class.modelName & "id";
+								
+							// set keys in regular order
+							loc.listA = loc.class.keys;
+							loc.listB = loc.assoc.foreignKey;
+						}
 						
 						// create join condition
 						loc.condition = "";
