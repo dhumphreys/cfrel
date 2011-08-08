@@ -76,10 +76,6 @@
 				if (arguments.maxRows GT 0) loc.rel.limit(arguments.maxRows);
 				if (arguments.$limit GT 0) loc.rel.limit(arguments.$limit);
 				if (arguments.$offset GT 0) loc.rel.offset(arguments.$offset);
-				
-				// ordering for paging (if no order specified)
-				if (arguments.page AND Len(arguments.order) EQ 0)
-					loc.rel.order(primaryKey());
 					
 				// execute query
 				loc.rel.exec(callbacks=arguments.callbacks);

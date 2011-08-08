@@ -106,6 +106,10 @@
 					loc.query.addParam(value=loc.paramValue, cfsqltype=loc.parameterColumnTypes[loc.i], list=loc.paramIsList, null=loc.paramIsNull, separator=Chr(7));
 				}
 				
+				// run before find callbacks on relation
+				if (arguments.callbacks)
+					this.mapper.beforeFind(this);
+				
 				// execute query
 				loc.result = loc.query.execute(sql=loc.sql);
 				

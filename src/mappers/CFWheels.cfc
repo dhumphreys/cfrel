@@ -328,6 +328,21 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="beforeFind" returntype="void" access="public" hint="Do before-find relation logic">
+		<cfargument name="relation" type="any" required="true" />
+		<cfscript>
+			var loc = {};
+			
+			// if recordset is paged, set up ordering like cfwheels
+			// TODO: we are not making sure that all primary key fields are in the order clause here
+			if (arguments.relation.isPaged() AND IsObject(arguments.relation.model) AND ArrayLen(arguments.relation.sql.orders) EQ 0) {
+				
+				// add the primary keys to the order list
+				arguments.relation.order(arguments.relation.model.primaryKey());
+			}
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="afterFind" returntype="query" access="public" hint="Do after-find query processing">
 		<cfargument name="model" type="any" required="true" />
 		<cfargument name="query" type="query" required="true" />

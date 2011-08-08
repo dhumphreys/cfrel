@@ -20,6 +20,10 @@
 	</cfscript>
 </cffunction>
 
+<cffunction name="isPaged" returntype="boolean" access="public" hint="Return whether or not query is paged">
+	<cfreturn variables.paged />
+</cffunction>
+
 <cffunction name="clearPagination" returntype="struct" access="public" hint="Remove all limits, offsets, and pagination from the current relation">
 	<cfscript>
 		if (variables.executed)

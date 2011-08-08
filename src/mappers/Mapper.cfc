@@ -72,6 +72,10 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="beforeFind" returntype="void" access="public" hint="Do before-find relation logic">
+		<cfargument name="relation" type="any" required="true" />
+	</cffunction>
+	
 	<cffunction name="afterFind" returntype="query" access="public" hint="Do after-find query processing">
 		<cfargument name="model" type="any" required="true" />
 		<cfargument name="query" type="query" required="true" />
