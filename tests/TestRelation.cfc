@@ -505,6 +505,27 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="testIsPaged" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			
+			// test that paged flag is off by default
+			loc.instance = new();
+			assertFalse(loc.instance._inspect().paged);
+			assertEquals(loc.instance._inspect().paged, loc.instance.isPaged());
+			
+			// test that paged flag is off with manual limit and offset
+			loc.instance.limit(5).offset(0);
+			assertFalse(loc.instance._inspect().paged);
+			assertEquals(loc.instance._inspect().paged, loc.instance.isPaged());
+			
+			// test that flag is set to true once paged
+			loc.instance.paginate(1, 1);
+			assertTrue(loc.instance._inspect().paged);
+			assertEquals(loc.instance._inspect().paged, loc.instance.isPaged());
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="testPaginateSyntax" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
@@ -517,7 +538,7 @@
 			assertTrue(StructKeyExists(loc.instance.sql, "offset"), "OFFSET should be set in SQL");
 			assertEquals(10, loc.instance.sql.limit, "LIMIT should be equal to value set");
 			assertEquals(40, loc.instance.sql.offset, "OFFSET should equal (page - 1) * per-page");
-			assertEquals(true, loc.instance._inspect().paged, "Paged flag should be set");
+			assertTrue(loc.instance.isPaged(), "Paged flag should be set");
 		</cfscript>
 	</cffunction>
 	
@@ -583,7 +604,7 @@
 			// make sure proper values were set in LIMIT and OFFSET clauses
 			assertFalse(StructKeyExists(loc.instance.sql, "limit"), "LIMIT should not be set in SQL");
 			assertFalse(StructKeyExists(loc.instance.sql, "offset"), "OFFSET should not be set in SQL");
-			assertEquals(false, loc.instance._inspect().paged, "Paged flag should not be set");
+			assertFalse(loc.instance.isPaged(), "Paged flag should not be set");
 		</cfscript>
 	</cffunction>
 	
