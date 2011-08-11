@@ -154,6 +154,7 @@
 				switch (loc.visitor) {
 					case "MicrosoftSQLServer": loc.visitor = "SqlServer"; break;
 					case "MySQL": loc.visitor = "MySql"; break;
+					case "PostgreSQL": loc.visitor = "PostgreSql"; break;
 				}
 				variables.wheels.class.cfrelVisitor = loc.visitor;
 			}
