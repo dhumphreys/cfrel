@@ -152,22 +152,30 @@
 						// determine join keys to use
 						if (loc.assoc.type EQ "belongsTo") {
 							
+							// guess join key if not set
+							if (loc.assoc.joinKey EQ "")
+								loc.assoc.joinKey = loc.model.primaryKey();
+							 
 							// guess foreign key if not set
 							if (loc.assoc.foreignKey EQ "")
 								loc.assoc.foreignKey = REReplace(loc.model.primaryKey(), "(^|,)", "\1#loc.otherClass.modelName#", "ALL");
 								
 							// set keys in reverse order
 							loc.listA = loc.assoc.foreignKey;
-							loc.listB = loc.class.keys;
+							loc.listB = loc.assoc.joinKey;
 							
 						} else {
 							
+							// guess join key if not set
+							if (loc.assoc.joinKey EQ "")
+								loc.assoc.joinKey = loc.lastModel.primaryKey();
+								
 							// guess foreign key if not set
 							if (loc.assoc.foreignKey EQ "")
 								loc.assoc.foreignKey = REReplace(loc.lastModel.primaryKey(), "(^|,)", "\1#loc.class.modelName#", "ALL");
 								
 							// set keys in regular order
-							loc.listA = loc.class.keys;
+							loc.listA = loc.assoc.joinKey;
 							loc.listB = loc.assoc.foreignKey;
 						}
 						
