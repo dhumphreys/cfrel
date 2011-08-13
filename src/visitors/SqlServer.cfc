@@ -67,9 +67,7 @@
 			loc.reg = "[^ \t'.,\]\[\(\)]+";
 			if (REFind("^(#loc.reg#)(\.#loc.reg#)*$", arguments.subject) EQ 0)
 				return arguments.subject;
-			loc.subject = REReplace(arguments.subject, "^(#loc.reg#)", "[\1]");
-			loc.subject = REReplace(loc.subject, "\.(#loc.reg#)", ".[\1]", "ALL");
-			return loc.subject;
+			return REReplace(arguments.subject, "(^|\.)(#loc.reg#)", "\1[\2]", "ALL");
 		</cfscript>
 	</cffunction>
 </cfcomponent>
