@@ -87,12 +87,10 @@
 			// throw error if FROM is not a model
 			if (typeOf(loc.from.model) NEQ "model")
 				throwException("Includes can only be used with models");
-			
-			// set up join level tracking and current model class
-			loc.levels = [loc.from.model];
-			loc.lastModel = loc.from.model;
-			loc.private = injectInspector(loc.from.model)._inspect();
-			loc.class = loc.private.wheels.class;
+				
+			// set up control stacks
+			loc.modelStack = [loc.from.model];
+			loc.aliasStack = [loc.from.alias];
 			
 			// loop over joined items
 			loc.iEnd = Len(arguments.include);
@@ -111,9 +109,8 @@
 					case "(":
 					
 						// push the last model onto the stack
-						ArrayAppend(loc.levels, loc.model);
-						loc.class = loc.model._inspect().wheels.class;
-						loc.lastModel = loc.model;
+						ArrayPrepend(loc.modelStack, loc.associationModel);
+						ArrayPrepend(loc.aliasStack, loc.associationAlias);
 						loc.pos++;
 						break;
 						
@@ -121,9 +118,8 @@
 					case ")":
 					
 						// pop the last model off of the stack
-						ArrayDeleteAt(loc.levels, ArrayLen(loc.levels));
-						loc.lastModel = loc.levels[ArrayLen(loc.levels)];
-						loc.class = loc.lastModel._inspect().wheels.class;
+						ArrayDeleteAt(loc.modelStack, 1);
+						ArrayDeleteAt(loc.aliasStack, 1);
 						loc.pos++;
 						break;
 						
@@ -136,29 +132,33 @@
 						loc.key = Mid(arguments.include, loc.pos, loc.nextPos - loc.pos);
 						loc.pos = loc.nextPos;
 						
-						// look up association and model
+						// look up class data for current model
+						loc.class = loc.modelStack[1].$classData();
+						
+						// look up association
+						// TODO: catch for missing associations
 						loc.assoc = loc.class.associations[loc.key];
-						loc.model = injectInspector(loc.from.model.model(loc.assoc.modelName));
-						loc.otherClass = loc.model._inspect().wheels.class;
+						loc.associationModel = loc.from.model.model(loc.assoc.modelName);
+						loc.associationClass = loc.associationModel.$classData();
 					
 						// build mapping for current model
-						loc.table = sqlTable(model=loc.model);
-						buildMapping(loc.table, arguments.relation);
+						loc.associationTable = sqlTable(model=loc.associationModel);
+						buildMapping(loc.associationTable, arguments.relation);
 						
 						// determine table aliases to use
-						loc.tableA = getLastTableAlias(loc.class.tableName, loc.class.modelName);
-						loc.tableB = getLastTableAlias(loc.otherClass.tableName, loc.otherClass.modelName);
+						loc.modelAlias = loc.aliasStack[1];
+						loc.associationAlias = loc.associationTable.alias;
 						
 						// determine join keys to use
 						if (loc.assoc.type EQ "belongsTo") {
 							
 							// guess join key if not set
 							if (loc.assoc.joinKey EQ "")
-								loc.assoc.joinKey = loc.model.primaryKey();
+								loc.assoc.joinKey = loc.associationClass.keys;
 							 
 							// guess foreign key if not set
 							if (loc.assoc.foreignKey EQ "")
-								loc.assoc.foreignKey = REReplace(loc.model.primaryKey(), "(^|,)", "\1#loc.otherClass.modelName#", "ALL");
+								loc.assoc.foreignKey = REReplace(loc.associationClass.keys, "(^|,)", "\1#loc.associationClass.modelName#", "ALL");
 								
 							// set keys in reverse order
 							loc.listA = loc.assoc.foreignKey;
@@ -168,11 +168,11 @@
 							
 							// guess join key if not set
 							if (loc.assoc.joinKey EQ "")
-								loc.assoc.joinKey = loc.lastModel.primaryKey();
+								loc.assoc.joinKey = loc.class.keys;
 								
 							// guess foreign key if not set
 							if (loc.assoc.foreignKey EQ "")
-								loc.assoc.foreignKey = REReplace(loc.lastModel.primaryKey(), "(^|,)", "\1#loc.class.modelName#", "ALL");
+								loc.assoc.foreignKey = REReplace(loc.class.keys, "(^|,)", "\1#loc.class.modelName#", "ALL");
 								
 							// set keys in regular order
 							loc.listA = loc.assoc.joinKey;
@@ -189,9 +189,9 @@
 							loc.keyB = ListGetAt(loc.listB, loc.j);
 							
 							// set up equality between the two keys
-							loc.columnA = StructKeyExists(loc.class.properties, loc.keyA) ? "#loc.tableA#." & loc.class.properties[loc.keyA].column : loc.class.calculatedProperties[loc.keyA].sql;
-							loc.columnB = StructKeyExists(loc.otherClass.properties, loc.keyB) ? "#loc.tableB#." & loc.otherClass.properties[loc.keyB].column : loc.otherClass.calculatedProperties[loc.keyB].sql;
-							loc.condition =  ListAppend(loc.condition, "#loc.columnA# = #loc.columnB#", Chr(7));
+							loc.columnA = StructKeyExists(loc.class.properties, loc.keyA) ? "#loc.modelAlias#." & loc.class.properties[loc.keyA].column : loc.class.calculatedProperties[loc.keyA].sql;
+							loc.columnB = StructKeyExists(loc.associationClass.properties, loc.keyB) ? "#loc.associationAlias#." & loc.associationClass.properties[loc.keyB].column : loc.associationClass.calculatedProperties[loc.keyB].sql;
+							loc.condition =  ListAppend(loc.condition, "#loc.columnB# = #loc.columnA#", Chr(7));
 						}
 						loc.condition = Replace(loc.condition, Chr(7), " AND ", "ALL");
 				
@@ -206,7 +206,7 @@
 						loc.joinType = (arguments.joinType EQ "") ? loc.assoc.joinType : arguments.joinType;
 						
 						// call join on relation
-						relation.join(loc.table, loc.condition, [], loc.joinType, true);
+						relation.join(loc.associationTable, loc.condition, [], loc.joinType, true);
 				}
 			}
 			
@@ -321,18 +321,6 @@
 				return arguments.model.$createInstance(properties=arguments.data, persisted=true, callbacks=true);
 			else
 				return super.structToObject(argumentCollection=arguments);
-		</cfscript>
-	</cffunction>
-	
-	<cffunction name="getLastTableAlias" returntype="string" access="public" hint="Search registered models for latest generated alias">
-		<cfargument name="tableName" type="string" required="true" />
-		<cfargument name="modelName" type="string" required="true" />
-		<cfscript>
-			var loc = {};
-			for (loc.i = ArrayLen(variables.models); loc.i GT 0; loc.i--)
-				if (variables.models[loc.i].table EQ arguments.tableName)
-					return variables.models[loc.i].alias;
-			return arguments.modelName;
 		</cfscript>
 	</cffunction>
 	
