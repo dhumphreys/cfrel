@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # set version
-VERSION=0.0.1
+VERSION=0.1
 
 # set path to export to
 COREZIP=cfrel-core-$VERSION.zip
