@@ -15,6 +15,7 @@
  testSuite.addAll("tests.TestRelation");
  testSuite.addAll("tests.visitors.TestVisitor");
  testSuite.addAll("tests.visitors.TestSql");
+ testSuite.addAll("tests.visitors.TestQueryOfQuery");
  testSuite.addAll("tests.visitors.TestMySql");
  testSuite.addAll("tests.visitors.TestPostgreSql");
  testSuite.addAll("tests.visitors.TestSqlServer");

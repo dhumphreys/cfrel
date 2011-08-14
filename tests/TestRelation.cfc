@@ -250,9 +250,11 @@
 			loc.instance = new();
 			loc.private = loc.instance._inspect();
 			assertFalse(loc.private.qoq, "QOQ should be false initially");
+			assertIsTypeOf(loc.instance.visitor, "src.visitors.Sql");
 			loc.instance.from(loc.query);
 			assertSame(loc.query, loc.instance.sql.froms[1], "FROM clause should be set to passed query");
 			assertTrue(loc.private.qoq, "QOQ should be true after using from(query)");
+			assertIsTypeOf(loc.instance.visitor, "src.visitors.QueryOfQuery");
 		</cfscript>
 	</cffunction>
 	

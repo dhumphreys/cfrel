@@ -88,6 +88,10 @@
 			// accept queries for QoQ operations
 			case "query":
 				variables.qoq = true;
+				
+				// change visitor for QoQ operations
+				variables.visitorClass = "QueryOfQuery";
+				this.visitor = CreateObject("component", addCfcPrefix("cfrel.visitors.QueryOfQuery")).init();
 				break;
 				
 			// and reject all others by throwing an error
