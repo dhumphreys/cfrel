@@ -149,7 +149,7 @@
 			
 			// determine visitor for relation
 			if (NOT StructKeyExists(variables.wheels.class, "cfrelVisitor")) {
-				loc.adapterMeta = GetMetaData($adapter());
+				loc.adapterMeta = GetMetaData(variables.wheels.class.adapter);
 				loc.visitor = ListLast(loc.adapterMeta.fullName, ".");
 				switch (loc.visitor) {
 					case "MicrosoftSQLServer": loc.visitor = "SqlServer"; break;
