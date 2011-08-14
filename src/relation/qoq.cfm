@@ -35,6 +35,7 @@
 						return "cf_sql_date";
 						break;
 					case "int":
+					case "int4":
 						return "cf_sql_integer";
 						break;
 					case "nchar":
