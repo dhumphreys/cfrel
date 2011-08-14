@@ -20,7 +20,7 @@
 				lparen="\(", rparen="\)", addOp="\+|-|&|\^|\|", star="\*", mulOp="\*|/|%", as="\bAS\b",
 				unaryOp="\+|-|~|\bNOT\b", compOp="<=>|<=|>=|<>|!=|!>|!<|=|<|>|\bLIKE\b", between="\bBETWEEN\b",
 				andOp="\bAND\b", orOp="\bOR\b", neg="\bNOT\b", sortOp="\bASC\b|\bDESC\b", null="\bNULL\b",
-				cast="\bCAST\b", iss="\bIS\b", inn="\bIN\b", identifier="\w+", kase="\bCASE\b", when="\bWHEN\b",
+				cast="\bCAST\b", iss="\bIS\b", inn="\bIN\b", identifier="[\[""`]?(\w+)[""`\]]?", kase="\bCASE\b", when="\bWHEN\b",
 				then="\bTHEN\b", els="\bELSE\b", end="\bEND\b", like="\bLIKE\b", distinct="\bDISTINCT\b"};
 			
 			// build regex to match any of the terminals above
@@ -542,6 +542,9 @@
 			// pad symbols with spaces and replace consecutive spaces
 			arguments.str = REReplaceNoCase(arguments.str, "(#terminalRegex#)", " \1 ", "ALL");
 			arguments.str = Trim(REReplaceNoCase(arguments.str, "(\s+)", " ", "ALL"));
+			
+			// replace escaped identifiers with their unescaped values
+			arguments.str = REReplace(arguments.str, t.identifier, "\1", "ALL");
 			
 			// split string into tokens by spaces
 			variables.tokens = ListToArray(arguments.str, " ");

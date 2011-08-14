@@ -608,6 +608,16 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="testColumnEscapeChars" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			
+			// test variety of escape characters to make sure they are stripped by parse
+			loc.instance = new().select("[a]").from("b").where('"a" > 5').order("`a` ASC");
+			assertEquals("SELECT a FROM b WHERE a > 5 ORDER BY a ASC", loc.instance.toSql());
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="testSqlGeneration" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
