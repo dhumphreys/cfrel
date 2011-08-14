@@ -87,7 +87,7 @@
 		<cfreturn ArrayNew(1) />
 	</cffunction>
 	
-	<cffunction name="columnsFor" returntype="any" access="private">
+	<cffunction name="wildcardColumns" returntype="any" access="private" hint="Return columns matching a wildcard (but not calculated columns)">
 		<cfargument name="table" type="string" default="" />
 		<cfscript>
 			var loc = {};

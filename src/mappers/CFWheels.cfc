@@ -266,7 +266,7 @@
 					case "cfrel.nodes.wildcard":
 					
 						// map the wildcard to all available table columns
-						arguments.obj.mapping = columnsFor(arguments.obj.subject);
+						arguments.obj.mapping = wildcardColumns(arguments.obj.subject);
 						break;
 						
 					// found a function call
