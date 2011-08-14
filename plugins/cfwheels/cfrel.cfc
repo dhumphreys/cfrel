@@ -4,7 +4,7 @@
 		<cfscript>
 			
 			// set compatible Wheels version
-			this.version = "1.1.1";
+			this.version = "1.1,1.1.1,1.1.2,1.1.3,1.1.4,1.1.5";
 			
 			// set up cfrel cfc mappings
 			application.cfrel = {};
