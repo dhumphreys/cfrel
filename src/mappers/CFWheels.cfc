@@ -153,7 +153,7 @@
 						if (loc.assoc.type EQ "belongsTo") {
 							
 							// guess join key if not set
-							if (loc.assoc.joinKey EQ "")
+							if (NOT StructKeyExists(loc.assoc, "joinKey") OR loc.assoc.joinKey EQ "")
 								loc.assoc.joinKey = loc.associationClass.keys;
 							 
 							// guess foreign key if not set
@@ -167,7 +167,7 @@
 						} else {
 							
 							// guess join key if not set
-							if (loc.assoc.joinKey EQ "")
+							if (NOT StructKeyExists(loc.assoc, "joinKey") OR loc.assoc.joinKey EQ "")
 								loc.assoc.joinKey = loc.class.keys;
 								
 							// guess foreign key if not set
