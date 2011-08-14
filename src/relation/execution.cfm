@@ -29,6 +29,10 @@
 	<cfargument name="allowSpecialPaging" type="boolean" default="false" />
 	<cfscript>
 		var loc = {};
+				
+		// run before find callbacks on relation
+		if (arguments.callbacks)
+			this.mapper.beforeFind(this);
 		
 		// drop into query logic if we don't have a query yet
 		if (variables.executed EQ false OR NOT StructKeyExists(variables.cache, "query")) {
@@ -105,10 +109,6 @@
 					loc.paramValue = loc.paramIsList ? ArrayToList(loc.parameters[loc.i], Chr(7)) : loc.parameters[loc.i];
 					loc.query.addParam(value=loc.paramValue, cfsqltype=loc.parameterColumnTypes[loc.i], list=loc.paramIsList, null=loc.paramIsNull, separator=Chr(7));
 				}
-				
-				// run before find callbacks on relation
-				if (arguments.callbacks)
-					this.mapper.beforeFind(this);
 				
 				// execute query
 				loc.result = loc.query.execute(sql=loc.sql);
