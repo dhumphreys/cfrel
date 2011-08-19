@@ -2,6 +2,7 @@
 	<cfargument name="datasource" type="string" default="" />
 	<cfargument name="visitor" type="string" default="Sql" />
 	<cfargument name="mapper" type="string" default="Mapper" />
+	<cfargument name="model" type="any" default="false" />
 	<cfargument name="cache" type="string" default="" />
 	<cfargument name="cacheParse" type="boolean" default="#ListFindNoCase(arguments.cache, 'parse')#" />
 	<cfargument name="includeSoftDeletes" type="boolean" default="false" />
@@ -17,7 +18,7 @@
 		this.mapper = CreateObject("component", addCfcPrefix("cfrel.mappers.#arguments.mapper#")).init(arguments.includeSoftDeletes);
 		
 		// store model that this relation deals with
-		this.model = false;
+		this.model = arguments.model;
 		
 		// internal parser
 		variables.parser = CreateObject("component", addCfcPrefix("cfrel.Parser")).init(cache=arguments.cacheParse);

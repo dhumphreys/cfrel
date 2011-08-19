@@ -1,5 +1,5 @@
 <cffunction name="qoq" returntype="struct" access="public" hint="Return a QoQ relation with the current recordset as the FROM">
-	<cfreturn this.new().from(this.query()) />
+	<cfreturn this.new(mapper=variables.mapperClass, model=this.model).from(this.query()) />
 </cffunction>
 
 <cffunction name="_queryColumnDataType" returntype="string" access="private" hint="Use query properties to return datatype of column">
