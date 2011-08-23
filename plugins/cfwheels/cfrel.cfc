@@ -50,7 +50,7 @@
 				return core.findAll(argumentCollection=arguments);
 
 			// we only allow direct associations to be loaded when returning objects
-			if (application.wheels.showErrorInformation && Len(arguments.returnAs) && arguments.returnAs != "query" && Find("(", arguments.include) && arguments.returnIncluded)
+			if (application.wheels.showErrorInformation && Len(arguments.returnAs) && ListFindNoCase("query,relation", arguments.returnAs) == 0 && Find("(", arguments.include) && arguments.returnIncluded)
 				$throw(type="Wheels", message="Incorrect Arguments", extendedInfo="You may only include direct associations to this object when returning an array of objects.");
 			
 			// return existing query result if it has been run already in current request, otherwise pass off the sql array to the query
