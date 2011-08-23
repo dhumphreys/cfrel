@@ -37,11 +37,13 @@
 			var loc = {};
 			
 			// create a new item with some options
-			loc.instance = new(init=false).init(datasource="test", visitor="SqlServer");
+			loc.model = {};
+			loc.instance = new(init=false).init(datasource="test", visitor="SqlServer", model=loc.model);
 			
 			// make sure datasource and visitor were correctly set
 			assertEquals("test", loc.instance.datasource, "Datasource should be set through constructor");
 			assertIsTypeOf(loc.instance.visitor, "src.visitors.SqlServer");
+			assertSame(loc.model, loc.instance.model);
 		</cfscript>
 	</cffunction>
 	
@@ -876,6 +878,15 @@
 				loc.pass = false;
 			}
 			assertTrue(loc.pass);
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="testQueryOfQueryModel" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.model = {};
+			loc.rel = new(datasource="cfrel", model=loc.model).from("users");
+			assertSame(loc.model, loc.rel.qoq().model);
 		</cfscript>
 	</cffunction>
 </cfcomponent>
