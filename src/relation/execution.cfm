@@ -118,7 +118,7 @@
 				variables.cache.result = loc.result.getPrefix();
 				
 				// run after find callbacks on query
-				if (arguments.callbacks)
+				if (arguments.callbacks AND IsObject(this.model))
 					this.mapper.afterFind(this.model, variables.cache.query);
 				
 				// set up looping counter
