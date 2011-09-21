@@ -152,10 +152,11 @@
 		<cfargument name="parameterize" type="any" required="false">
 		<cfargument name="returnAs" type="string" required="false">
 		<cfargument name="includeSoftDeletes" type="boolean" required="false" default="false">
+		<cfargument name="useDefaultScope" type="boolean" required="false" default="false">
 		<cfscript>
 			// make sure that all findOne calls don't use default scope
 			var coreMethod = core.findOne;
-			return coreMethod(argumentCollection=arguments, useDefaultScope=false);
+			return coreMethod(argumentCollection=arguments);
 		</cfscript>
 	</cffunction>
 	
