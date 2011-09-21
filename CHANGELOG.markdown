@@ -1,5 +1,10 @@
 # CFRel Changelog
 
+## 0.1.2 - Bug Fixes
+
+* Fixed column mappings for sql BETWEEN operations [Don]
+* Fixed broken `afterFind` logic for wheels rels with no model [Don]
+
 ## 0.1.1 - Bug Fixes
 
 * Allow model instances to be created from QoQ relations [Don]
