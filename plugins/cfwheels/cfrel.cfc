@@ -38,6 +38,7 @@
 		<cfargument name="returnIncluded" type="boolean" required="false">
 		<cfargument name="callbacks" type="boolean" required="false" default="true">
 		<cfargument name="includeSoftDeletes" type="boolean" required="false" default="false">
+		<cfargument name="useDefaultScope" type="boolean" required="false" default="true">
 		<cfargument name="$limit" type="numeric" required="false" default=0>
 		<cfargument name="$offset" type="numeric" required="false" default=0>
 		<cfargument name="$orig" type="boolean" default="false">
@@ -61,7 +62,11 @@
 			} else {
 			
 				// build new relation
-				loc.rel = this.rel(parameterize=arguments.parameterize, includeSoftDeletes=arguments.includeSoftDeletes);
+				loc.rel = this.rel(
+					parameterize=arguments.parameterize,
+					includeSoftDeletes=arguments.includeSoftDeletes,
+					useDefaultScope=arguments.useDefaultScope
+				);
 				
 				// call portions of select
 				if (Len(arguments.select) GT 0) loc.rel.select(arguments.select);
@@ -135,6 +140,23 @@
 			}
 		</cfscript>
 		<cfreturn loc.returnValue />
+	</cffunction>
+	
+	<cffunction name="findOne" returntype="any" access="public" output="false">
+		<cfargument name="where" type="string" required="false" default="">
+		<cfargument name="order" type="string" required="false" default="">
+		<cfargument name="select" type="string" required="false" default="">
+		<cfargument name="include" type="string" required="false" default="">
+		<cfargument name="cache" type="any" required="false" default="">
+		<cfargument name="reload" type="boolean" required="false">
+		<cfargument name="parameterize" type="any" required="false">
+		<cfargument name="returnAs" type="string" required="false">
+		<cfargument name="includeSoftDeletes" type="boolean" required="false" default="false">
+		<cfscript>
+			// make sure that all findOne calls don't use default scope
+			var coreMethod = core.findOne;
+			return coreMethod(argumentCollection=arguments, useDefaultScope=false);
+		</cfscript>
 	</cffunction>
 	
 	<!------------
