@@ -295,6 +295,10 @@
 								mapObject(arguments.obj.cases, arguments.useAlias);
 							if (StructKeyExists(arguments.obj, "els"))
 								mapObject(arguments.obj.els, arguments.useAlias);
+							if (StructKeyExists(arguments.obj, "start"))
+								mapObject(arguments.obj.start, arguments.useAlias);
+							if (StructKeyExists(arguments.obj, "end"))
+								mapObject(arguments.obj.end, arguments.useAlias);
 						}
 				}
 			}
