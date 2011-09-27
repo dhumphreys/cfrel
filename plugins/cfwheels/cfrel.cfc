@@ -38,7 +38,7 @@
 		<cfargument name="returnIncluded" type="boolean" required="false">
 		<cfargument name="callbacks" type="boolean" required="false" default="true">
 		<cfargument name="includeSoftDeletes" type="boolean" required="false" default="false">
-		<cfargument name="useDefaultScope" type="boolean" required="false" default="true">
+		<cfargument name="useDefaultScope" type="boolean" required="false" default="#$useDefaultScope()#">
 		<cfargument name="$limit" type="numeric" required="false" default=0>
 		<cfargument name="$offset" type="numeric" required="false" default=0>
 		<cfargument name="$orig" type="boolean" default="false">
@@ -193,15 +193,39 @@
 		<cfargument name="name" type="string" required="true" />
 		<cfscript>
 			var $customScope = $scopeStruct()[arguments.name];
-			var defaultScope = arguments.name EQ "default";
-			if (IsCustomFunction($customScope))
-				return $customScope();
-			else if (IsObject($customScope))
-				return $customScope.clone();
-			else if (IsSimpleValue($customScope))
-				return Evaluate($customScope);
-			else
-				return rel(useDefaultScope=(NOT defaultScope));
+			var loc = {};
+			loc.defaultScope = arguments.name EQ "default";
+			try {
+				
+				// if calling default scope, disable the default scope for the next operation
+				if (loc.defaultScope)
+					variables.wheels.class.useDefaultScope = false;
+					
+				// evaluate scope based on variable type
+				if (IsCustomFunction($customScope))
+					loc.rtn = $customScope();
+				else if (IsObject($customScope))
+					loc.rtn = $customScope.clone();
+				else if (IsSimpleValue($customScope))
+					loc.rtn = Evaluate($customScope);
+				else
+					loc.rtn = rel();
+				
+			} finally {
+				
+				// re-enable default scope
+				if (loc.defaultScope)
+					variables.wheels.class.useDefaultScope = true;
+			}
+			return loc.rtn;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="$useDefaultScope" returntype="boolean" access="public">
+		<cfscript>
+			if (NOT StructKeyExists(variables.wheels.class, "useDefaultScope"))
+				variables.wheels.class.useDefaultScope = true;
+			return variables.wheels.class.useDefaultScope;
 		</cfscript>
 	</cffunction>
 	
@@ -212,7 +236,7 @@
 	<cffunction name="rel" returntype="any" access="public" hint="Create relation object with this model as the subject">
 		<cfargument name="parameterize" type="boolean" default="false" />
 		<cfargument name="includeSoftDeletes" type="boolean" default="false" />
-		<cfargument name="useDefaultScope" type="boolean" default="true" />
+		<cfargument name="useDefaultScope" type="boolean" default="#$useDefaultScope()#" />
 		<cfscript>
 			var loc = {};
 			
