@@ -311,7 +311,7 @@
 		<cfargument name="model" type="any" default="false" />
 		<cfscript>
 			if (IsObject(arguments.model))
-				return arguments.model.$queryRowToStruct(arguments.query, arguments.index);
+				return arguments.model.$queryRowToStruct(properties=arguments.query, row=arguments.index);
 			else
 				return super.queryRowToStruct(argumentCollection=arguments);
 		</cfscript>
