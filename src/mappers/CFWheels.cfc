@@ -91,6 +91,7 @@
 			// set up control stacks
 			loc.modelStack = [loc.from.model];
 			loc.aliasStack = [loc.from.alias];
+			loc.includeStack = [variables.includes];
 			
 			// loop over joined items
 			loc.iEnd = Len(arguments.include);
@@ -110,7 +111,8 @@
 					
 						// push the last model onto the stack
 						ArrayPrepend(loc.modelStack, loc.associationModel);
-						ArrayPrepend(loc.aliasStack, loc.associationAlias);
+						ArrayPrepend(loc.aliasStack, loc.includeStack[1][loc.key]["_alias"]);
+						ArrayPrepend(loc.includeStack, loc.includeStack[1][loc.key]);
 						loc.pos++;
 						break;
 						
@@ -120,6 +122,7 @@
 						// pop the last model off of the stack
 						ArrayDeleteAt(loc.modelStack, 1);
 						ArrayDeleteAt(loc.aliasStack, 1);
+						ArrayDeleteAt(loc.includeStack, 1);
 						loc.pos++;
 						break;
 						
@@ -140,73 +143,78 @@
 						loc.assoc = loc.class.associations[loc.key];
 						loc.associationModel = loc.from.model.model(loc.assoc.modelName);
 						loc.associationClass = loc.associationModel.$classData();
+						
+						// only join to the association if it was not previously included
+						if (NOT StructKeyExists(loc.includeStack[1], loc.key)) {
+							loc.includeStack[1][loc.key] = javaHash();
 					
-						// build mapping for current model
-						loc.associationTable = sqlTable(model=loc.associationModel);
-						buildMapping(loc.associationTable, arguments.relation);
-						
-						// determine table aliases to use
-						loc.modelAlias = loc.aliasStack[1];
-						loc.associationAlias = loc.associationTable.alias;
-						
-						// determine join keys to use
-						if (loc.assoc.type EQ "belongsTo") {
+							// build mapping for current model
+							loc.associationTable = sqlTable(model=loc.associationModel);
+							buildMapping(loc.associationTable, arguments.relation);
 							
-							// guess join key if not set
-							if (NOT StructKeyExists(loc.assoc, "joinKey") OR loc.assoc.joinKey EQ "")
-								loc.assoc.joinKey = loc.associationClass.keys;
-							 
-							// guess foreign key if not set
-							if (loc.assoc.foreignKey EQ "")
-								loc.assoc.foreignKey = REReplace(loc.associationClass.keys, "(^|,)", "\1#loc.associationClass.modelName#", "ALL");
+							// determine table aliases to use
+							loc.modelAlias = loc.aliasStack[1];
+							loc.includeStack[1][loc.key]["_alias"] = loc.associationTable.alias;
+							
+							// determine join keys to use
+							if (loc.assoc.type EQ "belongsTo") {
 								
-							// set keys in reverse order
-							loc.listA = loc.assoc.foreignKey;
-							loc.listB = loc.assoc.joinKey;
-							
-						} else {
-							
-							// guess join key if not set
-							if (NOT StructKeyExists(loc.assoc, "joinKey") OR loc.assoc.joinKey EQ "")
-								loc.assoc.joinKey = loc.class.keys;
+								// guess join key if not set
+								if (NOT StructKeyExists(loc.assoc, "joinKey") OR loc.assoc.joinKey EQ "")
+									loc.assoc.joinKey = loc.associationClass.keys;
+								 
+								// guess foreign key if not set
+								if (loc.assoc.foreignKey EQ "")
+									loc.assoc.foreignKey = REReplace(loc.associationClass.keys, "(^|,)", "\1#loc.associationClass.modelName#", "ALL");
+									
+								// set keys in reverse order
+								loc.listA = loc.assoc.foreignKey;
+								loc.listB = loc.assoc.joinKey;
 								
-							// guess foreign key if not set
-							if (loc.assoc.foreignKey EQ "")
-								loc.assoc.foreignKey = REReplace(loc.class.keys, "(^|,)", "\1#loc.class.modelName#", "ALL");
+							} else {
 								
-							// set keys in regular order
-							loc.listA = loc.assoc.joinKey;
-							loc.listB = loc.assoc.foreignKey;
-						}
-						
-						// create join condition
-						loc.condition = "";
-						loc.jEnd = ListLen(loc.assoc.foreignKey);
-						for (loc.j = 1; loc.j LTE loc.jEnd; loc.j++) {
+								// guess join key if not set
+								if (NOT StructKeyExists(loc.assoc, "joinKey") OR loc.assoc.joinKey EQ "")
+									loc.assoc.joinKey = loc.class.keys;
+									
+								// guess foreign key if not set
+								if (loc.assoc.foreignKey EQ "")
+									loc.assoc.foreignKey = REReplace(loc.class.keys, "(^|,)", "\1#loc.class.modelName#", "ALL");
+									
+								// set keys in regular order
+								loc.listA = loc.assoc.joinKey;
+								loc.listB = loc.assoc.foreignKey;
+							}
 							
-							// handle opposite join directions
-							loc.keyA = ListGetAt(loc.listA, loc.j);
-							loc.keyB = ListGetAt(loc.listB, loc.j);
+							// create join condition
+							loc.condition = "";
+							loc.jEnd = ListLen(loc.assoc.foreignKey);
+							for (loc.j = 1; loc.j LTE loc.jEnd; loc.j++) {
+								
+								// handle opposite join directions
+								loc.keyA = ListGetAt(loc.listA, loc.j);
+								loc.keyB = ListGetAt(loc.listB, loc.j);
+								
+								// set up equality between the two keys
+								loc.columnA = StructKeyExists(loc.class.properties, loc.keyA) ? "#loc.modelAlias#." & loc.class.properties[loc.keyA].column : loc.class.calculatedProperties[loc.keyA].sql;
+								loc.columnB = StructKeyExists(loc.associationClass.properties, loc.keyB) ? "#loc.includeStack[1][loc.key]['_alias']#." & loc.associationClass.properties[loc.keyB].column : loc.associationClass.calculatedProperties[loc.keyB].sql;
+								loc.condition =  ListAppend(loc.condition, "#loc.columnB# = #loc.columnA#", Chr(7));
+							}
+							loc.condition = Replace(loc.condition, Chr(7), " AND ", "ALL");
+					
+							// if additional conditioning is specified, parse it out
+							loc.condPos = Find("[", arguments.include, loc.pos);
+							if (loc.condPos EQ loc.pos) {
+								loc.pos = Find("]", arguments.include, loc.condPos + 1) + 1;
+								loc.condition &= " AND " & Mid(arguments.include, loc.condPos + 1, loc.pos - loc.condPos - 2);
+							}
 							
-							// set up equality between the two keys
-							loc.columnA = StructKeyExists(loc.class.properties, loc.keyA) ? "#loc.modelAlias#." & loc.class.properties[loc.keyA].column : loc.class.calculatedProperties[loc.keyA].sql;
-							loc.columnB = StructKeyExists(loc.associationClass.properties, loc.keyB) ? "#loc.associationAlias#." & loc.associationClass.properties[loc.keyB].column : loc.associationClass.calculatedProperties[loc.keyB].sql;
-							loc.condition =  ListAppend(loc.condition, "#loc.columnB# = #loc.columnA#", Chr(7));
+							// use the passed in join type, or the default for this association
+							loc.joinType = (arguments.joinType EQ "") ? loc.assoc.joinType : arguments.joinType;
+							
+							// call join on relation
+							relation.join(loc.associationTable, loc.condition, [], loc.joinType, true);
 						}
-						loc.condition = Replace(loc.condition, Chr(7), " AND ", "ALL");
-				
-						// if additional conditioning is specified, parse it out
-						loc.condPos = Find("[", arguments.include, loc.pos);
-						if (loc.condPos EQ loc.pos) {
-							loc.pos = Find("]", arguments.include, loc.condPos + 1) + 1;
-							loc.condition &= " AND " & Mid(arguments.include, loc.condPos + 1, loc.pos - loc.condPos - 2);
-						}
-						
-						// use the passed in join type, or the default for this association
-						loc.joinType = (arguments.joinType EQ "") ? loc.assoc.joinType : arguments.joinType;
-						
-						// call join on relation
-						relation.join(loc.associationTable, loc.condition, [], loc.joinType, true);
 				}
 			}
 			

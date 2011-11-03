@@ -7,6 +7,7 @@
 			variables.models = [];
 			variables.tables = {};
 			variables.columns = {};
+			variables.includes = javaHash();
 			variables.includeSoftDeletes = arguments.includeSoftDeletes;
 			return this;
 		</cfscript>
@@ -118,6 +119,22 @@
 				loc.key = arguments.key & loc.j;
 			
 			return loc.key;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="includeString" returntype="string" access="public" hint="Return include structure as a string">
+		<cfargument name="includes" type="struct" default="#variables.includes#" />
+		<cfscript>
+			var loc = {};
+			loc.rtn = "";
+			for (loc.key in arguments.includes) {
+				if (loc.key NEQ "_alias") {
+					if (StructCount(arguments.includes[loc.key]) GT 1)
+						loc.key &= "(#includeString(arguments.includes[loc.key])#)";
+					loc.rtn = ListAppend(loc.rtn, loc.key);
+				}
+			}
+			return loc.rtn;
 		</cfscript>
 	</cffunction>
 </cfcomponent>

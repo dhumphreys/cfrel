@@ -66,3 +66,7 @@
 	</cfscript>
 	<cfreturn arguments.path />
 </cffunction>
+
+<cffunction name="javaHash" returntype="any" access="private" hint="Return an ordered Java hash map">
+	<cfreturn CreateObject("java", "java.util.LinkedHashMap").init() />
+</cffunction>

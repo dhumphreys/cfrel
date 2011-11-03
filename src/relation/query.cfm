@@ -131,6 +131,10 @@
 	</cfscript>
 </cffunction>
 
+<cffunction name="includeString" returntype="string" access="public" hint="Return minimized include string">
+	<cfreturn this.mapper.includeString() />
+</cffunction>
+
 <cffunction name="join" returntype="struct" access="public" hint="Add a JOIN to the relation">
 	<cfargument name="target" type="any" required="true" />
 	<cfargument name="condition" type="any" default="false" />
