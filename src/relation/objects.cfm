@@ -41,10 +41,12 @@
 	</cfscript>
 </cffunction>
 
-<cffunction name="struct" returntype="struct" access="public" hint="Return struct representation of current query row">
+<cffunction name="struct" returntype="any" access="public" hint="Return struct representation of current query row">
 	<cfargument name="index" type="numeric" default="#this.currentRow()#" />
 	<cfscript>
 		_buildStructCache();
+		if (arguments.index LT 1 OR arguments.index GT recordCount())
+			return false;
 		if (ArrayLen(variables.cache.structs) LT arguments.index OR NOT ArrayIsDefined(variables.cache.structs, arguments.index)) {
 			var obj = this.mapper.queryRowToStruct(this.query(), arguments.index, this.model);
 			ArraySet(variables.cache.structs, arguments.index, arguments.index, obj);
@@ -64,10 +66,12 @@
 	</cfscript>
 </cffunction>
 
-<cffunction name="object" returntype="struct" access="public" hint="Return object representation of current query row">
+<cffunction name="object" returntype="any" access="public" hint="Return object representation of current query row">
 	<cfargument name="index" type="numeric" default="#this.currentRow()#" />
 	<cfscript>
 		_buildObjectCache();
+		if (arguments.index LT 1 OR arguments.index GT recordCount())
+			return false;
 		if (ArrayLen(variables.cache.objects) LT arguments.index OR NOT ArrayIsDefined(variables.cache.objects, arguments.index)) {
 			var obj = this.mapper.structToObject(struct(arguments.index), this.model);
 			ArraySet(variables.cache.objects, arguments.index, arguments.index, obj);
