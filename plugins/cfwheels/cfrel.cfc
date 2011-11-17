@@ -172,7 +172,7 @@
 	<cffunction name="scope" returntype="void" access="public" hint="Set relation or callback to be a named scope for this model">
 		<cfargument name="name" type="string" required="true" />
 		<cfargument name="scope" type="any" required="true" />
-		<cfset $scopeStruct()[arguments.name] = arguments.scope />
+		<cfset scopes()[arguments.name] = arguments.scope />
 	</cffunction>
 	
 	<cffunction name="unscoped" returntype="any" access="public" hint="Return a relation that does not have default scope applied">
@@ -181,7 +181,7 @@
 		<cfreturn rel(argumentCollection=arguments, useDefaultScope=false) />
 	</cffunction>
 	
-	<cffunction name="$scopeStruct" returntype="struct" access="public">
+	<cffunction name="scopes" returntype="struct" access="public">
 		<cfscript>
 			if (NOT StructKeyExists(variables.wheels.class, "scopes"))
 				variables.wheels.class.scopes = {};
@@ -191,8 +191,9 @@
 	
 	<cffunction name="$evaluateScope" returntype="struct" access="public">
 		<cfargument name="name" type="string" required="true" />
+		<cfargument name="args" type="struct" default="#structNew()#" />
 		<cfscript>
-			var $customScope = $scopeStruct()[arguments.name];
+			var $customScope = scopes()[arguments.name];
 			var loc = {};
 			loc.defaultScope = arguments.name EQ "default";
 			try {
@@ -203,7 +204,7 @@
 					
 				// evaluate scope based on variable type
 				if (IsCustomFunction($customScope))
-					loc.rtn = $customScope();
+					loc.rtn = $customScope(argumentCollection=arguments.args);
 				else if (IsObject($customScope))
 					loc.rtn = $customScope.clone();
 				else if (IsSimpleValue($customScope))
@@ -241,7 +242,7 @@
 			var loc = {};
 			
 			// if using default scope, just return it
-			if (arguments.useDefaultScope AND StructKeyExists($scopeStruct(), "default"))
+			if (arguments.useDefaultScope AND StructKeyExists(scopes(), "default"))
 				return $evaluateScope("default");
 			
 			// determine visitor for relation
@@ -326,8 +327,8 @@
 			var coreMethod = core.onMissingMethod;
 			
 			// if the method name is a custom scope, evaluate that scope
-			if (StructKeyExists($scopeStruct(), arguments.missingMethodName))
-				return $evaluateScope(arguments.missingMethodName);
+			if (StructKeyExists(scopes(), arguments.missingMethodName))
+				return $evaluateScope(arguments.missingMethodName, arguments.missingMethodArguments);
 				
 			// call original cfwheels missing method
 			return coreMethod(argumentCollection=arguments);

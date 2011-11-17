@@ -7,6 +7,7 @@
 	<cfinclude template="relation/looping.cfm" />
 	<cfinclude template="relation/models.cfm" />
 	<cfinclude template="relation/objects.cfm" />
+	<cfinclude template="relation/onMissingMethod.cfm" />
 	<cfinclude template="relation/pagination.cfm" />
 	<cfinclude template="relation/qoq.cfm" />
 	<cfinclude template="relation/query.cfm" />
