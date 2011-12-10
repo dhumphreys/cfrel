@@ -165,13 +165,13 @@
 	------------->
 	
 	<cffunction name="defaultScope" returntype="void" access="public" hint="Set relation or callback to be default scope for this model">
-		<cfargument name="scope" type="any" required="true" />
+		<cfargument name="scope" type="any" required="true" hint="Method or text to evaluate" />
 		<cfset variables.scope("default", arguments.scope) />
 	</cffunction>
 	
 	<cffunction name="scope" returntype="void" access="public" hint="Set relation or callback to be a named scope for this model">
-		<cfargument name="name" type="string" required="true" />
-		<cfargument name="scope" type="any" required="true" />
+		<cfargument name="name" type="string" required="true" hint="Name of scope method to create" />
+		<cfargument name="scope" type="any" required="true" hint="Method or text to evaluate" />
 		<cfset scopes()[arguments.name] = arguments.scope />
 	</cffunction>
 	
@@ -205,8 +205,6 @@
 				// evaluate scope based on variable type
 				if (IsCustomFunction($customScope))
 					loc.rtn = $customScope(argumentCollection=arguments.args);
-				else if (IsObject($customScope))
-					loc.rtn = $customScope.clone();
 				else if (IsSimpleValue($customScope))
 					loc.rtn = Evaluate($customScope);
 				else
