@@ -313,40 +313,24 @@
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="buildStruct" returntype="struct" access="public">
-		<cfargument name="query" type="query" required="true" />
-		<cfargument name="index" type="numeric" default="#arguments.query.currentRow#" />
-		<cfargument name="model" type="any" default="false" />
-		<cfscript>
-			if (IsObject(arguments.model))
-				return arguments.model.$queryRowToStruct(properties=arguments.query, row=arguments.index);
-			else
-				return super.buildStruct(argumentCollection=arguments);
-		</cfscript>
-	</cffunction>
-	
 	<cffunction name="buildStructCache" returntype="array" access="public">
 		<cfargument name="query" type="query" required="true" />
 		<cfargument name="model" type="any" default="false" />
-		<cfreturn ArrayNew(1) />
-	</cffunction>
-	
-	<cffunction name="buildObject" returntype="struct" access="public">
-		<cfargument name="query" type="query" required="true" />
-		<cfargument name="index" type="numeric" default="#arguments.query.currentRow#" />
-		<cfargument name="model" type="any" default="false" />
 		<cfscript>
 			if (IsObject(arguments.model))
-				return arguments.model.$createInstance(properties=buildStruct(argumentCollection=arguments), persisted=true, callbacks=true);
-			else
-				return super.buildObject(argumentCollection=arguments);
+				return arguments.model.$serializeQueryToStructs(arguments.query, includeString(), false, true);
+			return super.buildStructCache(argumentCollection=arguments);
 		</cfscript>
 	</cffunction>
 	
 	<cffunction name="buildObjectCache" returntype="array" access="public">
 		<cfargument name="query" type="query" required="true" />
 		<cfargument name="model" type="any" default="false" />
-		<cfreturn ArrayNew(1) />
+		<cfscript>
+			if (IsObject(arguments.model))
+				return arguments.model.$serializeQueryToObjects(arguments.query, includeString(), false, true);
+			return super.buildObjectCache(argumentCollection=arguments);
+		</cfscript>
 	</cffunction>
 	
 	<cffunction name="beforeFind" returntype="void" access="public" hint="Do before-find relation logic">
