@@ -7,6 +7,7 @@
 			variables.models = [];
 			variables.tables = {};
 			variables.columns = {};
+			variables.includes = javaHash();
 			variables.includeSoftDeletes = arguments.includeSoftDeletes;
 			return this;
 		</cfscript>
@@ -45,7 +46,7 @@
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="queryRowToStruct" returntype="struct" access="public">
+	<cffunction name="buildStruct" returntype="struct" access="public">
 		<cfargument name="query" type="query" required="true" />
 		<cfargument name="index" type="numeric" default="#arguments.query.currentRow#" />
 		<cfargument name="model" type="any" default="false" />
@@ -60,16 +61,30 @@
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="structToObject" returntype="struct" access="public">
-		<cfargument name="data" type="struct" required="true" />
+	<cffunction name="buildStructCache" returntype="array" access="public">
+		<cfargument name="query" type="query" required="true" />
+		<cfargument name="model" type="any" default="false" />
+		<cfreturn ArrayNew(1) />
+	</cffunction>
+	
+	<cffunction name="buildObject" returntype="struct" access="public">
+		<cfargument name="query" type="query" required="true" />
+		<cfargument name="index" type="numeric" default="#arguments.query.currentRow#" />
 		<cfargument name="model" type="any" default="false" />
 		<cfscript>
 			var loc = {};
 			loc.comp = CreateObject("component", "component");
-			for (loc.key in arguments.data)
-				loc.comp[loc.key] = arguments.data[loc.key];
+			loc.data = buildStruct(argumentCollection=arguments);
+			for (loc.key in loc.data)
+				loc.comp[loc.key] = loc.data[loc.key];
 			return loc.comp;
 		</cfscript>
+	</cffunction>
+	
+	<cffunction name="buildObjectCache" returntype="array" access="public">
+		<cfargument name="query" type="query" required="true" />
+		<cfargument name="model" type="any" default="false" />
+		<cfreturn ArrayNew(1) />
 	</cffunction>
 	
 	<cffunction name="beforeFind" returntype="void" access="public" hint="Do before-find relation logic">
@@ -118,6 +133,22 @@
 				loc.key = arguments.key & loc.j;
 			
 			return loc.key;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="includeString" returntype="string" access="public" hint="Return include structure as a string">
+		<cfargument name="includes" type="struct" default="#variables.includes#" />
+		<cfscript>
+			var loc = {};
+			loc.rtn = "";
+			for (loc.key in arguments.includes) {
+				if (loc.key NEQ "_alias") {
+					if (StructCount(arguments.includes[loc.key]) GT 1)
+						loc.key &= "(#includeString(arguments.includes[loc.key])#)";
+					loc.rtn = ListAppend(loc.rtn, loc.key);
+				}
+			}
+			return loc.rtn;
 		</cfscript>
 	</cffunction>
 </cfcomponent>
