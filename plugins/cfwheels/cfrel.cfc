@@ -38,6 +38,7 @@
 		<cfargument name="returnIncluded" type="boolean" required="false">
 		<cfargument name="callbacks" type="boolean" required="false" default="true">
 		<cfargument name="includeSoftDeletes" type="boolean" required="false" default="false">
+		<cfargument name="useDefaultScope" type="boolean" required="false" default="#$useDefaultScope()#">
 		<cfargument name="$limit" type="numeric" required="false" default=0>
 		<cfargument name="$offset" type="numeric" required="false" default=0>
 		<cfargument name="$orig" type="boolean" default="false">
@@ -61,7 +62,11 @@
 			} else {
 			
 				// build new relation
-				loc.rel = this.rel(parameterize=arguments.parameterize, includeSoftDeletes=arguments.includeSoftDeletes);
+				loc.rel = this.rel(
+					parameterize=arguments.parameterize,
+					includeSoftDeletes=arguments.includeSoftDeletes,
+					useDefaultScope=arguments.useDefaultScope
+				);
 				
 				// call portions of select
 				if (Len(arguments.select) GT 0) loc.rel.select(arguments.select);
@@ -137,15 +142,106 @@
 		<cfreturn loc.returnValue />
 	</cffunction>
 	
+	<cffunction name="findOne" returntype="any" access="public" output="false">
+		<cfargument name="where" type="string" required="false" default="">
+		<cfargument name="order" type="string" required="false" default="">
+		<cfargument name="select" type="string" required="false" default="">
+		<cfargument name="include" type="string" required="false" default="">
+		<cfargument name="cache" type="any" required="false" default="">
+		<cfargument name="reload" type="boolean" required="false">
+		<cfargument name="parameterize" type="any" required="false">
+		<cfargument name="returnAs" type="string" required="false">
+		<cfargument name="includeSoftDeletes" type="boolean" required="false" default="false">
+		<cfargument name="useDefaultScope" type="boolean" required="false" default="false">
+		<cfscript>
+			// make sure that all findOne calls don't use default scope
+			var coreMethod = core.findOne;
+			return coreMethod(argumentCollection=arguments);
+		</cfscript>
+	</cffunction>
+	
+	<!------------
+	-- Scoping ---
+	------------->
+	
+	<cffunction name="defaultScope" returntype="void" access="public" hint="Set relation or callback to be default scope for this model">
+		<cfargument name="scope" type="any" required="true" hint="Method or text to evaluate" />
+		<cfset variables.scope("default", arguments.scope) />
+	</cffunction>
+	
+	<cffunction name="scope" returntype="void" access="public" hint="Set relation or callback to be a named scope for this model">
+		<cfargument name="name" type="string" required="true" hint="Name of scope method to create" />
+		<cfargument name="scope" type="any" required="true" hint="Method or text to evaluate" />
+		<cfset scopes()[arguments.name] = arguments.scope />
+	</cffunction>
+	
+	<cffunction name="unscoped" returntype="any" access="public" hint="Return a relation that does not have default scope applied">
+		<cfargument name="parameterize" type="boolean" default="false" />
+		<cfargument name="includeSoftDeletes" type="boolean" default="false" />
+		<cfreturn rel(argumentCollection=arguments, useDefaultScope=false) />
+	</cffunction>
+	
+	<cffunction name="scopes" returntype="struct" access="public">
+		<cfscript>
+			if (NOT StructKeyExists(variables.wheels.class, "scopes"))
+				variables.wheels.class.scopes = {};
+			return variables.wheels.class.scopes;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="$evaluateScope" returntype="struct" access="public">
+		<cfargument name="name" type="string" required="true" />
+		<cfargument name="args" type="struct" default="#structNew()#" />
+		<cfscript>
+			var $customScope = scopes()[arguments.name];
+			var loc = {};
+			loc.defaultScope = arguments.name EQ "default";
+			try {
+				
+				// if calling default scope, disable the default scope for the next operation
+				if (loc.defaultScope)
+					variables.wheels.class.useDefaultScope = false;
+					
+				// evaluate scope based on variable type
+				if (IsCustomFunction($customScope))
+					loc.rtn = $customScope(argumentCollection=arguments.args);
+				else if (IsSimpleValue($customScope))
+					loc.rtn = Evaluate($customScope);
+				else
+					loc.rtn = rel();
+				
+			} finally {
+				
+				// re-enable default scope
+				if (loc.defaultScope)
+					variables.wheels.class.useDefaultScope = true;
+			}
+			return loc.rtn;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="$useDefaultScope" returntype="boolean" access="public">
+		<cfscript>
+			if (NOT StructKeyExists(variables.wheels.class, "useDefaultScope"))
+				variables.wheels.class.useDefaultScope = true;
+			return variables.wheels.class.useDefaultScope;
+		</cfscript>
+	</cffunction>
+	
 	<!--------------------
 	--- Relation Calls ---
 	--------------------->
 	
 	<cffunction name="rel" returntype="any" access="public" hint="Create relation object with this model as the subject">
-		<cfargument name="parameterize" type="boolean" default="false" />includeSoftDeletes
+		<cfargument name="parameterize" type="boolean" default="false" />
 		<cfargument name="includeSoftDeletes" type="boolean" default="false" />
+		<cfargument name="useDefaultScope" type="boolean" default="#$useDefaultScope()#" />
 		<cfscript>
 			var loc = {};
+			
+			// if using default scope, just return it
+			if (arguments.useDefaultScope AND StructKeyExists(scopes(), "default"))
+				return $evaluateScope("default");
 			
 			// determine visitor for relation
 			if (NOT StructKeyExists(variables.wheels.class, "cfrelVisitor")) {
@@ -216,5 +312,24 @@
 	
 	<cffunction name="paginate" returntype="any" access="public" hint="Use page number and size to set LIMIT and OFFSET">
 		<cfreturn this.rel().paginate(argumentCollection=arguments) />
+	</cffunction>
+	
+	<!-----------------------------
+	--- Missing Method Handling ---
+	------------------------------>
+	
+	<cffunction name="onMissingMethod" returntype="any" access="public" output="false">
+		<cfargument name="missingMethodName" type="string" required="true" />
+		<cfargument name="missingMethodArguments" type="struct" required="true" />
+		<cfscript>
+			var coreMethod = core.onMissingMethod;
+			
+			// if the method name is a custom scope, evaluate that scope
+			if (StructKeyExists(scopes(), arguments.missingMethodName))
+				return $evaluateScope(arguments.missingMethodName, arguments.missingMethodArguments);
+				
+			// call original cfwheels missing method
+			return coreMethod(argumentCollection=arguments);
+		</cfscript>
 	</cffunction>
 </cfcomponent>

@@ -87,6 +87,11 @@
 		<cfreturn ArrayNew(1) />
 	</cffunction>
 	
+	<cffunction name="scopes" returntype="any" access="public">
+		<cfargument name="model" type="any" required="true" />
+		<cfreturn StructNew() />
+	</cffunction>
+	
 	<cffunction name="beforeFind" returntype="void" access="public" hint="Do before-find relation logic">
 		<cfargument name="relation" type="any" required="true" />
 	</cffunction>
