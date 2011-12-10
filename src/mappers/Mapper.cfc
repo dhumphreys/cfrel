@@ -46,7 +46,7 @@
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="queryRowToStruct" returntype="struct" access="public">
+	<cffunction name="buildStruct" returntype="struct" access="public">
 		<cfargument name="query" type="query" required="true" />
 		<cfargument name="index" type="numeric" default="#arguments.query.currentRow#" />
 		<cfargument name="model" type="any" default="false" />
@@ -61,16 +61,30 @@
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="structToObject" returntype="struct" access="public">
-		<cfargument name="data" type="struct" required="true" />
+	<cffunction name="buildStructCache" returntype="array" access="public">
+		<cfargument name="query" type="query" required="true" />
+		<cfargument name="model" type="any" default="false" />
+		<cfreturn ArrayNew(1) />
+	</cffunction>
+	
+	<cffunction name="buildObject" returntype="struct" access="public">
+		<cfargument name="query" type="query" required="true" />
+		<cfargument name="index" type="numeric" default="#arguments.query.currentRow#" />
 		<cfargument name="model" type="any" default="false" />
 		<cfscript>
 			var loc = {};
 			loc.comp = CreateObject("component", "component");
-			for (loc.key in arguments.data)
-				loc.comp[loc.key] = arguments.data[loc.key];
+			loc.data = buildStruct(argumentCollection=arguments);
+			for (loc.key in loc.data)
+				loc.comp[loc.key] = loc.data[loc.key];
 			return loc.comp;
 		</cfscript>
+	</cffunction>
+	
+	<cffunction name="buildObjectCache" returntype="array" access="public">
+		<cfargument name="query" type="query" required="true" />
+		<cfargument name="model" type="any" default="false" />
+		<cfreturn ArrayNew(1) />
 	</cffunction>
 	
 	<cffunction name="beforeFind" returntype="void" access="public" hint="Do before-find relation logic">
