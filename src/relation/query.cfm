@@ -434,11 +434,11 @@
 					throwException(message="#UCase(arguments.clause)# clause strings must have length > 0");
 				
 				// count the number of placeholders in clause and argument array
-				loc.placeholderCount = Len(arguments.args.$clause) - Len(Replace(arguments.args.$clause, "?", "", "ALL"));
+				//loc.placeholderCount = Len(arguments.args.$clause) - Len(Replace(arguments.args.$clause, "?", "", "ALL"));
 				
 				// make sure the numbers are equal
-				if (loc.placeholderCount NEQ loc.parameterCount)
-					throwException(message="Parameter count does not match number of placeholders in #UCase(arguments.clause)# clause");
+				// if (loc.placeholderCount NEQ loc.parameterCount)
+					//throwException(message="Parameter count does not match number of placeholders in #UCase(arguments.clause)# clause");
 			}
 				
 			// append clause and parameters to sql options
