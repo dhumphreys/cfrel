@@ -687,11 +687,11 @@
 			
 			// call struct methods and read from cache
 			loc.struct0 = loc.rel.struct(5);
-			loc.struct1 = loc.variables.cache.structs[5];
+			loc.struct1 = loc.variables.cache.flatStructs[5];
 			loc.struct2 = loc.rel.struct(5);
 			loc.struct3 = loc.rel.struct(2);
 			loc.structs0 = loc.rel.structs();
-			loc.structs1 = loc.variables.cache.structs;
+			loc.structs1 = loc.variables.cache.flatStructs;
 			loc.structs2 = loc.rel.structs();
 			
 			// test that return was created and cached
@@ -724,11 +724,11 @@
 			
 			// call struct methods and read from cache
 			loc.obj0 = loc.rel.object(3);
-			loc.obj1 = loc.variables.cache.objects[3];
+			loc.obj1 = loc.variables.cache.deepObjects[3];
 			loc.obj2 = loc.rel.object(3);
 			loc.obj3 = loc.rel.object(7);
 			loc.objs0 = loc.rel.objects();
-			loc.objs1 = loc.variables.cache.objects;
+			loc.objs1 = loc.variables.cache.deepObjects;
 			loc.objs2 = loc.rel.objects();
 			
 			// test that return was created and cached
@@ -762,7 +762,7 @@
 			// make sure calling curr can load the first object
 			// and lazy load execution properly
 			loc.curr = loc.rel.curr();
-			assertSame(loc.variables.cache.objects[1], loc.curr);
+			assertSame(loc.variables.cache.deepObjects[1], loc.curr);
 		</cfscript>
 	</cffunction>
 	
@@ -788,12 +788,12 @@
 				
 				// test curr method against structs
 				loc.curr = loc.rel.curr("struct");
-				assertSame(loc.curr, loc.variables.cache.structs[loc.i]);
+				assertSame(loc.curr, loc.variables.cache.flatStructs[loc.i]);
 				assertSame(loc.curr, loc.rel.struct(loc.i));
 				
 				// test curr method against objects
 				loc.curr = loc.rel.curr("object");
-				assertSame(loc.curr, loc.variables.cache.objects[loc.i]);
+				assertSame(loc.curr, loc.variables.cache.deepObjects[loc.i]);
 				assertSame(loc.curr, loc.rel.object(loc.i));
 			}
 			
@@ -811,12 +811,12 @@
 				
 				// test curr method against structs
 				loc.curr = loc.rel.curr("struct");
-				assertSame(loc.curr, loc.variables.cache.structs[loc.i]);
+				assertSame(loc.curr, loc.variables.cache.flatStructs[loc.i]);
 				assertSame(loc.curr, loc.rel.struct(loc.i));
 				
 				// test curr method against objects
 				loc.curr = loc.rel.curr("object");
-				assertSame(loc.curr, loc.variables.cache.objects[loc.i]);
+				assertSame(loc.curr, loc.variables.cache.deepObjects[loc.i]);
 				assertSame(loc.curr, loc.rel.object(loc.i));
 			}
 			
