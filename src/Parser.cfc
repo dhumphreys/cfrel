@@ -10,7 +10,7 @@
 			variables.cache = arguments.cache AND IsDefined("application");
 			
 			// string and numeric literals
-			variables.l = {date="'{ts '\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'}'", string="'[^']*'", number="\b-?\d+(\.\d+)?\b"};
+			variables.l = {date="'{ts '\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'}'", string="'[^']*'", number="-?(\B\.\d+|\b\d+(\.\d+)?)\b"};
 			
 			// build regex to match literals
 			variables.literalRegex = "(#l.date#|#l.string#|#l.number#)";

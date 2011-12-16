@@ -201,6 +201,18 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="testSelectDecimals" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.s1 = "0.75";
+			loc.s2 = ".75";
+			loc.s3 = "75";
+			assertEquals("SELECT #loc.s1#", new().select(loc.s1).toSql());
+			assertEquals("SELECT #loc.s2#", new().select(loc.s2).toSql());
+			assertEquals("SELECT #loc.s3#", new().select(loc.s3).toSql());
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="testDistinct" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
