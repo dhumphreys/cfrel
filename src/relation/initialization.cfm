@@ -2,6 +2,7 @@
 	<cfargument name="datasource" type="string" default="" />
 	<cfargument name="visitor" type="string" default="Sql" />
 	<cfargument name="mapper" type="string" default="Mapper" />
+	<cfargument name="qoq" type="boolean" default="false" />
 	<cfargument name="model" type="any" default="false" />
 	<cfargument name="cache" type="string" default="" />
 	<cfargument name="cacheParse" type="boolean" default="#ListFindNoCase(arguments.cache, 'parse')#" />
@@ -49,7 +50,7 @@
 		variables.currentRow = 0;
 		variables.executed = false;
 		variables.mapped = false;
-		variables.qoq = false;
+		variables.qoq = arguments.qoq;
 		variables.paged = false;
 		variables.paginationData = false;
 		
@@ -58,9 +59,7 @@
 </cffunction>
 
 <cffunction name="new" returntype="struct" access="public" hint="Create new instance of relation">
-	<cfscript>
-		return relation(argumentCollection=arguments);
-	</cfscript>
+	<cfreturn relation(argumentCollection=arguments) />
 </cffunction>
 
 <cffunction name="clone" returntype="struct" access="public" hint="Duplicate the relation object">
@@ -87,4 +86,8 @@
 		
 		return loc.rel;
 	</cfscript>
+</cffunction>
+
+<cffunction name="subQuery" returntype="any" access="public" hint="Create new rel with the current rel as the child">
+	<cfreturn new(datasource=this.datasource, visitor=variables.visitorClass, qoq=variables.qoq).from(this) />
 </cffunction>
