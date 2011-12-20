@@ -105,36 +105,6 @@
 	</cfscript>
 </cffunction>
 
-<cffunction name="include" returntype="struct" access="public" hint="Add a JOIN to the relation using predefined relationships">
-	<cfargument name="include" type="string" required="true" />
-	<cfargument name="params" type="array" default="#[]#" />
-	<cfargument name="joinType" type="string" default="" />
-	<cfscript>
-		var loc = {};
-		if (variables.executed)
-			return this.clone().include(argumentCollection=arguments);
-			
-		// make sure a from has been specified
-		if (ArrayLen(this.sql.froms) EQ 0)
-			throwException("Includes cannot be specified before FROM clause");
-			
-		// let mapper do the work with includes
-		this.mapper.mapIncludes(this, arguments.include, arguments.joinType);
-		
-		// handle parameters for join
-		loc.iEnd = ArrayLen(arguments.params);
-		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
-			ArrayAppend(this.sql.joinParameters, arguments.params[loc.i]);
-		}
-			
-		return this;
-	</cfscript>
-</cffunction>
-
-<cffunction name="includeString" returntype="string" access="public" hint="Return minimized include string">
-	<cfreturn this.mapper.includeString() />
-</cffunction>
-
 <cffunction name="join" returntype="struct" access="public" hint="Add a JOIN to the relation">
 	<cfargument name="target" type="any" required="true" />
 	<cfargument name="condition" type="any" default="false" />
@@ -335,6 +305,40 @@
 		this.sql.orders = [];
 		return this;
 	</cfscript>
+</cffunction>
+
+<cffunction name="selectGroup" returntype="struct" access="public" hint="Append to the SELECT and GROUP clauses of the relation">
+	<cfreturn iif(variables.executed, "this.clone()", "this").select(argumentCollection=arguments).group(argumentCollection=arguments) />
+</cffunction>
+
+<cffunction name="include" returntype="struct" access="public" hint="Add a JOIN to the relation using predefined relationships">
+	<cfargument name="include" type="string" required="true" />
+	<cfargument name="params" type="array" default="#[]#" />
+	<cfargument name="joinType" type="string" default="" />
+	<cfscript>
+		var loc = {};
+		if (variables.executed)
+			return this.clone().include(argumentCollection=arguments);
+			
+		// make sure a from has been specified
+		if (ArrayLen(this.sql.froms) EQ 0)
+			throwException("Includes cannot be specified before FROM clause");
+			
+		// let mapper do the work with includes
+		this.mapper.mapIncludes(this, arguments.include, arguments.joinType);
+		
+		// handle parameters for join
+		loc.iEnd = ArrayLen(arguments.params);
+		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
+			ArrayAppend(this.sql.joinParameters, arguments.params[loc.i]);
+		}
+			
+		return this;
+	</cfscript>
+</cffunction>
+
+<cffunction name="includeString" returntype="string" access="public" hint="Return minimized include string">
+	<cfreturn this.mapper.includeString() />
 </cffunction>
 
 <cffunction name="_appendFieldsToClause" returntype="void" access="private" hint="Take either lists or name/value pairs and append to an array">
