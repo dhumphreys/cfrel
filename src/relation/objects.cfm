@@ -71,6 +71,8 @@
 	<cfscript>
 		var loc = {};
 		loc.iEnd = recordCount();
+		if (loc.iEnd EQ 0)
+			return [];
 		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
 			struct(index=loc.i, argumentCollection=arguments);
 		return variables.cache[_getCacheName(name="structs", argumentCollection=arguments)];
@@ -101,6 +103,8 @@
 	<cfscript>
 		var loc = {};
 		loc.iEnd = recordCount();
+		if (loc.iEnd EQ 0)
+			return [];
 		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
 			object(index=loc.i, argumentCollection=arguments);
 		return variables.cache[_getCacheName(name="objects", argumentCollection=arguments)];
