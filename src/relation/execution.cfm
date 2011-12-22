@@ -67,55 +67,50 @@
 			
 			} else {
 				
-				// create the new query object
-				loc.query = new query();
-				
-				// generate SQL for query
-				loc.sql = this.toSql();
+				// set up arguments for query execution
+				loc.queryArgs = {};
+				loc.queryArgs.sql = this.toSql();
+				loc.queryArgs.params = ArrayNew(1);
 				
 				// use max rows if specified
 				if (this.maxRows GT 0)
-					loc.query.setMaxRows(this.maxRows);
+					loc.queryArgs.maxRows = this.maxRows;
 				
-				// if we are using query of a query, set dbtype and resultset
+				// if we are using query of a query, set dbtype and resultsets
 				if (variables.qoq) {
-					loc.queryArgs = {};
+					loc.queryArgs.dbType = "query";
 					loc.iEnd = ArrayLen(this.sql.froms);
 					for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
 						loc.queryArgs["query" & loc.i] = this.sql.froms[loc.i];
-					loc.query.setAttributes(dbType="query", argumentCollection=loc.queryArgs);
 					
 				} else {
 			
 					// set up a datasource
 					if (Len(this.datasource) EQ 0)
 						throwException("Cannot execute query without a datasource");
-					loc.query.setDatasource(this.datasource);
+					loc.queryArgs.datasource = this.datasource;
 				}
 				
-				// stack on parameters
+				// stack parameters onto query argument list
 				loc.parameters = getParameters();
 				loc.parameterColumnTypes = getParameterColumnTypes();
 				loc.iEnd = ArrayLen(loc.parameters);
 				for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
-					
-					// see if param is an array
-					loc.paramIsList = IsArray(loc.parameters[loc.i]);
-					
-					// see if param should be NULL
-					loc.paramIsNull = (loc.paramIsList AND ArrayLen(loc.parameters[loc.i]) EQ 0);
-					
-					// add parameter, converting to list if necessary
-					loc.paramValue = loc.paramIsList ? ArrayToList(loc.parameters[loc.i], Chr(7)) : loc.parameters[loc.i];
-					loc.query.addParam(value=loc.paramValue, cfsqltype=loc.parameterColumnTypes[loc.i], list=loc.paramIsList, null=loc.paramIsNull, separator=Chr(7));
+					loc.param = {};
+					loc.param.cfsqltype = loc.parameterColumnTypes[loc.i];
+					if (IsArray(loc.parameters[loc.i])) {
+						loc.param.value = ArrayToList(loc.parameters[loc.i], Chr(7));
+						loc.param.list = true;
+						loc.param.null = ArrayLen(loc.parameters[loc.i]) EQ 0;
+						loc.param.separator = Chr(7);
+					} else {
+						loc.param.value = loc.parameters[loc.i];
+					}
+					ArrayAppend(loc.queryArgs.params, loc.param);
 				}
 				
-				// execute query
-				loc.result = loc.query.execute(sql=loc.sql);
-				
-				// save objects
-				variables.cache.query = loc.result.getResult();
-				variables.cache.result = loc.result.getPrefix();
+				// execute query using a wrapper
+				$executeQuery(argumentCollection=loc.queryArgs);
 				
 				// run after find callbacks on query
 				if (arguments.callbacks AND IsObject(this.model))
@@ -156,4 +151,45 @@
 			return false;
 		return variables.paginationData;
 	</cfscript>
+</cffunction>
+
+<cffunction name="$executeQuery" returntype="void" access="private" hint="Execute a cfquery with parameters">
+	<cfargument name="sql" type="string" required="true" hint="Query string to execute" />
+	<cfargument name="params" type="array" default="#ArrayNew(1)#" hint="Array of cfqueryparam arguments" />
+	<cfscript>
+		var loc = {};
+		
+		// find and mark positional parameters
+		loc.regex = "(^[^']*(?:'[^']*'[^']*)*)\?";
+		while (REFind(loc.regex, arguments.sql))
+			arguments.sql = REReplace(arguments.sql, loc.regex, "\1" & Chr(7) & "__PARAM__" & Chr(7), "ALL");
+			
+		// split sql string into an array at positional parameters
+		loc.sql = ListToArray(arguments.sql, Chr(7));
+		
+		// loop over and add params to sql structure
+		loc.iEnd = ArrayLen(loc.sql);
+		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
+			if (loc.sql[loc.i] EQ "__PARAM__") {
+				
+				// add an existing parameter from relation
+				if (ArrayLen(arguments.params) GT 0) {
+					loc.sql[loc.i] = arguments.params[1];
+					ArrayDeleteAt(arguments.params, 1);
+				
+				// or set up a NULL parameter
+				} else {
+					loc.sql[loc.i] = StructNew();
+					loc.sql[loc.i].null = true;
+				}
+			}
+		}
+		
+		// remove positional params and sql from arguments
+		StructDelete(arguments, "sql");
+		StructDelete(arguments, "params");
+	</cfscript>
+	<cfquery name="variables.cache.query" result="variables.cache.result" attributeCollection="#arguments#">
+		<cfloop array="#loc.sql#" index="loc.fragment"><cfif IsStruct(loc.fragment)><cfqueryparam attributeCollection="#loc.fragment#" /><cfelse>#PreserveSingleQuotes(loc.fragment)#</cfif></cfloop>
+	</cfquery>
 </cffunction>
