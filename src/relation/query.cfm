@@ -109,7 +109,7 @@
 	<cfargument name="target" type="any" required="true" />
 	<cfargument name="condition" type="any" default="false" />
 	<cfargument name="params" type="array" default="#[]#" />
-	<cfargument name="type" type="string" default="inner" hint="INNER or OUTER join" />
+	<cfargument name="type" type="string" default="inner" hint="inner, outer, natural, or cross" />
 	<cfargument name="$skipMapping" type="boolean" default="false" />
 	<cfscript>
 		var loc = {};
@@ -309,6 +309,30 @@
 
 <cffunction name="selectGroup" returntype="struct" access="public" hint="Append to the SELECT and GROUP clauses of the relation">
 	<cfreturn iif(variables.executed, "this.clone()", "this").select(argumentCollection=arguments).group(argumentCollection=arguments) />
+</cffunction>
+
+<cffunction name="innerJoin" returntype="struct" access="public" hint="Add an INNER JOIN to the relation">
+	<cfargument name="target" type="any" required="true" />
+	<cfargument name="condition" type="any" default="false" />
+	<cfargument name="params" type="array" default="#[]#" />
+	<cfreturn this.join(argumentCollection=arguments, type="inner") />
+</cffunction>
+
+<cffunction name="outerJoin" returntype="struct" access="public" hint="Add a LEFT OUTER JOIN to the relation">
+	<cfargument name="target" type="any" required="true" />
+	<cfargument name="condition" type="any" default="false" />
+	<cfargument name="params" type="array" default="#[]#" />
+	<cfreturn this.join(argumentCollection=arguments, type="outer") />
+</cffunction>
+
+<cffunction name="naturalJoin" returntype="struct" access="public" hint="Add a NATURAL JOIN to the relation">
+	<cfargument name="target" type="any" required="true" />
+	<cfreturn this.join(argumentCollection=arguments, type="natural") />
+</cffunction>
+
+<cffunction name="crossJoin" returntype="struct" access="public" hint="Add a CROSS JOIN to the relation">
+	<cfargument name="target" type="any" required="true" />
+	<cfreturn this.join(argumentCollection=arguments, type="cross") />
 </cffunction>
 
 <cffunction name="include" returntype="struct" access="public" hint="Add a JOIN to the relation using predefined relationships">
