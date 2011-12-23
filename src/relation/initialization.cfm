@@ -21,9 +21,6 @@
 		// store model that this relation deals with
 		this.model = arguments.model;
 		
-		// internal parser
-		variables.parser = CreateObject("component", addCfcPrefix("cfrel.Parser")).init(cache=arguments.cacheParse);
-		
 		// struct to hold SQL tree
 		this.sql = {
 			select = [],
@@ -53,6 +50,47 @@
 		variables.qoq = arguments.qoq;
 		variables.paged = false;
 		variables.paginationData = false;
+		
+		/***************
+		* PARSING VARS *
+		***************/
+		
+		// set cache setting (if application scope is defined)
+		variables.cache = arguments.cache AND IsDefined("application");
+		
+		// string and numeric literals
+		variables.l = {date="'{ts '\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'}'", string="'[^']*'", number="-?(\B\.\d+|\b\d+(\.\d+)?)\b"};
+		
+		// build regex to match literals
+		variables.literalRegex = "(#l.date#|#l.string#|#l.number#)";
+		
+		// terminals (and literal placeholders)
+		variables.t = {date="::date::", string="::string::", number="::number::", param="\?", dot="\.", comma=",",
+			lparen="\(", rparen="\)", addOp="\+|-|&|\^|\|", star="\*", mulOp="\*|/|%", as="\bAS\b",
+			unaryOp="\+|-|~|\bNOT\b", compOp="<=>|<=|>=|<>|!=|!>|!<|=|<|>|\bLIKE\b", between="\bBETWEEN\b",
+			andOp="\bAND\b", orOp="\bOR\b", neg="\bNOT\b", sortOp="\bASC\b|\bDESC\b", null="\bNULL\b",
+			cast="\bCAST\b", iss="\bIS\b", inn="\bIN\b", identifier="[\[""`]?(\w+)[""`\]]?", kase="\bCASE\b", when="\bWHEN\b",
+			then="\bTHEN\b", els="\bELSE\b", end="\bEND\b", like="\bLIKE\b", distinct="\bDISTINCT\b"};
+		
+		// build regex to match any of the terminals above
+		variables.terminalRegex = "";
+		for (loc.key in variables.t)
+			terminalRegex = ListAppend(terminalRegex, t[loc.key], "|");
+				
+		// token and literal storage
+		variables.tokens = [];
+		variables.tokenTypes = [];
+		variables.literals = [];
+		
+		// storage for parameter column references
+		variables.parameterColumns = [];
+		
+		// token index during parse
+		variables.tokenIndex = 1;
+		variables.tokenLen = 0;
+		
+		// temporary hold column name that '? 'parameters may refer to
+		variables.tmpParamColumn = "";
 		
 		return this;
 	</cfscript>

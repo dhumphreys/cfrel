@@ -11,4 +11,6 @@
 	<cfinclude template="relation/pagination.cfm" />
 	<cfinclude template="relation/qoq.cfm" />
 	<cfinclude template="relation/query.cfm" />
+	<cfinclude template="parser/parse.cfm" />
+	<cfinclude template="parser/grammar.cfm" />
 </cfcomponent>

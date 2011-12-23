@@ -119,8 +119,8 @@
 		if (typeOf(arguments.condition) NEQ "simple") {
 			loc.condition = arguments.condition;
 		} else if (arguments.condition NEQ false) {
-			loc.condition = variables.parser.parse(arguments.condition);
-			loc.parameterColumns = variables.parser.getParameterColumns();
+			loc.condition = parse(arguments.condition);
+			loc.parameterColumns = getParameterColumns();
 		} else {
 			loc.condition = false;
 		}
@@ -451,7 +451,7 @@
 		
 			// append parameter column mappings
 			if (loc.type EQ "simple") {
-				loc.parameterColumns = variables.parser.getParameterColumns();
+				loc.parameterColumns = getParameterColumns();
 				loc.iEnd = ArrayLen(loc.parameterColumns);
 				for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
 					ArrayAppend(this.sql[arguments.parameterColumnScope], loc.parameterColumns[loc.i]);
@@ -511,7 +511,7 @@
 
 		// parse simple values with parser
 		if (loc.type EQ "simple")
-			return variables.parser.parse(arguments.obj, arguments.clause);
+			return parse(arguments.obj, arguments.clause);
 			
 		// throw error if we havent found it yet
 		throwException("Invalid object type passed into #UCase(arguments.clause)#");
