@@ -13,7 +13,6 @@
  testSuite.addAll("tests.TestHelpers");
  testSuite.addAll("tests.TestInspection");
  testSuite.addAll("tests.TestRelation");
- testSuite.addAll("tests.visitors.TestVisitor");
  testSuite.addAll("tests.visitors.TestSql");
  testSuite.addAll("tests.visitors.TestQueryOfQuery");
  testSuite.addAll("tests.visitors.TestMySql");

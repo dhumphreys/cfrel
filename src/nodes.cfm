@@ -74,6 +74,14 @@
 	<cfreturn constructObject("cfrel.nodes.Order", arguments)>
 </cffunction>
 
+<cffunction name="sqlParam" returntype="any" access="private">
+	<cfargument name="value" type="any" required="true" />
+	<cfargument name="null" type="boolean" default="false" />
+	<cfargument name="cfsqltype" type="string" required="false" />
+	<cfargument name="column" type="string" required="false" />
+	<cfreturn constructObject("cfrel.nodes.Param", arguments)>
+</cffunction>
+
 <cffunction name="sqlParen" returntype="any" access="private">
 	<cfargument name="subject" type="any" required="true" />
 	<cfreturn constructObject("cfrel.nodes.Paren", arguments)>

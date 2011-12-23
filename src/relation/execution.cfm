@@ -70,7 +70,6 @@
 				// set up arguments for query execution
 				loc.queryArgs = {};
 				loc.queryArgs.sql = this.toSql();
-				loc.queryArgs.params = ArrayNew(1);
 				
 				// use max rows if specified
 				if (this.maxRows GT 0)
@@ -89,24 +88,6 @@
 					if (Len(this.datasource) EQ 0)
 						throwException("Cannot execute query without a datasource");
 					loc.queryArgs.datasource = this.datasource;
-				}
-				
-				// stack parameters onto query argument list
-				loc.parameters = getParameters();
-				loc.parameterColumnTypes = getParameterColumnTypes();
-				loc.iEnd = ArrayLen(loc.parameters);
-				for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
-					loc.param = {};
-					loc.param.cfsqltype = loc.parameterColumnTypes[loc.i];
-					if (IsArray(loc.parameters[loc.i])) {
-						loc.param.value = ArrayToList(loc.parameters[loc.i], Chr(7));
-						loc.param.list = true;
-						loc.param.null = ArrayLen(loc.parameters[loc.i]) EQ 0;
-						loc.param.separator = Chr(7);
-					} else {
-						loc.param.value = loc.parameters[loc.i];
-					}
-					ArrayAppend(loc.queryArgs.params, loc.param);
 				}
 				
 				// execute query using a wrapper

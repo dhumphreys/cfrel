@@ -120,7 +120,6 @@
 			loc.condition = arguments.condition;
 		} else if (arguments.condition NEQ false) {
 			loc.condition = parse(arguments.condition);
-			loc.parameterColumns = getParameterColumns();
 		} else {
 			loc.condition = false;
 		}
@@ -173,23 +172,6 @@
 		// append join to sql structure
 		ArrayAppend(this.sql.joins, sqlJoin(loc.table, loc.condition, arguments.type));
 		
-		// handle parameters for join
-		loc.iEnd = ArrayLen(arguments.params);
-		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
-			ArrayAppend(this.sql.joinParameters, arguments.params[loc.i]);
-			
-			// if we did not get parameter columns, we still need to account for this parameter
-			if (NOT StructKeyExists(loc, "parameterColumns"))
-				ArrayAppend(this.sql.joinParameterColumns, "");
-		}
-		
-		// append parameter column mappings
-		if (StructKeyExists(loc, "parameterColumns")) {
-			loc.iEnd = ArrayLen(loc.parameterColumns);
-			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
-				ArrayAppend(this.sql.joinParameterColumns, loc.parameterColumns[loc.i]);
-		}
-			
 		return this;
 	</cfscript>
 </cffunction>
@@ -407,6 +389,7 @@
 	<cfargument name="parameterScope" type="string" required="true" />
 	<cfargument name="parameterColumnScope" type="string" required="true" />
 	<cfargument name="args" type="struct" required="true" />
+	<cfparam name="arguments.args.$params" default="#ArrayNew(1)#" />
 	<cfscript>
 		var loc = {};
 		
@@ -424,7 +407,7 @@
 			loc.type = typeOf(arguments.args.$clause);
 			
 			// get count of parameters passed in
-			loc.parameterCount = iif(StructKeyExists(arguments.args, "$params"), "ArrayLen(arguments.args.$params)", DE(0));
+			loc.parameterCount = ArrayLen(arguments.args.$params);
 				
 			// go ahead and confirm parameter count unless clause is literal
 			if (loc.type EQ "simple") {
@@ -440,22 +423,11 @@
 				// if (loc.placeholderCount NEQ loc.parameterCount)
 					//throwException(message="Parameter count does not match number of placeholders in #UCase(arguments.clause)# clause");
 			}
+			
+			// TODO: if literal is passed in, inject positional parameters into string
 				
-			// append clause and parameters to sql options
-			ArrayAppend(this.sql[arguments.scope], _transformInput(arguments.args.$clause, arguments.clause));
-			for (loc.i = 1; loc.i LTE loc.parameterCount; loc.i++) {
-				ArrayAppend(this.sql[arguments.parameterScope], arguments.args.$params[loc.i]);
-				if (loc.type NEQ "simple")
-					ArrayAppend(this.sql[arguments.parameterColumnScope], "");
-			}
-		
-			// append parameter column mappings
-			if (loc.type EQ "simple") {
-				loc.parameterColumns = getParameterColumns();
-				loc.iEnd = ArrayLen(loc.parameterColumns);
-				for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
-					ArrayAppend(this.sql[arguments.parameterColumnScope], loc.parameterColumns[loc.i]);
-			}
+			// append clause with parameters to sql scope
+			ArrayAppend(this.sql[arguments.scope], _transformInput(arguments.args.$clause, arguments.clause, arguments.args.$params));
 			
 		} else {
 			
@@ -485,10 +457,8 @@
 				// FIXME: (2) note that we found a good value
 				loc.success = true;
 					
-				// append clause and parameters
-				ArrayAppend(this.sql[arguments.scope], _transformInput(loc.clause, arguments.clause));
-				ArrayAppend(this.sql[arguments.parameterScope], loc.value);
-				ArrayAppend(this.sql[arguments.parameterColumnScope], loc.key);
+				// append clause to correct scope
+				ArrayAppend(this.sql[arguments.scope], _transformInput(loc.clause, arguments.clause, [loc.value]));
 			}
 			
 			// FIXME: (3) throw an error if a good value was not found
@@ -501,6 +471,7 @@
 <cffunction name="_transformInput" returntype="any" access="private">
 	<cfargument name="obj" type="any" required="true">
 	<cfargument name="clause" type="string" default="SELECT">
+	<cfargument name="params" type="array" default="#ArrayNew(1)#">
 	<cfscript>
 		var loc = {};
 		loc.type = typeOf(arguments.obj);
@@ -511,7 +482,7 @@
 
 		// parse simple values with parser
 		if (loc.type EQ "simple")
-			return parse(arguments.obj, arguments.clause);
+			return parse(arguments.obj, arguments.clause, arguments.params);
 			
 		// throw error if we havent found it yet
 		throwException("Invalid object type passed into #UCase(arguments.clause)#");

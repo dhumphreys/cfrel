@@ -75,7 +75,7 @@
 		var loc = {};
 		loc.left = addExpr();
 		
-		// if expression is a column, store it for use by '?' parameters
+		// if expression is a column, store it for use by positional parameters
 		if (IsStruct(loc.left) AND loc.left.$class EQ "cfrel.nodes.Column") {
 			if (IsStruct(loc.left.table) OR loc.left.table NEQ "")
 				variables.tmpParamColumn = loc.left.table & "." & loc.left.column;
@@ -168,15 +168,15 @@
 	<cfscript>
 		var loc = {};
 		
-		// NUMBER
+		// NUMBER, TODO: implement parameterization
 		if (accept(t.number)) {
 			loc.term = popLiteral(); // wrap in nodes.literal?
 		
-		// STRING
+		// STRING, TODO: implement parameterization
 		} else if (accept(t.string)) {
 			loc.term = popLiteral(); // wrap in nodes.literal?
 		
-		// DATE
+		// DATE, TODO: implement parameterization
 		} else if (accept(t.date)) {
 			loc.date = REReplace(popLiteral(), "(^'|'$)", "", "ALL");
 			loc.term = "'" & DateFormat(loc.date, "yyyy-mm-dd ") & TimeFormat(loc.date, "hh:mm:ss TT") & "'";
@@ -191,11 +191,10 @@
 			
 		// PARAM
 		} else if (accept(t.param)) {
-			
-			// store column that parameter references
-			ArrayAppend(variables.parameterColumns, variables.tmpParamColumn);
-			
-			loc.term = "?"; // todo: object? wrap in nodes.literal?
+			if (NOT ArrayLen(variables.parseParameters))
+				throwException("Not enough parameters were supplied for SQL expression.");
+			loc.term = sqlParam(value=variables.parseParameters[1], column=variables.tmpParamColumn);
+			ArrayDeleteAt(variables.parseParameters, 1);
 			
 		// UNARY TERM
 		} else if (accept(t.unaryOp)) {

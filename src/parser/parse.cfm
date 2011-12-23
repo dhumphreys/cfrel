@@ -1,14 +1,12 @@
 <cffunction name="parse" returntype="any" access="public" hint="Turn a SQL string into a tree of nodes">
 	<cfargument name="str" type="string" required="true" />
 	<cfargument name="clause" type="string" default="WHERE" />
+	<cfargument name="params" type="array" default="#ArrayNew(1)#" />
 	<cfscript>
 		var loc = {};
 		
-		// reset param reference array
-		variables.parameterColumns = [];
-		
 		// try to read from cache if turned on
-		if (variables.cache) {
+		if (variables.cacheParse) {
 		
 			// create key for cache
 			loc.cacheKey = Hash("#arguments.clause#:#arguments.str#", "MD5");
@@ -29,6 +27,9 @@
 		// break incoming string into tokens
 		tokenize(arguments.str);
 		
+		// set positional parameters in variables scope
+		variables.parseParameters = arguments.params;
+		
 		// parse string depending on clause type
 		switch (arguments.clause) {
 			case "SELECT":
@@ -47,7 +48,7 @@
 			throwException("Parsing error. Not all tokens processed. #tokenIndex - 1# of #tokenLen# processed.");
 			
 		// cache the parse tree and parameter columns in the application scope
-		if (variables.cache) {
+		if (variables.cacheParse) {
 			application.cfrel.parseCache[loc.cacheKey] = Duplicate(loc.tree);
 			application.cfrel.paramCache[loc.cacheKey] = variables.parameterColumns;
 		}
@@ -98,10 +99,6 @@
 		variables.tokenIndex = 1;
 		variables.tokenLen = ArrayLen(variables.tokens);
 	</cfscript>
-</cffunction>
-
-<cffunction name="getParameterColumns" returntype="array" access="public" hint="Return array of columns that parameters in string reference">
-	<cfreturn variables.parameterColumns />
 </cffunction>
 
 <cffunction name="peek" returntype="boolean" access="private" hint="See if next item on token stack matches regex">

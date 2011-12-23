@@ -27,15 +27,9 @@
 			selectFlags = [],
 			froms = [],
 			joins = [],
-			joinParameters = [],
-			joinParameterColumns = [],
 			wheres = [],
-			whereParameters = [],
-			whereParameterColumns = [],
 			groups = [],
 			havings = [],
-			havingParameters = [],
-			havingParameterColumns = [],
 			orders = []
 		};
 		
@@ -56,7 +50,7 @@
 		***************/
 		
 		// set cache setting (if application scope is defined)
-		variables.cache = arguments.cache AND IsDefined("application");
+		variables.cacheParse = arguments.cacheParse AND IsDefined("application");
 		
 		// string and numeric literals
 		variables.l = {date="'{ts '\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'}'", string="'[^']*'", number="-?(\B\.\d+|\b\d+(\.\d+)?)\b"};
@@ -82,14 +76,14 @@
 		variables.tokenTypes = [];
 		variables.literals = [];
 		
-		// storage for parameter column references
-		variables.parameterColumns = [];
+		// store parameter values that are passed in
+		variables.parseParameters = [];
 		
 		// token index during parse
 		variables.tokenIndex = 1;
 		variables.tokenLen = 0;
 		
-		// temporary hold column name that '? 'parameters may refer to
+		// temporary hold column name that positional parameters may refer to
 		variables.tmpParamColumn = "";
 		
 		return this;
