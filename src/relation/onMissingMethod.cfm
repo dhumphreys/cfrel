@@ -10,9 +10,11 @@
 			if (StructKeyExists(loc.scopes, arguments.missingMethodName)) {
 				var $scope = loc.scopes[arguments.missingMethodName];
 				if (IsCustomFunction($scope))
-					$scope(argumentCollection=arguments.missingMethodArguments);
+					loc.returnValue = $scope(argumentCollection=arguments.missingMethodArguments);
 				else if (IsSimpleValue($scope))
-					Evaluate($scope);
+					loc.returnValue = Evaluate($scope);
+				if (StructKeyExists(loc, "returnValue") AND IsObject(loc.returnValue))
+					return loc.returnValue;
 				return this;
 			}
 		}
