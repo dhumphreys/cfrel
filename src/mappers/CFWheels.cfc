@@ -6,9 +6,6 @@
 		<cfscript>
 			var loc = {};
 			
-			// TODO: a bug here will cause multiple joins on the same table to generate
-			// errors with calculated properties out of ambiguous column names
-			
 			// append model to mapper
 			ArrayAppend(variables.models, arguments.table);
 			
@@ -44,10 +41,13 @@
 			// loop over calculated properties in model
 			for (loc.key in loc.class.calculatedProperties) {
 				loc.col = loc.class.calculatedProperties[loc.key];
-				
-				// build column data structure
 				loc.colData = {};
-				loc.colData.value = loc.col.sql;
+				
+				// TODO: a bug here will cause multiple joins on the same table to generate
+				// errors with calculated properties out of ambiguous column names
+			
+				// handle ambiguous columns for single table calculated properties
+				loc.colData.value = REReplace(loc.col.sql, ":TABLE\b", loc.tableAlias, "ALL");
 					
 				// deal with column name conflicts
 				loc.key = uniqueScopeKey(key=loc.key, prefix=loc.class.modelName, scope=variables.columns);
