@@ -4,14 +4,21 @@
 		<cfscript>
 			variables.aliasOnly = false;
 			variables.aliasOff = false;
+			variables.queryCounter = 1;
+			variables.subQueryCounter = 1;
 			return this;
 		</cfscript>
 	</cffunction>
 	
 	<cffunction name="visit_relation" returntype="any" access="private" hint="Generate general SQL for a relation">
 		<cfargument name="obj" type="any" required="true" />
+		<cfargument name="top" type="boolean" default="true" />
 		<cfscript>
 			var loc = {};
+			
+			// clear out query and subquery counters when response is top-level
+			if (arguments.top)
+				variables.queryCounter = variables.subQueryCounter = 1;
 			
 			// set some control variables to reduce load
 			loc.select = false;
@@ -35,19 +42,9 @@
 			}
 			ArrayAppend(loc.fragments, loc.clause);
 			
-			// generate FROM arguments, either as tables, QoQ references, or subqueries
-			loc.iEnd = ArrayLen(obj.sql.froms);
-			if (loc.iEnd GT 0) {
-				loc.froms = "";
-				for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
-					if (IsSimpleValue(obj.sql.froms[loc.i]) OR typeOf(obj.sql.froms[loc.i]) EQ "cfrel.nodes.table")
-						loc.froms = ListAppend(loc.froms, visit(obj.sql.froms[loc.i]), Chr(7));
-					else if (IsQuery(obj.sql.froms[loc.i]))
-						loc.froms = ListAppend(loc.froms, "query" & loc.i, Chr(7));
-					else
-						loc.froms = ListAppend(loc.froms, "(#visit(obj.sql.froms[loc.i])#) subquery#loc.i#", Chr(7));
-				}
-				ArrayAppend(loc.fragments, "FROM " & Replace(loc.froms, Chr(7), ", ", "ALL"));
+			// generate FROM arguments
+			if (ArrayLen(obj.sql.froms) GT 0) {
+				ArrayAppend(loc.fragments, "FROM " & ArrayToList(visit(obj.sql.froms), ", "));
 					
 			// error if neither SELECT or FROM was specified
 			} else if (loc.select EQ false) {
@@ -101,6 +98,11 @@
 				
 			return loc.rtn;
 		</cfscript>
+	</cffunction>
+	
+	<cffunction name="visit_query" returntype="any" access="private" hint="Render a query as a QOQ reference">
+		<cfargument name="obj" type="query" required="true" />
+		<cfreturn "query" & variables.queryCounter++ />
 	</cffunction>
 	
 	<cffunction name="visit_model" returntype="string" access="private" hint="Visit a CFWheels model">
@@ -267,6 +269,11 @@
 				loc.subject = ArrayToList(loc.subject, ", ");
 			return "(#loc.subject#)";
 		</cfscript>
+	</cffunction>
+	
+	<cffunction name="visit_nodes_subquery" returntype="any" access="private" hint="Render a subquery with an alias">
+		<cfargument name="obj" type="any" required="true" />
+		<cfreturn "(#visit(obj=arguments.obj.subject, top=false)#) subquery#variables.subQueryCounter++#" />
 	</cffunction>
 	
 	<cffunction name="visit_nodes_table" returntype="string" access="private">

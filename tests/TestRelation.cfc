@@ -253,7 +253,8 @@
 			var loc = {};
 			loc.instance = new();
 			loc.instance2 = new().from(loc.instance);
-			assertSame(loc.instance, loc.instance2.sql.froms[1], "FROM clause should be set to passed relation");
+			assertEquals("cfrel.nodes.SubQuery", typeOf(loc.instance2.sql.froms[1]));
+			assertSame(loc.instance, loc.instance2.sql.froms[1].subject, "FROM clause should contain passed relation");
 		</cfscript>
 	</cffunction>
 	

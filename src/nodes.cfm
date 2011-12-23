@@ -79,6 +79,11 @@
 	<cfreturn constructObject("cfrel.nodes.Paren", arguments)>
 </cffunction>
 
+<cffunction name="sqlSubQuery" returntype="any" access="private">
+	<cfargument name="subject" type="any" required="true" />
+	<cfreturn constructObject("cfrel.nodes.SubQuery", arguments)>
+</cffunction>
+
 <cffunction name="sqlTable" returntype="any" access="private">
 	<cfargument name="table" type="string" default="" />
 	<cfargument name="alias" type="string" default="" />

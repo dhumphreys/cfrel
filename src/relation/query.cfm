@@ -63,10 +63,9 @@
 		// make decision based on argument type
 		switch(typeOf(arguments.target)) {
 			
-			// accept relations
+			// accept relations as subqueries
 			case "cfrel.Relation":
-			
-				// let the defaults fall through
+				arguments.target = sqlSubquery(arguments.target);
 				break;
 			
 			// accept model and add model to mapping
@@ -141,6 +140,11 @@
 				// map the models using the mapper
 				if (NOT arguments.$skipMapping)
 					this.mapper.buildMapping(loc.table, this);
+				break;
+				
+			// use another relation as a subquery
+			case "cfrel.relation":
+				loc.table = sqlSubQuery(arguments.target);
 				break;
 				
 			// just use raw table object

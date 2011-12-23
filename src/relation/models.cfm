@@ -30,8 +30,14 @@
 			// map any subquery relations
 			loc.iEnd = ArrayLen(this.sql.froms);
 			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
-				if (typeOf(this.sql.froms[loc.i]) EQ "cfrel.Relation")
-					this.sql.froms[loc.i]._applyMappings();
+				if (typeOf(this.sql.froms[loc.i]) EQ "cfrel.nodes.SubQuery")
+					this.sql.froms[loc.i].subject._applyMappings();
+					
+			// map any subquery joins
+			loc.iEnd = ArrayLen(this.sql.joins);
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+				if (typeOf(this.sql.joins[loc.i].table) EQ "cfrel.nodes.SubQuery")
+					this.sql.joins[loc.i].table.subject._applyMappings();
 			
 			// default to a wildcard selector
 			if (ArrayLen(this.sql.select) EQ 0)
