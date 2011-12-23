@@ -19,6 +19,10 @@
 			// set up fragments array
 			loc.fragments = [];
 			
+			// turn aliasing on in select clause
+			loc.aliasOff = variables.aliasOff;
+			variables.aliasOff = false;
+			
 			// generate SELECT clause
 			loc.clause = "SELECT ";
 			if (ArrayLen(obj.sql.selectFlags) GT 0)
@@ -64,7 +68,7 @@
 			loc.fragments = _appendFieldsClause("ORDER BY", loc.fragments, obj.sql.orders);
 			
 			// turn aliasing back on
-			variables.aliasOff = false;
+			variables.aliasOff = loc.aliasOff;
 			
 			// generate LIMIT clause
 			if (StructKeyExists(obj.sql, "limit"))
@@ -127,9 +131,10 @@
 			// use both, but ignore any aliases inside of subject
 			} else {
 				
+				loc.aliasOff = variables.aliasOff;
 				variables.aliasOff = true;
 				loc.sql = "#visit(obj.subject)# AS #_escapeSqlEntity(obj.alias)#";
-				variables.aliasOff = false;
+				variables.aliasOff = loc.aliasOff;
 			}
 			
 			return loc.sql;
@@ -192,10 +197,11 @@
 			// read alias unless we have them turned off
 			loc.alias = NOT variables.aliasOff AND Len(obj.alias) ? " AS #_escapeSqlEntity(obj.alias)#" : "";
 			
-			// only use alias if we have asked to do so
+			// return only the alias if we have asked to do so
 			if (variables.aliasOnly AND Len(loc.alias))
 				return _escapeSqlEntity(obj.alias);
 			
+			// use a mapping if it is available
 			if (StructKeyExists(obj, "mapping"))
 				return _escapeSqlEntity(visit(obj.mapping.value)) & loc.alias;
 			
@@ -234,7 +240,7 @@
 		<cfscript>
 			var loc = {};
 			loc.fn = "";
-			loc.tmpAliasOff = variables.aliasOff;
+			loc.aliasOff = variables.aliasOff;
 			variables.aliasOff = true;
 			if (NOT IsSimpleValue(obj.scope) OR obj.scope NEQ "")
 				loc.fn = visit(obj.scope) & ".";
@@ -242,7 +248,7 @@
 			if (obj.distinct)
 				loc.fn &= "DISTINCT ";
 			loc.fn &= "#ArrayToList(visit(obj.args), ', ')#)";
-			variables.aliasOff = loc.tmpAliasOff;
+			variables.aliasOff = loc.aliasOff;
 			return loc.fn;
 		</cfscript>
 	</cffunction>
@@ -329,13 +335,13 @@
 			var loc = {};
 			loc.iEnd = ArrayLen(arguments.src);
 			
-			// visit arguments
-			arguments.src = visit(arguments.src);
-			
 			// quit execution if needed
 			if (loc.iEnd EQ 0)
 				return arguments.dest;
-				
+			
+			// visit arguments
+			arguments.src = visit(arguments.src);
+			
 			// wrap clauses containing OR in parenthesis
 			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
 				if (loc.iEnd GT 1 AND REFind("\bOR\b", arguments.src[loc.i]) GT 0)
