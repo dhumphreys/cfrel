@@ -107,11 +107,11 @@
 			
 			// generate LIMIT clause
 			if (StructKeyExists(obj.sql, "limit"))
-				ArrayAppend(loc.fragments, ["LIMIT", obj.sql.limit]);
+				ArrayAppend(loc.fragments, "LIMIT #obj.sql.limit#");
 				
 			// generate OFFSET clause
 			if (StructKeyExists(obj.sql, "offset") AND obj.sql.offset GT 0)
-				ArrayAppend(loc.fragments, ["OFFSET", obj.sql.offset]);
+				ArrayAppend(loc.fragments, "OFFSET #obj.sql.offset#");
 				
 			// return sql array
 			return loc.fragments;
