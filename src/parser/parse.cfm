@@ -43,9 +43,11 @@
 				loc.tree = expr();
 		}
 		
-		// if tokens are still left, throw an error
+		// if tokens or parameters are still left, throw an error
 		if (tokenIndex LTE tokenLen)
 			throwException("Parsing error. Not all tokens processed. #tokenIndex - 1# of #tokenLen# processed.");
+		if (ArrayLen(variables.parseParameters))
+			throwException("Parsing error. Too many parameters passed into #UCase(arguments.clause)#.");
 			
 		// cache the parse tree and parameter columns in the application scope
 		if (variables.cacheParse) {

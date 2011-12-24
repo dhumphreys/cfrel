@@ -321,8 +321,8 @@
 		<cfscript>
 			var loc = {};
 			loc.whereParameters = [50, "admin", [1,2,3]];
-			loc.instance = new().where("id = ? OR name = '?' OR role IN (?)", loc.whereParameters);
-			assertEquals("(id = ? OR (name = '?' OR role IN (?)))", traverseToString(loc.instance.sql.wheres[1]), "where() should set the passed condition");
+			loc.instance = new().where("id = ? OR name = ? OR role IN (?)", loc.whereParameters);
+			assertEquals("(id = ? OR (name = ? OR role IN (?)))", traverseToString(loc.instance.sql.wheres[1]), "where() should set the passed condition");
 		</cfscript>
 	</cffunction>
 	
@@ -332,7 +332,7 @@
 			loc.pass = false;
 			loc.instance = new();
 			try {
-				loc.instance.where("id = ? OR name = '?'", [2]);
+				loc.instance.where("id = ? OR name = ?", [2, 1, 3]);
 			} catch (custom_type e) {
 				loc.pass = true;
 			}
@@ -402,8 +402,8 @@
 	<cffunction name="testHavingSyntaxWithParameters" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
-			loc.havingClause = "id = ? OR name = '?' OR role IN (?)";
-			loc.testValue = "(id = ? OR (name = '?' OR role IN (?)))";
+			loc.havingClause = "id = ? OR name = ? OR role IN (?)";
+			loc.testValue = "(id = ? OR (name = ? OR role IN (?)))";
 			loc.havingParameters = [50, "admin", [1,2,3]];
 			loc.instance = new().having(loc.havingClause, loc.havingParameters);
 			assertEquals(loc.testValue, traverseToString(loc.instance.sql.havings[1]));
@@ -416,7 +416,7 @@
 			loc.pass = false;
 			loc.instance = new();
 			try {
-				loc.instance.having("id = ? OR name = '?'", [2]);
+				loc.instance.having("id = ? OR name = ?", [2]);
 			} catch (custom_type e) {
 				loc.pass = true;
 			}
