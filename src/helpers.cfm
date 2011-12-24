@@ -75,21 +75,29 @@
 	<cfargument name="sql" type="array" required="true" />
 	<cfscript>
 		var loc = {};
-		loc.sql = Duplicate(arguments.sql);
-		loc.iEnd = ArrayLen(loc.sql);
+		loc.sql = "";
+		loc.prev = "";
+		loc.iEnd = ArrayLen(arguments.sql);
 		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
-			if (IsStruct(loc.sql[loc.i]))
-				loc.sql[loc.i] = "?";
+			loc.rtn = arguments.sql[loc.i];
+			if (IsStruct(loc.rtn))
+				loc.rtn = "?";
+			if (loc.sql NEQ "" AND (NOT REFind("(\(|\.)$", loc.prev) AND NOT REFind("^(,|\))", loc.rtn)))
+				loc.rtn = " " & loc.rtn;
+			loc.sql &= loc.rtn;
+			loc.prev = loc.rtn;
 		}
-		return ArrayToList(loc.sql, " ");
+		return loc.sql;
 	</cfscript>
 </cffunction>
 
 <cffunction name="flattenArray" returntype="array" access="private" hint="Turn deep array into a flat one">
-	<cfargument name="array" type="array" required="true" />
+	<cfargument name="array" type="any" required="true" />
 	<cfargument name="accumulator" type="array" default="#ArrayNew(1)#" />
 	<cfscript>
 		var loc = {};
+		if (NOT IsArray(arguments.array))
+			return [arguments.array];
 		loc.iEnd = ArrayLen(arguments.array);
 		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
 			if (IsArray(arguments.array[loc.i]))

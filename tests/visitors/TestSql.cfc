@@ -7,22 +7,6 @@
 		</cfscript>
 	</cffunction>
 	
-	<!---
-	TODO: Fix test that blows up
-	
-	<cffunction name="testVisitCfrelObject" returntype="void" access="public">
-		<cfscript>
-			var loc = {};
-			
-			// mixin a visitor for cfrel.visitors.Visitor
-			loc.obj = new();
-			loc.obj._inspect().visit_visitors_visitor = variables.visit_visitors_visitor;
-			
-			assertEquals(36, loc.obj.visit(loc.obj), "visit(obj) should call visit_visitors_visitor()");
-		</cfscript>
-	</cffunction>
-	--->
-	
 	<cffunction name="testVisitStruct" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
@@ -32,7 +16,7 @@
 			loc.obj = new();
 			loc.obj._inspect().visit_struct = visit_struct;
 			
-			assertEquals(StructCount(loc.set), loc.obj.visit(loc.set), "visit({}) should call visit_struct()");
+			assertEquals(StructCount(loc.set), loc.obj.traverseToString(loc.set), "traverseToString({}) should call visit_struct()");
 		</cfscript>
 	</cffunction>
 	
@@ -45,7 +29,7 @@
 			loc.obj = new();
 			loc.obj._inspect().visit_query = visit_query;
 			
-			assertEquals(loc.query.recordCount, loc.obj.visit(loc.query), "visit(query) should call visit_query()");
+			assertEquals(loc.query.recordCount, loc.obj.traverseToString(loc.query), "traverseToString(query) should call visit_query()");
 		</cfscript>
 	</cffunction>
 	
@@ -55,16 +39,16 @@
 			loc.pass = false;
 			loc.obj = new();
 			try {
-				loc.obj.visit(StructNew());
+				loc.obj.traverseToString(StructNew());
 			} catch (custom_type e) {
 				loc.pass = true;
 			}
 			assertFalse(StructKeyExists(loc.obj, "visit_struct"), "visit_struct() should not exist for this test to work");
-			assertTrue(loc.pass, "Calling visit() on an invalid object should throw an error");
+			assertTrue(loc.pass, "Calling traverseToString() on an invalid object should throw an error");
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="testVisitRelation" returntype="void" access="public">
+	<cffunction name="testSqlTraversal" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
 			loc.sql = new();
@@ -92,37 +76,37 @@
 			
 			// test each value
 			for (loc.i = 1; loc.i LTE 8; loc.i++)
-				assertEquals(loc["exp#loc.i#"], loc.sql.visit(loc["rel#loc.i#"]));
+				assertEquals(loc["exp#loc.i#"], loc.sql.traverseToString(loc["rel#loc.i#"]));
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="testVisitSimple" returntype="void" access="public">
+	<cffunction name="testSimpleTraversal" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
 			loc.visitor = new();
-			assertEquals(5, loc.visitor.visit(5));
-			assertEquals("boo", loc.visitor.visit("boo"));
-			assertEquals(true, loc.visitor.visit(true));
-			assertEquals(Now(), loc.visitor.visit(Now()));
+			assertEquals(5, loc.visitor.traverseToString(5));
+			assertEquals("boo", loc.visitor.traverseToString("boo"));
+			assertEquals(true, loc.visitor.traverseToString(true));
+			assertEquals(Now(), loc.visitor.traverseToString(Now()));
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="testVisitArray" returntype="void" access="public">
+	<cffunction name="testArrayTraversal" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
 			loc.visitor = new();
 			loc.rel = new("src.Relation").select(1).from("a");
 			loc.input = [5, "a", sqlLiteral("b"), loc.rel];
-			loc.output = [5, "a", "b", "SELECT 1 FROM a"];
-			assertEquals(loc.output, loc.visitor.visit(loc.input));
+			loc.output = [5, "a", "b", "SELECT", 1, "FROM", "a"];
+			assertEquals(loc.output, loc.visitor.traverseToArray(loc.input));
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="testVisitNodesLiteral" returntype="void" access="public">
+	<cffunction name="testLiteralTraversal" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
 			loc.sql = new();
-			assertEquals("SELECT 1", loc.sql.visit(sqlLiteral("SELECT 1")), "visit_literal() should just retain plain text contents");
+			assertEquals("SELECT 1", loc.sql.traverseToString(sqlLiteral("SELECT 1")), "visit_literal() should just retain plain text contents");
 		</cfscript>
 	</cffunction>
 	

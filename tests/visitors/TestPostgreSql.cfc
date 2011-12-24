@@ -17,7 +17,7 @@
 			loc.expected = 'SELECT "a", "b", "c", SUM("e") FROM "tableD" WHERE "a" = ? GROUP BY "a", "b", "c" ORDER BY "b" ASC';
 			
 			// make sure columns are correctly escaped
-			assertEquals(loc.expected, loc.visitor.visit(loc.relation));
+			assertEquals(loc.expected, loc.visitor.traverseToString(loc.relation));
 		</cfscript>
 	</cffunction>
 </cfcomponent>

@@ -11,6 +11,16 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="traverseToString" returntype="string" access="public" hint="Return tree traversal as SQL string">
+		<cfargument name="tree" type="any" required="true" />
+		<cfreturn sqlArrayToString(traverseToArray(arguments.tree)) />
+	</cffunction>
+	
+	<cffunction name="traverseToArray" returntype="array" access="public" hint="Return tree traversal as flat array of nodes">
+		<cfargument name="tree" type="any" required="true" />
+		<cfreturn flattenArray(visit(arguments.tree)) />
+	</cffunction>
+	
 	<cffunction name="visit" returntype="any" access="public" hint="Visit a particular object">
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
@@ -31,14 +41,13 @@
 			
 			// call visit_xxx_yyy method
 			method = variables[loc.method];
-			loc.returnValue = method(argumentCollection=arguments);
-			
-			// if the return is an array and has only one entry, return just the entry
-			if (IsArray(loc.returnValue) AND ArrayLen(loc.returnValue) EQ 1)
-				return loc.returnValue[1];
-			return loc.returnValue;
+			return method(argumentCollection=arguments);
 		</cfscript>
 	</cffunction>
+	
+	<!-------------------
+	--- Main Visitors ---
+	-------------------->
 	
 	<cffunction name="visit_relation" returntype="array" access="private" hint="Generate general SQL for a relation">
 		<cfargument name="obj" type="any" required="true" />
@@ -244,9 +253,9 @@
 			var loc = {};
 			loc.join = ["JOIN"];
 			switch(obj.type) {
-				case "outer": loc.join[1] = "LEFT JOIN "; break;
-				case "cross": loc.join[1] = "CROSS JOIN "; break;
-				case "natural": loc.join[1] = "NATURAL JOIN "; break;
+				case "outer": loc.join[1] = "LEFT JOIN"; break;
+				case "cross": loc.join[1] = "CROSS JOIN"; break;
+				case "natural": loc.join[1] = "NATURAL JOIN"; break;
 			}
 			ArrayAppend(loc.join, visit(obj.table));
 			if (IsStruct(obj.condition) OR obj.condition NEQ false)
@@ -264,15 +273,16 @@
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
 			var loc = {};
-			loc.fn = [""];
+			loc.fn = [];
 			loc.aliasOff = variables.aliasOff;
 			variables.aliasOff = true;
 			if (NOT IsSimpleValue(obj.scope) OR obj.scope NEQ "")
-				loc.fn[1] = visit(obj.scope) & ".";
-			loc.fn[1] &= "#obj.name#(";
+				ArrayAppend(loc.fn, [visit(obj.scope), "."]);
+			ArrayAppend(loc.fn, "#obj.name#(");
 			if (obj.distinct)
-				loc.fn[1] &= "DISTINCT ";
+				ArrayAppend(loc.fn, "DISTINCT");
 			ArrayAppend(loc.fn, separateArray(visit(obj.args)));
+			ArrayAppend(loc.fn, ")");
 			variables.aliasOff = loc.aliasOff;
 			return loc.fn;
 		</cfscript>

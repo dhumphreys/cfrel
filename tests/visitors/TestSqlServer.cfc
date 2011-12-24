@@ -17,7 +17,7 @@
 			loc.expected = "SELECT [a], [b], [c], SUM([e]) FROM [tableD] WHERE [a] = ? GROUP BY [a], [b], [c] ORDER BY [b] ASC";
 			
 			// make sure columns are correctly escaped
-			assertEquals(loc.expected, loc.visitor.visit(loc.relation));
+			assertEquals(loc.expected, loc.visitor.traverseToString(loc.relation));
 		</cfscript>
 	</cffunction>
 	
@@ -37,7 +37,7 @@
 			
 			// test each value
 			for (loc.i = 1; loc.i LTE 2; loc.i++)
-				assertEquals(loc["exp#loc.i#"], loc.visitor.visit(loc["rel#loc.i#"]));
+				assertEquals(loc["exp#loc.i#"], loc.visitor.traverseToString(loc["rel#loc.i#"]));
 		</cfscript>
 	</cffunction>
 	
@@ -50,7 +50,7 @@
 			
 			// should not allow OFFSET without LIMIT
 			try {
-				loc.visitor.visit(loc.rel);
+				loc.visitor.traverseToString(loc.rel);
 			} catch (custom_type e) {
 				loc.pass = true;
 			}
@@ -67,7 +67,7 @@
 			
 			// should not allow empty ORDER BY
 			try {
-				loc.visitor.visit(loc.rel);
+				loc.visitor.traverseToString(loc.rel);
 			} catch (custom_type e) {
 				loc.pass = true;
 			}
@@ -85,8 +85,8 @@
 			loc.rel2 = new("src.Relation").select("b").order("b DESC").limit(5).offset(10);
 			
 			// generate sql string
-			loc.visitor.visit(loc.rel1);
-			loc.visitor.visit(loc.rel2);
+			loc.visitor.traverseToString(loc.rel1);
+			loc.visitor.traverseToString(loc.rel2);
 			
 			// make sure original limit and offset are still left
 			assertEquals(5, loc.rel1.sql.limit, "Original LIMIT should not be modified");

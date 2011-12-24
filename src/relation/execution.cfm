@@ -5,7 +5,7 @@
 <cffunction name="toSqlArray" returntype="array" access="public" hint="Convert relational data into flat SQL array">
 	<cfscript>
 		_applyMappings();
-		return flattenArray(this.visitor.visit(this));
+		return flattenArray(this.visitor.traverseToArray(this));
 	</cfscript>
 </cffunction>
 
