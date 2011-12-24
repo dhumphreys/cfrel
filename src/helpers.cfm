@@ -82,7 +82,7 @@
 			loc.rtn = arguments.sql[loc.i];
 			if (IsStruct(loc.rtn))
 				loc.rtn = "?";
-			if (loc.sql NEQ "" AND (NOT REFind("(\(|\.)$", loc.prev) AND NOT REFind("^(,|\))", loc.rtn)))
+			if (loc.sql NEQ "" AND (NOT REFind("(\(|\.)$", loc.prev) AND NOT REFind("^(,|\.(\D|$)|\))", Left(loc.rtn, 2))))
 				loc.rtn = " " & loc.rtn;
 			loc.sql &= loc.rtn;
 			loc.prev = loc.rtn;

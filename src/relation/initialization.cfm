@@ -4,6 +4,7 @@
 	<cfargument name="mapper" type="string" default="Mapper" />
 	<cfargument name="qoq" type="boolean" default="false" />
 	<cfargument name="model" type="any" default="false" />
+	<cfargument name="parameterize" type="boolean" default="false" />
 	<cfargument name="cache" type="string" default="" />
 	<cfargument name="cacheParse" type="boolean" default="#ListFindNoCase(arguments.cache, 'parse')#" />
 	<cfargument name="includeSoftDeletes" type="boolean" default="false" />
@@ -49,18 +50,21 @@
 		* PARSING VARS *
 		***************/
 		
+		// store parameterization preference
+		variables.parameterize = arguments.parameterize;
+		
 		// set cache setting (if application scope is defined)
 		variables.cacheParse = arguments.cacheParse AND IsDefined("application");
 		
 		// string and numeric literals
-		variables.l = {date="'{ts '\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'}'", string="'[^']*'", number="-?(\B\.\d+|\b\d+(\.\d+)?)\b"};
+		variables.l = {date="'{ts '\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'}'", string="'([^']*((\\|')'[^']*)*[^\'])?'", integer="\b\d+\b", decimal="-?(\B|\b\d+)\.\d+\b"};
 		
 		// build regex to match literals
-		variables.literalRegex = "(#l.date#|#l.string#|#l.number#)";
+		variables.literalRegex = "(#l.date#|#l.string#|#l.decimal#|#l.integer#)";
 		
 		// terminals (and literal placeholders)
-		variables.t = {date="::date::", string="::string::", number="::number::", param="\?", dot="\.", comma=",",
-			lparen="\(", rparen="\)", addOp="\+|-|&|\^|\|", star="\*", mulOp="\*|/|%", as="\bAS\b",
+		variables.t = {date="::dt::", string="::str::", decimal="::dec::", integer="::int::", param="\?", dot="\.",
+			comma=",", lparen="\(", rparen="\)", addOp="\+|-|&|\^|\|", star="\*", mulOp="\*|/|%", as="\bAS\b",
 			unaryOp="\+|-|~|\bNOT\b", compOp="<=>|<=|>=|<>|!=|!>|!<|=|<|>|\bLIKE\b", between="\bBETWEEN\b",
 			andOp="\bAND\b", orOp="\bOR\b", neg="\bNOT\b", sortOp="\bASC\b|\bDESC\b", null="\bNULL\b",
 			cast="\bCAST\b", iss="\bIS\b", inn="\bIN\b", identifier="[\[""`]?(\w+)[""`\]]?", kase="\bCASE\b", when="\bWHEN\b",
@@ -121,5 +125,5 @@
 </cffunction>
 
 <cffunction name="subQuery" returntype="any" access="public" hint="Create new rel with the current rel as the child">
-	<cfreturn new(datasource=this.datasource, visitor=variables.visitorClass, qoq=variables.qoq).from(this) />
+	<cfreturn new(datasource=this.datasource, visitor=variables.visitorClass, qoq=variables.qoq, parameterize=variables.parameterize).from(this) />
 </cffunction>

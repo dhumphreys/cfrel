@@ -33,7 +33,7 @@
 		<cfargument name="handle" type="string" required="false" default="query">
 		<cfargument name="cache" type="any" required="false" default="">
 		<cfargument name="reload" type="boolean" required="false">
-		<cfargument name="parameterize" type="any" required="false">
+		<cfargument name="parameterize" type="any" default="true">
 		<cfargument name="returnAs" type="string" required="false">
 		<cfargument name="returnIncluded" type="boolean" required="false">
 		<cfargument name="callbacks" type="boolean" required="false" default="true">

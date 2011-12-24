@@ -302,9 +302,9 @@
 			
 			// if value is an array, set up list params
 			if (IsArray(arguments.obj.value)) {
+				arguments.obj.null = ArrayLen(arguments.obj.value) EQ 0;
 				arguments.obj.value = ArrayToList(arguments.obj.value, Chr(7));
 				arguments.obj.list = true;
-				arguments.obj.null = ArrayLen(loc.parameters[loc.i]) EQ 0;
 				arguments.obj.separator = Chr(7);
 			}
 			
@@ -314,13 +314,7 @@
 	
 	<cffunction name="visit_nodes_paren" returntype="array" access="private">
 		<cfargument name="obj" type="any" required="true" />
-		<cfscript>
-			var loc = {};
-			loc.subject = separateArray(arguments.obj.subject);
-			ArrayPrepend(loc.subject, "(");
-			ArrayAppend(loc.subject, ")");
-			return loc.subject;
-		</cfscript>
+		<cfreturn ["(", visit(arguments.obj.subject), ")"] />
 	</cffunction>
 	
 	<cffunction name="visit_nodes_subquery" returntype="array" access="private" hint="Render a subquery with an alias">

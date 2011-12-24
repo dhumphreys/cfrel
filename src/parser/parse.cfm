@@ -83,7 +83,8 @@
 		// replace literals with placeholders
 		arguments.str = REReplaceNoCase(arguments.str, l.date, t.date, "ALL");
 		arguments.str = REReplaceNoCase(arguments.str, l.string, t.string, "ALL");
-		arguments.str = REReplaceNoCase(arguments.str, l.number, t.number, "ALL");
+		arguments.str = REReplaceNoCase(arguments.str, l.decimal, t.decimal, "ALL");
+		arguments.str = REReplaceNoCase(arguments.str, l.integer, t.integer, "ALL");
 		
 		// pad symbols with spaces and replace consecutive spaces
 		arguments.str = REReplaceNoCase(arguments.str, "(#terminalRegex#)", " \1 ", "ALL");

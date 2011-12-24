@@ -168,18 +168,35 @@
 	<cfscript>
 		var loc = {};
 		
-		// NUMBER, TODO: implement parameterization
-		if (accept(t.number)) {
-			loc.term = popLiteral(); // wrap in nodes.literal?
+		// DECIMAL
+		if (accept(t.decimal)) {
+			loc.term = popLiteral();
+			if (variables.parameterize)
+				loc.term = sqlParam(value=loc.term, cfsqltype="cf_sql_decimal");
 		
-		// STRING, TODO: implement parameterization
+		// INTEGER
+		} else if (accept(t.integer)) {
+			loc.term = popLiteral();
+			if (variables.parameterize)
+				loc.term = sqlParam(value=loc.term, cfsqltype="cf_sql_integer");
+		
+		// STRING
 		} else if (accept(t.string)) {
-			loc.term = popLiteral(); // wrap in nodes.literal?
+			loc.term = popLiteral();
+			if (variables.parameterize) {
+				loc.term = REReplace(loc.term, "^'(.+)'$", "\1");
+				loc.term = REReplace(loc.term, "(\\|')'", "'", "ALL");
+				loc.term = sqlParam(value=loc.term, cfsqltype="cf_sql_varchar");
+			}
 		
-		// DATE, TODO: implement parameterization
+		// DATE
 		} else if (accept(t.date)) {
 			loc.date = REReplace(popLiteral(), "(^'|'$)", "", "ALL");
 			loc.term = "'" & DateFormat(loc.date, "yyyy-mm-dd ") & TimeFormat(loc.date, "hh:mm:ss TT") & "'";
+			if (variables.parameterize) {
+				loc.term = REReplace(loc.term, "^'(.+)'$", "\1");
+				loc.term = sqlParam(value=loc.term, cfsqltype="cf_sql_timestamp");
+			}
 			
 		// NULL
 		} else if (accept(t.null)) {
@@ -306,9 +323,9 @@
 		var loc = {num1="", num2=""};
 		if (accept(t.identifier)) {
 			loc.id = tokens[tokenIndex - 1];
-			if (accept(t.lparen) AND expect(t.number)) {
+			if (accept(t.lparen) AND expect(t.integer)) {
 				loc.num1 = popLiteral();
-				if (accept(t.comma) AND expect(t.number))
+				if (accept(t.comma) AND expect(t.integer))
 					loc.num2 = popLiteral();
 				expect(t.rparen);
 			}
