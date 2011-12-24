@@ -34,7 +34,6 @@
 	<cfscript>
 		if (variables.executed)
 			return this.clone().select(argumentCollection=arguments);
-			
 		_appendFieldsToClause("SELECT", "select", arguments);
 		return this;
 	</cfscript>
@@ -44,7 +43,6 @@
 	<cfscript>
 		if (variables.executed)
 			return this.clone().distinct(argumentCollection=arguments);
-			
 		if (NOT ArrayFind(this.sql.selectFlags, "DISTINCT"))
 			ArrayAppend(this.sql.selectFlags, "DISTINCT");
 		return this;
@@ -182,8 +180,7 @@
 	<cfscript>
 		if (variables.executed)
 			return this.qoq().where(argumentCollection=arguments);
-			
-		_appendConditionsToClause("WHERE", "wheres", "whereParameters", "whereParameterColumns", arguments);
+		_appendConditionsToClause("WHERE", "wheres", arguments);
 		return this;
 	</cfscript>
 </cffunction>
@@ -192,7 +189,6 @@
 	<cfscript>
 		if (variables.executed)
 			return this.clone().group(argumentCollection=arguments);
-			
 		_appendFieldsToClause("GROUP BY", "groups", arguments);
 		return this;
 	</cfscript>
@@ -204,8 +200,7 @@
 	<cfscript>
 		if (variables.executed)
 			return this.clone().having(argumentCollection=arguments);
-			
-		_appendConditionsToClause("HAVING", "havings", "havingParameters", "havingParameterColumns", arguments);
+		_appendConditionsToClause("HAVING", "havings", arguments);
 		return this;
 	</cfscript>
 </cffunction>
@@ -214,7 +209,6 @@
 	<cfscript>
 		if (variables.executed)
 			return this.clone().order(argumentCollection=arguments);
-			
 		_appendFieldsToClause("ORDER BY", "orders", arguments);
 		return this;
 	</cfscript>
@@ -225,7 +219,6 @@
 	<cfscript>
 		if (variables.executed)
 			return this.clone().limit(argumentCollection=arguments);
-			
 		if (variables.qoq)
 			this.maxRows = Int(arguments.value);
 		else
@@ -239,7 +232,6 @@
 	<cfscript>
 		if (variables.executed)
 			return this.clone().offset(argumentCollection=arguments);
-			
 		this.sql.offset = Int(arguments.value);
 		return this;
 	</cfscript>
@@ -260,7 +252,6 @@
 		if (variables.executed)
 			return this.clone().clearWhere(argumentCollection=arguments);
 		this.sql.wheres = [];
-		this.sql.whereParameters = [];
 		return this;
 	</cfscript>
 </cffunction>
@@ -279,7 +270,6 @@
 		if (variables.executed)
 			return this.clone().clearHaving(argumentCollection=arguments);
 		this.sql.havings = [];
-		this.sql.havingParameters = [];
 		return this;
 	</cfscript>
 </cffunction>
@@ -351,33 +341,25 @@
 	<cfreturn this.mapper.includeString() />
 </cffunction>
 
-<cffunction name="_appendFieldsToClause" returntype="void" access="private" hint="Take either lists or name/value pairs and append to an array">
+<cffunction name="_appendFieldsToClause" returntype="void" access="private" hint="Append list(s) to the ">
 	<cfargument name="clause" type="string" required="true" />
 	<cfargument name="scope" type="string" required="true" />
 	<cfargument name="args" type="struct" required="true" />
 	<cfscript>
 		var loc = {};
-		loc.iEnd = StructCount(arguments.args);
 		
-		// do not allow empty call
+		// do not allow empty set of arguments
+		loc.iEnd = StructCount(arguments.args);
 		if (loc.iEnd EQ 0) {
 			throwException("Arguments are required in #UCase(arguments.clause)#");
-			
 		} else {
-		
-			// loop over all arguments
+			
+			// parse each parameter and append to desired scope
 			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
 				loc.value = _transformInput(arguments.args[loc.i], arguments.clause);
-				
-				if (IsStruct(loc.value)) {
-					ArrayAppend(this.sql[arguments.scope], loc.value);
-				} else if (IsArray(loc.value)) {
-					loc.jEnd = ArrayLen(loc.value);
-					for (loc.j = 1; loc.j LTE loc.jEnd; loc.j++)
-						ArrayAppend(this.sql[arguments.scope], loc.value[loc.j]);
-				} else {
-					throwException("Unknown return from parser in #UCase(arguments.clause)#");
-				}
+				loc.jEnd = ArrayLen(loc.value);
+				for (loc.j = 1; loc.j LTE loc.jEnd; loc.j++)
+					ArrayAppend(this.sql[arguments.scope], loc.value[loc.j]);
 			}
 		}
 	</cfscript>
@@ -386,27 +368,19 @@
 <cffunction name="_appendConditionsToClause" returntype="void" access="private" hint="Take conditions and parameters and append to arrays">
 	<cfargument name="clause" type="string" required="true" />
 	<cfargument name="scope" type="string" required="true" />
-	<cfargument name="parameterScope" type="string" required="true" />
-	<cfargument name="parameterColumnScope" type="string" required="true" />
 	<cfargument name="args" type="struct" required="true" />
 	<cfparam name="arguments.args.$params" default="#ArrayNew(1)#" />
 	<cfscript>
 		var loc = {};
 		
-		// get count of arguments
+		// do not allow empty set of arguments
 		loc.argumentCount = StructCount(arguments.args);
-		
-		// if arguments are empty
 		if (loc.argumentCount EQ 0) {
 			throwException(message="Relation requires arguments for #UCase(arguments.clause)#");
 			
-		// if a text clause was passed
+		// if a text clause was passed, we need to parse entire clause and add passed in params
 		} else if (StructKeyExists(arguments.args, "$clause")) {
-					
-			// get data type of clause
 			loc.type = typeOf(arguments.args.$clause);
-			
-			// get count of parameters passed in
 			loc.parameterCount = ArrayLen(arguments.args.$params);
 				
 			// go ahead and confirm parameter count unless clause is literal
@@ -429,9 +403,8 @@
 			// append clause with parameters to sql scope
 			ArrayAppend(this.sql[arguments.scope], _transformInput(arguments.args.$clause, arguments.clause, arguments.args.$params));
 			
+		// if key/value pairs were passed, comparison nodes should be added with parameters
 		} else {
-			
-			// loop over parameters
 			for (loc.key in arguments.args) {
 				
 				// FIXME: (1) railo seems to keep these arguments around

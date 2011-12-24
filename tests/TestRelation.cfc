@@ -558,10 +558,8 @@
 			// make sure proper values were set in LIMIT and OFFSET clauses
 			assertEquals(0, ArrayLen(loc.r1.sql.select));
 			assertEquals(0, ArrayLen(loc.r2.sql.wheres));
-			assertEquals(0, ArrayLen(loc.r2.sql.whereParameters));
 			assertEquals(0, ArrayLen(loc.r3.sql.groups));
 			assertEquals(0, ArrayLen(loc.r4.sql.havings));
-			assertEquals(0, ArrayLen(loc.r4.sql.havingParameters));
 			assertEquals(0, ArrayLen(loc.r5.sql.orders));
 		</cfscript>
 	</cffunction>
