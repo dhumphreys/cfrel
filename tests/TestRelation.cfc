@@ -305,7 +305,6 @@
 			var loc = {};
 			loc.instance = new().where("1 = 1");
 			assertEquals(1, ArrayLen(loc.instance.sql.wheres));
-			assertEquals(0, ArrayLen(loc.instance.sql.whereParameters));
 			assertEquals("cfrel.nodes.BinaryOp", typeOf(loc.instance.sql.wheres[1]));
 			assertEquals("1 = 1", visit(loc.instance.sql.wheres[1]));
 		</cfscript>
@@ -411,7 +410,6 @@
 			var loc = {};
 			loc.instance = new().having("a > 1");
 			assertEquals(1, ArrayLen(loc.instance.sql.havings));
-			assertEquals(0, ArrayLen(loc.instance.sql.havingParameters));
 			assertEquals("cfrel.nodes.BinaryOp", typeOf(loc.instance.sql.havings[1]));
 			assertEquals("a > 1", visit(loc.instance.sql.havings[1]));
 		</cfscript>
@@ -433,7 +431,6 @@
 			loc.havingParameters = [50, "admin", [1,2,3]];
 			loc.instance = new().having(loc.havingClause, loc.havingParameters);
 			assertEquals(loc.havingClause, visit(loc.instance.sql.havings[1]), "having() should set the passed condition");
-			assertEquals(loc.havingParameters, visit(loc.instance.sql.havingParameters), "having() should set parameters in correct order");
 		</cfscript>
 	</cffunction>
 	

@@ -70,3 +70,47 @@
 <cffunction name="javaHash" returntype="any" access="private" hint="Return an ordered Java hash map">
 	<cfreturn CreateObject("java", "java.util.LinkedHashMap").init() />
 </cffunction>
+
+<cffunction name="sqlArrayToString" returntype="string" access="private" hint="Turn SQL tree into a string">
+	<cfargument name="sql" type="array" required="true" />
+	<cfscript>
+		var loc = {};
+		loc.sql = Duplicate(arguments.sql);
+		loc.iEnd = ArrayLen(loc.sql);
+		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
+			if (IsStruct(loc.sql[loc.i]))
+				loc.sql[loc.i] = "?";
+		}
+		return ArrayToList(loc.sql, " ");
+	</cfscript>
+</cffunction>
+
+<cffunction name="flattenArray" returntype="array" access="private" hint="Turn deep array into a flat one">
+	<cfargument name="array" type="array" required="true" />
+	<cfargument name="accumulator" type="array" default="#ArrayNew(1)#" />
+	<cfscript>
+		var loc = {};
+		loc.iEnd = ArrayLen(arguments.array);
+		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
+			if (IsArray(arguments.array[loc.i]))
+				arguments.accumulator = flattenArray(arguments.array[loc.i], arguments.accumulator);
+			else
+				ArrayAppend(arguments.accumulator, arguments.array[loc.i]);
+		}
+		return arguments.accumulator;
+	</cfscript>
+</cffunction>
+
+<cffunction name="separateArray" returntype="array" access="private" hint="Add a delimeter between array elements">
+	<cfargument name="array" type="any" required="true" />
+	<cfargument name="delim" type="string" default="," />
+	<cfscript>
+		var loc = {};
+		if (NOT IsArray(arguments.array))
+			return [arguments.array];
+		loc.iEnd = ArrayLen(arguments.array) - 1;
+		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+			ArrayInsertAt(arguments.array, loc.i * 2, arguments.delim);
+		return arguments.array;
+	</cfscript>
+</cffunction>

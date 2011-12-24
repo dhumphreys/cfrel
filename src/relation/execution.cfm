@@ -1,10 +1,11 @@
 <cffunction name="toSql" returntype="string" access="public" hint="Convert relational data into a SQL string">
+	<cfreturn sqlArrayToString(toSqlArray()) />
+</cffunction>
+
+<cffunction name="toSqlArray" returntype="array" access="public" hint="Convert relational data into flat SQL array">
 	<cfscript>
-		
-		// run mappings before converting to SQL
 		_applyMappings();
-		
-		return this.visitor.visit(this);
+		return flattenArray(this.visitor.visit(this));
 	</cfscript>
 </cffunction>
 
@@ -69,7 +70,7 @@
 				
 				// set up arguments for query execution
 				loc.queryArgs = {};
-				loc.queryArgs.sql = this.toSql();
+				loc.queryArgs.sql = this.toSqlArray();
 				
 				// use max rows if specified
 				if (this.maxRows GT 0)
@@ -135,42 +136,15 @@
 </cffunction>
 
 <cffunction name="$executeQuery" returntype="void" access="private" hint="Execute a cfquery with parameters">
-	<cfargument name="sql" type="string" required="true" hint="Query string to execute" />
-	<cfargument name="params" type="array" default="#ArrayNew(1)#" hint="Array of cfqueryparam arguments" />
+	<cfargument name="sql" type="array" required="true" hint="Flat array of statements to execute" />
 	<cfscript>
 		var loc = {};
 		
-		// find and mark positional parameters
-		loc.regex = "(^[^']*(?:'[^']*'[^']*)*)\?";
-		while (REFind(loc.regex, arguments.sql))
-			arguments.sql = REReplace(arguments.sql, loc.regex, "\1" & Chr(7) & "__PARAM__" & Chr(7), "ALL");
-			
-		// split sql string into an array at positional parameters
-		loc.sql = ListToArray(arguments.sql, Chr(7));
-		
-		// loop over and add params to sql structure
-		loc.iEnd = ArrayLen(loc.sql);
-		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
-			if (loc.sql[loc.i] EQ "__PARAM__") {
-				
-				// add an existing parameter from relation
-				if (ArrayLen(arguments.params) GT 0) {
-					loc.sql[loc.i] = arguments.params[1];
-					ArrayDeleteAt(arguments.params, 1);
-				
-				// or set up a NULL parameter
-				} else {
-					loc.sql[loc.i] = StructNew();
-					loc.sql[loc.i].null = true;
-				}
-			}
-		}
-		
-		// remove positional params and sql from arguments
+		// remove sql from arguments
+		loc.sql = arguments.sql;
 		StructDelete(arguments, "sql");
-		StructDelete(arguments, "params");
 	</cfscript>
 	<cfquery name="variables.cache.query" result="variables.cache.result" attributeCollection="#arguments#">
-		<cfloop array="#loc.sql#" index="loc.fragment"><cfif IsStruct(loc.fragment)><cfqueryparam attributeCollection="#loc.fragment#" /><cfelse>#PreserveSingleQuotes(loc.fragment)#</cfif></cfloop>
+		<cfloop array="#loc.sql#" index="loc.fragment"><cfif IsStruct(loc.fragment)><cfqueryparam attributeCollection="#loc.fragment#" /><cfelse> #PreserveSingleQuotes(loc.fragment)# </cfif></cfloop>
 	</cfquery>
 </cffunction>
