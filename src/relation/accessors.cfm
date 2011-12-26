@@ -6,8 +6,14 @@
 		// stack on parameters from subqueries
 		loc.iEnd = ArrayLen(this.sql.froms);
 		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
-			if (typeOf(this.sql.froms[loc.i]) EQ "cfrel.Relation")
-				arguments.stack = this.sql.froms[loc.i].getParameters(arguments.stack);
+			if (typeOf(this.sql.froms[loc.i]) EQ "cfrel.nodes.SubQuery")
+				arguments.stack = this.sql.froms[loc.i].subject.getParameters(arguments.stack);
+				
+		// stack on parameters from join subqueries
+		loc.iEnd = ArrayLen(this.sql.joins);
+		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+			if (typeOf(this.sql.joins[loc.i].table) EQ "cfrel.nodes.SubQuery")
+				arguments.stack = this.sql.joins[loc.i].table.subject.getParameters(arguments.stack);
 			
 		// stack on join parameters
 		loc.iEnd = ArrayLen(this.sql.joinParameters);
@@ -36,9 +42,15 @@
 		// stack on parameters from subqueries
 		loc.iEnd = ArrayLen(this.sql.froms);
 		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
-			if (typeOf(this.sql.froms[loc.i]) EQ "cfrel.Relation")
-				arguments.stack = this.sql.froms[loc.i].getParameterColumns(arguments.stack);
-			
+			if (typeOf(this.sql.froms[loc.i]) EQ "cfrel.nodes.SubQuery")
+				arguments.stack = this.sql.froms[loc.i].subject.getParameterColumns(arguments.stack);
+				
+		// stack on parameters from join subqueries
+		loc.iEnd = ArrayLen(this.sql.joins);
+		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+			if (typeOf(this.sql.joins[loc.i].table) EQ "cfrel.nodes.SubQuery")
+				arguments.stack = this.sql.joins[loc.i].table.subject.getParameterColumns(arguments.stack);
+		
 		// stack on join parameter columns
 		loc.iEnd = ArrayLen(this.sql.joinParameterColumns);
 		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
@@ -66,13 +78,22 @@
 		// stack on parameters from subqueries
 		loc.iEnd = ArrayLen(this.sql.froms);
 		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
-			if (typeOf(this.sql.froms[loc.i]) EQ "cfrel.Relation")
-				arguments.stack = this.sql.froms[loc.i].getParameterColumnTypes(arguments.stack);
+			if (typeOf(this.sql.froms[loc.i]) EQ "cfrel.nodes.SubQuery")
+				arguments.stack = this.sql.froms[loc.i].subject.getParameterColumnTypes(arguments.stack);
+				
+		// stack on parameters from join subqueries
+		loc.iEnd = ArrayLen(this.sql.joins);
+		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+			if (typeOf(this.sql.joins[loc.i].table) EQ "cfrel.nodes.SubQuery")
+				arguments.stack = this.sql.joins[loc.i].table.subject.getParameterColumnTypes(arguments.stack);
 			
 		// stack on join parameter columns
 		loc.iEnd = ArrayLen(this.sql.joinParameterColumns);
-		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
+			if (typeOf(this.sql.joins[loc.i].table) EQ "cfrel.nodes.SubQuery")
+				arguments.stack = this.sql.joins[loc.i].table.subject.getParameters(arguments.stack);
 			ArrayAppend(arguments.stack, this.mapper.columnDataType(this.sql.joinParameterColumns[loc.i]));
+		}
 		
 		// stack on where parameter columns
 		loc.iEnd = ArrayLen(this.sql.whereParameterColumns);
