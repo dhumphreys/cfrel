@@ -81,10 +81,10 @@
 		
 		// get back a relation with only columns needed
 		loc.rel = this.minimizedRelation();
+		loc.rel.clearSelect().select("1 as placeholder");
 		
 		// remove order by and paging since we just care about count
-		loc.rel.sql.orders = [];
-		loc.rel.clearPagination();
+		loc.rel.clearOrder().clearPagination();
 				
 		// create new relation to contain subquery
 		loc.rel2 = relation(datasource=this.datasource, mapper=variables.mapperClass, visitor=variables.visitorClass);
