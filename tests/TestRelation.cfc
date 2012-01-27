@@ -662,6 +662,16 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="testInterpolatedSqlGeneration" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			loc.rel = new().select("'a?' AS a, 'b?' AS b").from("items")
+				.where(a=1, b="test").where("c = 'test2'").where("d = ?", [6.523]);
+			loc.sql = "SELECT 'a?' AS a, 'b?' AS b FROM items WHERE a = '1' AND b = 'test' AND c = 'test2' AND d = '6.523'";
+			assertEquals(loc.sql, loc.rel.toSql(true));
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="testEmptyDatasource" returntype="void" access="public">
 		<cfscript>
 			var loc = {};

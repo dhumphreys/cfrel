@@ -1,10 +1,57 @@
 <cffunction name="toSql" returntype="string" access="public" hint="Convert relational data into a SQL string">
+	<cfargument name="interpolateParams" type="boolean" default="false" />
 	<cfscript>
+		var loc = {};
 		
 		// run mappings before converting to SQL
 		_applyMappings();
 		
-		return this.visitor.visit(this);
+		// convert relation into SQL
+		loc.sql = this.visitor.visit(this);
+		
+		// if necessary, replace placeholders with parameter values
+		if (arguments.interpolateParams) {
+			
+			// loop over params and types to interpolate them
+			loc.parameters = getParameters();
+			loc.parameterColumnTypes = getParameterColumnTypes();
+			loc.iEnd = ArrayLen(loc.parameters);
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
+				loc.value = Duplicate(loc.parameters[loc.i]);
+				
+				// determine if we should wrap the parameter in quotes
+				loc.quoted = NOT REFindNoCase("^cf_sql_((big|tiny|small)?int|float|numeric|decimal|double|real|bit|money*)$", loc.parameterColumnTypes[loc.i]);
+				
+				// see if param is an array
+				if (IsArray(loc.value)) {
+					loc.jEnd = ArrayLen(loc.value);
+					
+					// if there is an empty array, set the value to NULL
+					if (loc.jEnd EQ 0) {
+						loc.value = "NULL";
+					} else {
+						
+						// quote each array value if necessary
+						if (loc.quoted)
+							for (loc.j = 1; loc.j LTE loc.jEnd; loc.j++)
+								loc.value[loc.j] = "'#loc.value[loc.j]#'";
+						
+						// turn array into a list
+						loc.value = ArrayToList(loc.value, ", ");
+					}
+				
+				// quote scalar values
+				} else if (loc.quoted) {
+					loc.value = "'#loc.value#'";
+				};
+				
+				// replace the next non-quoted question mark with the value
+				loc.sql = REReplace(loc.sql, "(^[^'\?]*(?:'[^']*'[^'\?]*)*)*\?", "\1#loc.value#");
+			}
+		}
+		
+		// return the raw sql statement
+		return loc.sql;
 	</cfscript>
 </cffunction>
 
