@@ -172,6 +172,20 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="testSelectSubquery" returntype="void" access="public">
+		<cfscript>
+			var loc = {};
+			
+			// build a relation with another relation in the select
+			loc.rel1 = new().select("MIN(price)").from("prices").where("id = items.id");
+			loc.rel2 = new().select("id,name", sqlAlias(subject=loc.rel1, alias="lowestPrice")).from("items").order("lowestPrice ASC");
+			
+			// test that the subquery gets wrapped in parens
+			loc.sql = "SELECT id, name, (SELECT MIN(price) FROM prices WHERE id = items.id) AS lowestPrice FROM items ORDER BY lowestPrice ASC";
+			assertEquals(loc.sql, loc.rel2.toSql());
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="testEmptySelect" returntype="void" access="public">
 		<cfscript>
 			var loc = {};

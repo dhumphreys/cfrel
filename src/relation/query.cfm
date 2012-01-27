@@ -387,12 +387,16 @@
 			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
 				loc.value = _transformInput(arguments.args[loc.i], arguments.clause);
 				
+				// if a node is encountered, append it
 				if (IsStruct(loc.value)) {
 					ArrayAppend(this.sql[arguments.scope], loc.value);
+					
+				// if an array is encountered, append each node
 				} else if (IsArray(loc.value)) {
 					loc.jEnd = ArrayLen(loc.value);
 					for (loc.j = 1; loc.j LTE loc.jEnd; loc.j++)
 						ArrayAppend(this.sql[arguments.scope], loc.value[loc.j]);
+				
 				} else {
 					throwException("Unknown return from parser in #UCase(arguments.clause)#");
 				}
@@ -506,14 +510,23 @@
 		loc.type = typeOf(arguments.obj);
 		
 		// nodes should pass straight through
-		if (REFindNoCase("^cfrel\.nodes\.", loc.type) GT 0)
+		if (REFindNoCase("^cfrel\.nodes\.", loc.type) GT 0) {
+				
+			// if node is an alias with a relation as the subject, wrap it in parenthesis node
+			// TODO: wrapping in parens is probably not the best practice here!
+			if (loc.type EQ "cfrel.nodes.alias" AND typeOf(arguments.obj.subject) EQ "cfrel.Relation")
+				arguments.obj.subject = sqlParen(arguments.obj.subject);
+				
+			// just pass nodes through
 			return arguments.obj;
 
 		// parse simple values with parser
-		if (loc.type EQ "simple")
+		} else if (loc.type EQ "simple") {
 			return variables.parser.parse(arguments.obj, arguments.clause);
-			
-		// throw error if we havent found it yet
-		throwException("Invalid object type passed into #UCase(arguments.clause)#");
+		
+		// error out if input is of incorrect type
+		} else {
+			throwException("Invalid object type passed into #UCase(arguments.clause)#");
+		}
 	</cfscript>
 </cffunction>
