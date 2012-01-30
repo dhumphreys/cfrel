@@ -274,6 +274,10 @@
 		<cfreturn this.rel().select(argumentCollection=arguments) />
 	</cffunction>
 	
+	<cffunction name="selectGroup" returntype="any" access="public" hint="Append columns to SELECT and GROUP clauses">
+		<cfreturn this.rel().selectGroup(argumentCollection=arguments) />
+	</cffunction>
+	
 	<cffunction name="distinct" returntype="any" access="public" hint="Make a relation DISTINCT">
 		<cfreturn this.rel().distinct(argumentCollection=arguments) />
 	</cffunction>
