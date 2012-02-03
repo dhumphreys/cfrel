@@ -183,6 +183,9 @@
 			
 			// change state
 			variables.executed = true;
+		
+			// call the mapper to cache data as needed
+			this.mapper.cacheData(this, variables.cache.query, variables.cache.result);
 		}
 		
 		return variables.cache.query;

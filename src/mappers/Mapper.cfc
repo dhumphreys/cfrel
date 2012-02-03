@@ -156,4 +156,10 @@
 			return loc.rtn;
 		</cfscript>
 	</cffunction>
+	
+	<cffunction name="cacheData" returntype="void" access="public" hint="allows a specific mapper to cache data about the resulting query created">
+		<cfargument name="relation" type="any" required="true">
+		<cfargument name="query" type="query" required="true">
+		<cfargument name="results" type="struct" required="true">
+	</cffunction>
 </cfcomponent>

@@ -1,5 +1,5 @@
 <cffunction name="recordCount" returntype="numeric" access="public" hint="Get count of rows in recordset">
-	<cfreturn query().recordCount />
+	<cfreturn this.query().recordCount />
 </cffunction>
 
 <cffunction name="currentRow" returntype="numeric" access="public" hint="Get current row of loop">

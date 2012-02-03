@@ -383,4 +383,16 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="cacheData" returntype="void" access="public" hint="allows a specific mapper to cache data about the resulting query created">
+		<cfargument name="relation" type="any" required="true">
+		<cfargument name="query" type="query" required="true">
+		<cfargument name="results" type="struct" required="true">
+		<cfscript>
+			if (StructKeyExists(arguments.relation, "model")) {
+				injectInspector(arguments.relation.model);
+				request.wheels[arguments.relation.model.$hashedKey(arguments.query)] = arguments.relation.model._inspect().wheels.class.modelName;
+			}
+		</cfscript>
+		<cfreturn>
+	</cffunction>
 </cfcomponent>
