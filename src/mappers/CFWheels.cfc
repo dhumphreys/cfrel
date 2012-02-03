@@ -388,7 +388,7 @@
 		<cfargument name="query" type="query" required="true">
 		<cfargument name="results" type="struct" required="true">
 		<cfscript>
-			if (StructKeyExists(arguments.relation, "model")) {
+			if (StructKeyExists(arguments.relation, "model") AND IsObject(arguments.relation.model)) {
 				injectInspector(arguments.relation.model);
 				request.wheels[arguments.relation.model.$hashedKey(arguments.query)] = arguments.relation.model._inspect().wheels.class.modelName;
 			}
