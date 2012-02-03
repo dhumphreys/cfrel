@@ -8,10 +8,10 @@
 			return false;
 		switch (arguments.format) {
 			case "struct":
-				return struct(argumentCollection=arguments);
+				return this.struct(argumentCollection=arguments);
 				break;
 			case "object":
-				return object(argumentCollection=arguments);
+				return this.object(argumentCollection=arguments);
 				break;
 		}
 		return false;
