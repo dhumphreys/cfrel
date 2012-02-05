@@ -2,48 +2,37 @@
 	<cfinclude template="../functions.cfm" />
 	
 	<cffunction name="init" returntype="struct" access="public" hint="Constructor">
-		<cfargument name="includeSoftDeletes" type="boolean" default="false" />
+		<cfreturn this />
+	</cffunction>
+	
+	<cffunction name="aliasName" returntype="string" access="public" hint="Return alias name to reference in query">
+		<cfargument name="model" type="any" required="true" />
 		<cfscript>
-			variables.models = [];
-			variables.tables = {};
-			variables.columns = {};
-			variables.includes = javaHash();
-			variables.includeSoftDeletes = arguments.includeSoftDeletes;
-			return this;
+			if (StructKeyExists(arguments.model, "alias") AND Len(arguments.model.alias))
+				return arguments.model.alias;
+			return arguments.model.table;
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="clearMapping" returntype="void" access="public">
-		<cfscript>
-			variables.models = [];
-			variables.tables = {};
-			variables.columns = {};
-		</cfscript>
+	<cffunction name="tableName" returntype="string" access="public" hint="Return table name to reference in query">
+		<cfargument name="model" type="any" required="true" />
+		<cfreturn arguments.model.table />
 	</cffunction>
 	
-	<cffunction name="buildMapping" returntype="void" access="public">
-		<cfargument name="relation" type="any" required="true" />
-		<!--- do nothing here --->
+	<cffunction name="properties" returntype="struct" access="public" hint="Return all database properties in a structure">
+		<cfargument name="model" type="any" required="true" />
+		<cfreturn StructNew() />
 	</cffunction>
 	
-	<cffunction name="mapObject" returntype="void" access="public">
-		<cfargument name="obj" type="any" required="true" />
-		<cfargument name="useAlias" type="boolean" default="true" />
-		<!--- do nothing here --->
+	<cffunction name="calculatedProperties" returntype="struct" access="public" hint="Return all calculated properties in a structure">
+		<cfargument name="model" type="any" required="true" />
+		<cfreturn StructNew() />
 	</cffunction>
 	
-	<cffunction name="mapIncludes" returntype="void" access="public">
-		<cfargument name="relation" type="any" required="true" />
-		<cfargument name="include" type="string" required="true" />
-		<cfargument name="joinType" type="string" default="" />
-		<cfset throwException("Current mapper does not support includes") />
-	</cffunction>
-	
-	<cffunction name="columnDataType" returntype="string" access="public">
-		<cfargument name="column" type="string" required="true" />
-		<cfscript>
-			return "cf_sql_char";
-		</cfscript>
+	<cffunction name="association" returntype="struct" access="public" hint="Return specific association details">
+		<cfargument name="model" returntype="any" required="true" />
+		<cfargument name="association" type="string" required="true" />
+		<cfset throwException("Association `#arguments.association#` not found.") />
 	</cffunction>
 	
 	<cffunction name="buildStruct" returntype="struct" access="public">
@@ -102,58 +91,8 @@
 		<cfreturn arguments.query />
 	</cffunction>
 	
-	<cffunction name="primaryKey" returntype="array" access="public" hint="Get primary key array from model">
+	<cffunction name="primaryKey" returntype="string" access="public" hint="Get primary key list from model">
 		<cfargument name="model" type="any" required="true" />
-		<cfreturn ArrayNew(1) />
-	</cffunction>
-	
-	<cffunction name="wildcardColumns" returntype="any" access="private" hint="Return columns matching a wildcard (but not calculated columns)">
-		<cfargument name="table" type="string" default="" />
-		<cfscript>
-			var loc = {};
-			loc.columns = ArrayNew(1);
-			for (loc.key in variables.columns) {
-				loc.col = variables.columns[loc.key];
-				if (StructKeyExists(loc.col, "table") AND (Len(arguments.table) EQ 0 OR loc.col.table EQ arguments.table))
-					ArrayAppend(loc.columns, sqlColumn(column=loc.col.value, alias=loc.key));
-			}
-			return loc.columns;
-		</cfscript>
-	</cffunction>
-	
-	<cffunction name="uniqueScopeKey" returntype="string" access="private" hint="Create a unique, meaningful key for a certain scope">
-		<cfargument name="key" type="string" required="true" />
-		<cfargument name="prefix" type="string" default="" />
-		<cfargument name="scope" type="struct" required="true" />
-		<cfscript>
-			var loc = {};
-			loc.key = arguments.key;
-					
-			// if key already used, try prepending a prefix
-			if (StructKeyExists(arguments.scope, loc.key) AND Len(arguments.prefix))
-				loc.key = arguments.key = arguments.prefix & arguments.key;
-				
-			// if key still conflicts, start appending numbers
-			for (loc.j = 2; StructKeyExists(arguments.scope, loc.key); loc.j++)
-				loc.key = arguments.key & loc.j;
-			
-			return loc.key;
-		</cfscript>
-	</cffunction>
-	
-	<cffunction name="includeString" returntype="string" access="public" hint="Return include structure as a string">
-		<cfargument name="includes" type="struct" default="#variables.includes#" />
-		<cfscript>
-			var loc = {};
-			loc.rtn = "";
-			for (loc.key in arguments.includes) {
-				if (loc.key NEQ "_alias") {
-					if (StructCount(arguments.includes[loc.key]) GT 1)
-						loc.key &= "(#includeString(arguments.includes[loc.key])#)";
-					loc.rtn = ListAppend(loc.rtn, loc.key);
-				}
-			}
-			return loc.rtn;
-		</cfscript>
+		<cfreturn "" />
 	</cffunction>
 </cfcomponent>

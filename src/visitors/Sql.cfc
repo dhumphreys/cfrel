@@ -1,12 +1,9 @@
 <cfcomponent output="false">
 	<cfinclude template="../functions.cfm" />
 	
-	<cffunction name="init">
+	<cffunction name="init" returntype="any" access="public" hint="Constructor">
 		<cfscript>
-			variables.aliasOnly = false;
-			variables.aliasOff = false;
-			variables.queryCounter = 1;
-			variables.subQueryCounter = 1;
+			$resetCounters();
 			return this;
 		</cfscript>
 	</cffunction>
@@ -57,7 +54,10 @@
 			
 			// clear out query and subquery counters when response is top-level
 			if (arguments.top)
-				variables.queryCounter = variables.subQueryCounter = 1;
+				$resetCounters();
+			
+			// push relation onto stack for mapping
+			ArrayPrepend(variables.relations, arguments.obj);
 			
 			// set some control variables to reduce load
 			loc.select = false;
@@ -74,7 +74,7 @@
 			if (ArrayLen(obj.sql.selectFlags) GT 0)
 				ArrayAppend(loc.fragments, visit(obj.sql.selectFlags));
 			if (ArrayLen(obj.sql.select) EQ 0) {
-				ArrayAppend(loc.fragments, "*");
+				ArrayAppend(loc.fragments, visit(sqlWildcard()));
 			} else {
 				ArrayAppend(loc.fragments, separateArray(visit(obj.sql.select)));
 				loc.select = true;
@@ -112,6 +112,9 @@
 			// generate OFFSET clause
 			if (StructKeyExists(obj.sql, "offset") AND obj.sql.offset GT 0)
 				ArrayAppend(loc.fragments, "OFFSET #obj.sql.offset#");
+			
+			// pop relation off of stack for mapping
+			ArrayDeleteAt(variables.relations, 1);
 				
 			// return sql array
 			return loc.fragments;
@@ -230,20 +233,26 @@
 		<cfscript>
 			var loc = {};
 			
+			// map the column
+			arguments.obj = $relation().mapColumn(arguments.obj);
+			
 			// read alias unless we have them turned off
+			// TODO: clean up this logic
 			loc.alias = NOT variables.aliasOff AND Len(obj.alias) ? " AS #_escapeSqlEntity(obj.alias)#" : "";
 			
 			// only use alias if we have asked to do so
 			if (variables.aliasOnly AND Len(loc.alias))
 				return _escapeSqlEntity(obj.alias);
 			
-			if (StructKeyExists(obj, "mapping"))
-				return _escapeSqlEntity(visit(obj.mapping.value)) & loc.alias;
+			// use sql mapping instead of column if specified
+			if (StructKeyExists(obj, "sql"))
+				return _escapeSqlEntity(visit(obj.sql)) & loc.alias;
 			
-			// read table specified for column
-			loc.table = Len(obj.table) ? _escapeSqlEntity(obj.table) & "." : "";
+			// remove alias if column equals alias
+			if (ListLast(obj.column, ".") EQ obj.alias)
+				loc.alias = "";
 			
-			return loc.table & _escapeSqlEntity(obj.column) & loc.alias;
+			return _escapeSqlEntity(obj.column) & loc.alias;
 		</cfscript>
 	</cffunction>
  	
@@ -296,9 +305,8 @@
 	<cffunction name="visit_nodes_param" returntype="any" access="private">
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
-			// TODO: map column type here
-			if (StructKeyExists(arguments.obj, "column"))
-				StructDelete(arguments, "column");
+			// map the parameter data type
+			arguments.obj = $relation().mapParameter(arguments.obj);
 			
 			// if value is an array, set up list params
 			if (IsArray(arguments.obj.value)) {
@@ -329,7 +337,7 @@
 			if (Len(obj.table) EQ 0)
 				throwException("No table defined.");
 			loc.table = _escapeSqlEntity(obj.table);
-			if (Len(obj.alias))
+			if (Len(obj.alias) AND obj.table NEQ obj.alias)
 				loc.table &= " " & _escapeSqlEntity(obj.alias);
 			return loc.table;
 		</cfscript>
@@ -358,9 +366,12 @@
 	<cffunction name="visit_nodes_wildcard" returntype="string" access="private">
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
-			// TODO: perform wildcard mapping here
+			// map wildcard
+			arguments.obj = $relation().mapWildcard(arguments.obj);
+			
+			// decide which wildcard behavior to use
 			if (NOT variables.aliasOff AND StructKeyExists(obj, "mapping") AND ArrayLen(obj.mapping))
-				return ArrayToList(visit(obj.mapping), ",");
+				return ArrayToList(visit(obj.mapping), ", ");
 			else
 				return obj.subject NEQ "" ? "#visit(obj.subject)#.*" : "*";
 		</cfscript>
@@ -401,5 +412,23 @@
 	<cffunction name="_escapeSqlEntity" returntype="string" access="private" hint="Escape SQL column and table names">
 		<cfargument name="subject" type="string" required="true" />
 		<cfreturn arguments.subject />
+	</cffunction>
+
+	<cffunction name="$resetCounters" returntype="void" access="private" hint="Reset counters and relation stack for new build">
+		<cfscript>
+			variables.aliasOnly = false;
+			variables.aliasOff = false;
+			variables.queryCounter = 1;
+			variables.subQueryCounter = 1;
+			variables.relations = [];
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="$relation" returntype="any" access="private" hint="Return top relation from the stack">
+		<cfscript>
+			if (ArrayLen(variables.relations) EQ 0)
+				return relation();
+			return variables.relations[1];
+		</cfscript>
 	</cffunction>
 </cfcomponent>

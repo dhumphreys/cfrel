@@ -20,7 +20,7 @@
 			var loc = {};
 			loc.rel = relation(datasource="cfrel", visitor="SqlServer");
 			assertIsTypeOf(loc.rel, "src.Relation");
-			assertIsTypeOf(loc.rel.visitor, "src.visitors.SqlServer");
+			assertIsTypeOf(loc.rel.visitor(), "src.visitors.SqlServer");
 			assertEquals("cfrel", loc.rel.datasource);
 		</cfscript>
 	</cffunction>

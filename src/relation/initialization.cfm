@@ -1,7 +1,6 @@
 <cffunction name="init" returntype="struct" access="public" hint="Constructor">
 	<cfargument name="datasource" type="string" default="" />
 	<cfargument name="visitor" type="string" default="Sql" />
-	<cfargument name="mapper" type="string" default="Mapper" />
 	<cfargument name="qoq" type="boolean" default="false" />
 	<cfargument name="model" type="any" default="false" />
 	<cfargument name="parameterize" type="boolean" default="false" />
@@ -10,14 +9,10 @@
 	<cfargument name="includeSoftDeletes" type="boolean" default="false" />
 	<cfscript>
 		
-		// store classes used for mapper and visitor
-		variables.mapperClass = arguments.mapper;
+		// datasource and adapter settings
 		variables.visitorClass = arguments.visitor;
-		
-		// datasource and visitor to use
+		variables.includeSoftDeletes = arguments.includeSoftDeletes;
 		this.datasource = arguments.datasource;
-		this.visitor = CreateObject("component", addCfcPrefix("cfrel.visitors.#arguments.visitor#")).init();
-		this.mapper = CreateObject("component", addCfcPrefix("cfrel.mappers.#arguments.mapper#")).init(arguments.includeSoftDeletes);
 		
 		// store model that this relation deals with
 		this.model = arguments.model;
@@ -45,6 +40,18 @@
 		variables.qoq = arguments.qoq;
 		variables.paged = false;
 		variables.paginationData = false;
+		
+		/***************
+		* MAPPING VARS *
+		***************/
+		
+		variables.mappings = {};
+		variables.mappings.columns = {};
+		variables.mappings.includes = javaHash();
+		variables.mappings.tableAlias = {};
+		variables.mappings.tableColumns = {};
+		variables.mappings.queue = [];
+		variables.mappings.wildcards = {};
 		
 		/***************
 		* PARSING VARS *
@@ -126,4 +133,8 @@
 
 <cffunction name="subQuery" returntype="any" access="public" hint="Create new rel with the current rel as the child">
 	<cfreturn new(datasource=this.datasource, visitor=variables.visitorClass, qoq=variables.qoq, parameterize=variables.parameterize).from(this) />
+</cffunction>
+
+<cffunction name="qoq" returntype="struct" access="public" hint="Return a QoQ relation with the current recordset as the FROM">
+	<cfreturn this.new(model=this.model).from(this.query()) />
 </cffunction>

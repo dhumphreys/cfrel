@@ -47,7 +47,7 @@
 			
 			// make sure datasource and visitor were correctly set
 			assertEquals("test", loc.instance.datasource, "Datasource should be set through constructor");
-			assertIsTypeOf(loc.instance.visitor, "src.visitors.SqlServer");
+			assertIsTypeOf(loc.instance.visitor(), "src.visitors.SqlServer");
 			assertSame(loc.model, loc.instance.model);
 		</cfscript>
 	</cffunction>
@@ -210,6 +210,10 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="testSelectOfRedundantAliasIgnored" returntype="void" access="public">
+		<cfset assertEquals("SELECT a", new().select("a AS a").toSql()) />
+	</cffunction>
+	
 	<cffunction name="testDistinct" returntype="void" access="public">
 		<cfscript>
 			var loc = {};
@@ -264,11 +268,11 @@
 			loc.instance = new();
 			loc.private = loc.instance._inspect();
 			assertFalse(loc.private.qoq, "QOQ should be false initially");
-			assertIsTypeOf(loc.instance.visitor, "src.visitors.Sql");
+			assertIsTypeOf(loc.instance.visitor(), "src.visitors.Sql");
 			loc.instance.from(loc.query);
 			assertSame(loc.query, loc.instance.sql.froms[1], "FROM clause should be set to passed query");
 			assertTrue(loc.private.qoq, "QOQ should be true after using from(query)");
-			assertIsTypeOf(loc.instance.visitor, "src.visitors.QueryOfQuery");
+			assertIsTypeOf(loc.instance.visitor(), "src.visitors.QueryOfQuery");
 		</cfscript>
 	</cffunction>
 	

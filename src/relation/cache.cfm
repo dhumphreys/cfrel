@@ -8,7 +8,7 @@
 	<cfscript>
 		var loc.cacheName = _getCacheName(name="structs", argumentCollection=arguments);
 		if (NOT StructKeyExists(variables.cache, loc.cacheName))
-			variables.cache[loc.cacheName] = this.mapper.buildStructCache(query=this.query(), model=this.model, argumentCollection=arguments);
+			variables.cache[loc.cacheName] = mapper().buildStructCache(query=this.query(), model=this.model, argumentCollection=arguments);
 	</cfscript>
 </cffunction>
 
@@ -18,7 +18,7 @@
 	<cfscript>
 		var loc.cacheName = _getCacheName(name="objects", argumentCollection=arguments);
 		if (NOT StructKeyExists(variables.cache, loc.cacheName))
-			variables.cache[loc.cacheName] = this.mapper.buildObjectCache(query=this.query(), model=this.model, argumentCollection=arguments);
+			variables.cache[loc.cacheName] = mapper().buildObjectCache(query=this.query(), model=this.model, argumentCollection=arguments);
 	</cfscript>
 </cffunction>
 

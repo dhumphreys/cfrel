@@ -71,6 +71,26 @@
 	<cfreturn CreateObject("java", "java.util.LinkedHashMap").init() />
 </cffunction>
 
+<cffunction name="uniqueScopeKey" returntype="string" access="private" hint="Create a unique, meaningful key for a certain scope">
+	<cfargument name="key" type="string" required="true" />
+	<cfargument name="prefix" type="string" default="" />
+	<cfargument name="scope" type="struct" required="true" />
+	<cfscript>
+		var loc = {};
+		loc.key = arguments.key;
+				
+		// if key already used, try prepending a prefix
+		if (StructKeyExists(arguments.scope, loc.key) AND Len(arguments.prefix))
+			loc.key = arguments.key = arguments.prefix & arguments.key;
+			
+		// if key still conflicts, start appending numbers
+		for (loc.j = 2; StructKeyExists(arguments.scope, loc.key); loc.j++)
+			loc.key = arguments.key & loc.j;
+		
+		return loc.key;
+	</cfscript>
+</cffunction>
+
 <cffunction name="sqlArrayToString" returntype="string" access="private" hint="Turn SQL tree into a string">
 	<cfargument name="sql" type="array" required="true" />
 	<cfscript>

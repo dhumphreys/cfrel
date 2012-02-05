@@ -4,8 +4,8 @@
 
 <cffunction name="toSqlArray" returntype="array" access="public" hint="Convert relational data into flat SQL array">
 	<cfscript>
-		_applyMappings();
-		return flattenArray(this.visitor.traverseToArray(this));
+		buildMappings();
+		return flattenArray(visitor().traverseToArray(this));
 	</cfscript>
 </cffunction>
 
@@ -33,7 +33,7 @@
 				
 		// run before find callbacks on relation
 		if (arguments.callbacks)
-			this.mapper.beforeFind(this);
+			mapper().beforeFind(this);
 		
 		// drop into query logic if we don't have a query yet
 		if (variables.executed EQ false OR NOT StructKeyExists(variables.cache, "query")) {
@@ -96,7 +96,7 @@
 				
 				// run after find callbacks on query
 				if (arguments.callbacks AND IsObject(this.model))
-					this.mapper.afterFind(this.model, variables.cache.query);
+					mapper().afterFind(this.model, variables.cache.query);
 				
 				// set up looping counter
 				variables.currentRow = 0;
@@ -139,8 +139,6 @@
 	<cfargument name="sql" type="array" required="true" hint="Flat array of statements to execute" />
 	<cfscript>
 		var loc = {};
-		
-		// remove sql from arguments
 		loc.sql = arguments.sql;
 		StructDelete(arguments, "sql");
 	</cfscript>

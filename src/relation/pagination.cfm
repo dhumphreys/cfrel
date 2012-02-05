@@ -49,9 +49,6 @@
 	<cfscript>
 		var loc = {};
 		
-		// run mappings before we clone
-		_applyMappings();
-		
 		// clone query
 		loc.rel = this.clone();
 		

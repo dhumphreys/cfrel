@@ -6,7 +6,7 @@
 		
 		// get primary keys from mapper
 		loc.keys = ListToArray(arguments.key);
-		loc.primaryKey = this.mapper.primaryKey(this.model);
+		loc.primaryKey = ListToArray(mapper().primaryKey(this.model));
 		loc.iEnd = ArrayLen(loc.primaryKey);
 		
 		// check for errors
@@ -75,7 +75,6 @@
 				
 				// set up table node to wrap model
 				arguments.target = sqlTable(model=arguments.target);
-				this.mapper.buildMapping(arguments.target, this);
 				break;
 				
 			case "simple":
@@ -88,13 +87,15 @@
 				
 				// change visitor for QoQ operations
 				variables.visitorClass = "QueryOfQuery";
-				this.visitor = CreateObject("component", addCfcPrefix("cfrel.visitors.QueryOfQuery")).init();
 				break;
 				
 			// and reject all others by throwing an error
 			default:
 				throwException("Only a table name or another relation can be in FROM clause");
 		}
+		
+		// queue mappings for later execution
+		queueMapping(arguments.target);
 		
 		// put the target onto the FROM stack
 		ArrayAppend(this.sql.froms, arguments.target);
@@ -133,10 +134,6 @@
 			// add a model to a new table object
 			case "model":
 				loc.table = sqlTable(model=arguments.target);
-				
-				// map the models using the mapper
-				if (NOT arguments.$skipMapping)
-					this.mapper.buildMapping(loc.table, this);
 				break;
 				
 			// use another relation as a subquery
@@ -166,6 +163,10 @@
 				throwException("Only table names or table nodes can be target of JOIN");
 				
 		}
+		
+		// queue the mapping of 
+		if (NOT arguments.$skipMapping)
+			queueMapping(loc.table);
 		
 		// append join to sql structure
 		ArrayAppend(this.sql.joins, sqlJoin(loc.table, loc.condition, arguments.type));
@@ -319,26 +320,28 @@
 		var loc = {};
 		if (variables.executed)
 			return this.clone().include(argumentCollection=arguments);
-			
-		// make sure a from has been specified
-		if (ArrayLen(this.sql.froms) EQ 0)
-			throwException("Includes cannot be specified before FROM clause");
-			
-		// let mapper do the work with includes
-		this.mapper.mapIncludes(this, arguments.include, arguments.joinType);
 		
-		// handle parameters for join
-		loc.iEnd = ArrayLen(arguments.params);
-		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
-			ArrayAppend(this.sql.joinParameters, arguments.params[loc.i]);
-		}
+		// queue include and its mappings for later
+		queueMapping(arguments);
 			
 		return this;
 	</cfscript>
 </cffunction>
 
 <cffunction name="includeString" returntype="string" access="public" hint="Return minimized include string">
-	<cfreturn this.mapper.includeString() />
+	<cfargument name="includes" type="struct" default="#variables.mappings.includes#" />
+	<cfscript>
+		var loc = {};
+		loc.rtn = "";
+		for (loc.key in arguments.includes) {
+			if (loc.key NEQ "_alias") {
+				if (StructCount(arguments.includes[loc.key]) GT 1)
+					loc.key &= "(#includeString(arguments.includes[loc.key])#)";
+				loc.rtn = ListAppend(loc.rtn, loc.key);
+			}
+		}
+		return loc.rtn;
+	</cfscript>
 </cffunction>
 
 <cffunction name="_appendFieldsToClause" returntype="void" access="private" hint="Append list(s) to the ">

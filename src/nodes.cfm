@@ -43,7 +43,6 @@
 
 <cffunction name="sqlColumn" returntype="any" access="private">
 	<cfargument name="column" type="string" required="true" />
-	<cfargument name="table" type="any" default="" />
 	<cfargument name="alias" type="string" default="" />
 	<cfreturn constructObject("cfrel.nodes.Column", arguments)>
 </cffunction>

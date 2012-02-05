@@ -23,8 +23,12 @@
 		loc.expr = orCondition();
 		
 		// EXPR AS IDENTIFIER
-		if (accept(t.as) AND expect(t.identifier))
-			return sqlAlias(subject=loc.expr, alias=tokens[tokenIndex - 1]);
+		if (accept(t.as) AND expect(t.identifier)) {
+			if (loc.expr.$class EQ "cfrel.nodes.column")
+				loc.expr.alias = tokens[tokenIndex - 1];
+			else
+				return sqlAlias(subject=loc.expr, alias=tokens[tokenIndex - 1]);
+		}
 		
 		return loc.expr;
 	</cfscript>
@@ -76,12 +80,8 @@
 		loc.left = addExpr();
 		
 		// if expression is a column, store it for use by positional parameters
-		if (IsStruct(loc.left) AND loc.left.$class EQ "cfrel.nodes.Column") {
-			if (IsStruct(loc.left.table) OR loc.left.table NEQ "")
-				variables.tmpParamColumn = loc.left.table & "." & loc.left.column;
-			else
-				variables.tmpParamColumn = loc.left.column;
-		}
+		if (IsStruct(loc.left) AND loc.left.$class EQ "cfrel.nodes.Column")
+			variables.tmpParamColumn = loc.left.column;
 		
 		// ADD_EXPR BETWEEN TERM AND TERM
 		if (accept(t.between)) {
@@ -264,7 +264,7 @@
 						
 					// TABLE DOT COLUMN
 					} else {
-						loc.term = sqlColumn(table=loc.id, column=loc.id2);
+						loc.term = sqlColumn(column=ListAppend(loc.id, loc.id2, "."));
 					}
 				}
 				
