@@ -9,7 +9,8 @@
 				loc.type = "CFWheels";
 				break;
 			case "query":
-				// TODO: build query-of-query mapper
+				loc.type = "QueryOfQuery";
+				break;
 			case "cfrel.nodes.subquery":
 				// TODO: build subquery mapper
 			default:
@@ -83,13 +84,20 @@
 		// TODO: append model to mapper. why?
 		// ArrayAppend(variables.models, arguments.table);
 		
-		// assign table alias
+		// determine a unique alias for this table in the query
 		loc.tableAlias = uniqueScopeKey(key=loc.mapper.aliasName(loc.subject), scope=variables.mappings.tableAlias);
-		arguments.table.table = loc.mapper.tableName(loc.subject);
-		arguments.table.alias = loc.tableAlias;
+		
+		// get table name
+		loc.tableName = loc.mapper.tableName(loc.subject);
+		
+		// write table information to table node
+		if (NOT variables.qoq) {
+			arguments.table.table = loc.tableName;
+			arguments.table.alias = loc.tableAlias;
+		}
 		
 		// add table data to proper mapping structures
-		variables.mappings.tableAlias[loc.tableAlias] = arguments.table.table;
+		variables.mappings.tableAlias[loc.tableAlias] = loc.tableName;
 		loc.tableCols = variables.mappings.tableColumns[loc.tableAlias] = {};
 		
 		// loop over database properties in model

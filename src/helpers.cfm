@@ -83,8 +83,11 @@
 		if (StructKeyExists(arguments.scope, loc.key) AND Len(arguments.prefix))
 			loc.key = arguments.key = arguments.prefix & arguments.key;
 			
+		// start at 1 if dealing with a query or subquery, or 2 otherwise
+		loc.jStart = ListFindNoCase("query,subquery", loc.key) ? 1 : 2;
+			
 		// if key still conflicts, start appending numbers
-		for (loc.j = 2; StructKeyExists(arguments.scope, loc.key); loc.j++)
+		for (loc.j = loc.jStart; StructKeyExists(arguments.scope, loc.key) OR ListFindNoCase("query,subquery", loc.key); loc.j++)
 			loc.key = arguments.key & loc.j;
 		
 		return loc.key;

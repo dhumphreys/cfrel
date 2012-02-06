@@ -151,11 +151,17 @@
 				if (variables.qoq EQ false)
 					throwException("Cannot join a query object if relation is not a QoQ");
 					
-				// add the query as an addition from, and put conditions in where clause
+				// add the query as an additional from
 				ArrayAppend(this.sql.froms, arguments.target);
-				this.where(arguments.condition, arguments.params);
-				return this;
 				
+				// put conditions in where clause if not a cross join
+				// TODO: make up some fancy way to handle QoQ natural joins
+				if (arguments.type NEQ "cross")
+					this.where(arguments.condition, arguments.params);
+				
+				// map the query and return
+				queueMapping(arguments.target);
+				return this;
 				break;
 				
 			// throw error if invalid target
@@ -164,7 +170,7 @@
 				
 		}
 		
-		// queue the mapping of 
+		// queue the mapping of the join table
 		if (NOT arguments.$skipMapping)
 			queueMapping(loc.table);
 		
