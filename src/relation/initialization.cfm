@@ -68,7 +68,10 @@
 		
 		// duplicate object and sql
 		loc.rel = Duplicate(this);
-		loc.rel.executed = false;
+		
+		// fix for railo as it seems to keep references in the this.sql struct after a duplicate
+		if (StructKeyExists(server, "railo"))
+			loc.rel.sql = Duplicate(this.sql);
 		
 		// remove query values that should not be kept in new instance
 		if (variables.executed EQ true OR StructKeyExists(variables.cache, "query")) {
