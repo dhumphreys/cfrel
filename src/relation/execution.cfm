@@ -71,7 +71,7 @@
 	</cfscript>
 </cffunction>
 
-<cffunction name="query" returntype="query" access="public" hint="Lazily execute and return query object">
+<cffunction name="$query" returntype="query" access="public" hint="Lazily execute and return query object">
 	<cfargument name="callbacks" type="boolean" default="true" />
 	<cfargument name="allowSpecialPaging" type="boolean" default="false" />
 	<cfscript>
