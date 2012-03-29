@@ -73,7 +73,7 @@
 		<cfargument name="model" type="any" default="false" />
 		<cfscript>
 			var loc = {};
-			loc.comp = CreateObject("component", "component");
+			loc.comp = CreateObject("component", "base");
 			loc.data = buildStruct(argumentCollection=arguments);
 			for (loc.key in loc.data)
 				loc.comp[loc.key] = loc.data[loc.key];
