@@ -47,7 +47,7 @@
 	</cfscript>
 </cffunction>
 
-<cffunction name="struct" returntype="any" access="public" hint="Return struct representation of current query row">
+<cffunction name="$struct" returntype="any" access="public" hint="Return struct representation of current query row">
 	<cfargument name="index" type="numeric" default="#this.currentRow()#" />
 	<cfargument name="flat" type="boolean" required="false" />
 	<cfargument name="deep" type="boolean" required="false" />
