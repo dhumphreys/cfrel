@@ -56,7 +56,7 @@
 				throwException("OFFSET not supported in Microsoft SQL Server");
 			}
 			
-			return super.visit_relation(obj);
+			return super.visit_relation(argumentCollection=arguments);
 		</cfscript>
 	</cffunction>
 	
