@@ -137,9 +137,17 @@
 			case "model":
 				loc.table = sqlTable(model=arguments.target);
 				
-				// map the models using the mapper
-				if (NOT arguments.$skipMapping)
-					this.mapper.buildMapping(loc.table, this);
+				// map the models using the mapper, but place soft delete condition on the join
+				if (NOT arguments.$skipMapping) {
+					this.mapper.buildMapping(loc.table, this, true);
+
+					// if we have an ON clause and soft deletions are available, put them in the ON clause
+					// TODO: remove this code from join()! it belongs in a mapper!
+					if (NOT variables.includeSoftDeletes AND loc.table.model.$softDeletion() AND typeOf(loc.condition) NEQ "simple") {
+						loc.softDeleteCondition = loc.table.alias & "." & loc.table.model.$softDeleteColumn() & " IS NULL";
+						loc.condition = sqlBinaryOp(left=loc.condition, op="AND", right=loc.softDeleteCondition);
+					}
+				}
 				break;
 				
 			// use another relation as a subquery

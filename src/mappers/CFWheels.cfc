@@ -3,6 +3,7 @@
 	<cffunction name="buildMapping" returntype="void" access="public">
 		<cfargument name="table" type="any" required="true" />
 		<cfargument name="relation" type="any" required="true" />
+		<cfargument name="includeSoftDeletes" type="boolean" default="#variables.includeSoftDeletes#" />
 		<cfscript>
 			var loc = {};
 			
@@ -57,7 +58,7 @@
 			}
 			
 			// if the option is set, and the model has soft delete, consider it in the WHERE clause
-			if (NOT variables.includeSoftDeletes AND loc.model.$softDeletion())
+			if (NOT arguments.includeSoftDeletes AND loc.model.$softDeletion())
 				arguments.relation.where(loc.tableAlias & "." & loc.model.$softDeleteColumn() & " IS NULL");
 		</cfscript>
 	</cffunction>
@@ -148,9 +149,9 @@
 						if (NOT StructKeyExists(loc.includeStack[1], loc.key)) {
 							loc.includeStack[1][loc.key] = javaHash();
 					
-							// build mapping for current model
+							// build mapping for current model, but do not map soft deletes
 							loc.associationTable = sqlTable(model=loc.associationModel);
-							buildMapping(loc.associationTable, arguments.relation);
+							buildMapping(loc.associationTable, arguments.relation, true);
 							
 							// determine table aliases to use
 							loc.modelAlias = loc.aliasStack[1];
@@ -211,6 +212,10 @@
 							
 							// use the passed in join type, or the default for this association
 							loc.joinType = (arguments.joinType EQ "") ? loc.assoc.joinType : arguments.joinType;
+
+							// if the option is set, and the model has soft delete, append it to the ON clause
+							if (NOT variables.includeSoftDeletes AND loc.associationModel.$softDeletion())
+								loc.condition &= " AND " & loc.includeStack[1][loc.key]['_alias'] & "." & loc.associationModel.$softDeleteColumn() & " IS NULL";
 							
 							// call join on relation
 							relation.join(loc.associationTable, loc.condition, [], loc.joinType, true);
