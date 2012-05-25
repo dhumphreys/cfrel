@@ -53,6 +53,7 @@
 		variables.qoq = arguments.qoq;
 		variables.paged = false;
 		variables.paginationData = false;
+		variables.includeSoftDeletes = arguments.includeSoftDeletes;
 		
 		return this;
 	</cfscript>
