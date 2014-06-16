@@ -67,6 +67,13 @@
 	<cfreturn constructObject("cfrel.nodes.Literal", arguments)>
 </cffunction>
 
+<cffunction name="sqlModel" returntype="any" access="private">
+	<cfargument name="model" type="any" required="true" />
+	<cfargument name="table" type="string" default="" />
+	<cfargument name="alias" type="string" default="" />
+	<cfreturn constructObject("cfrel.nodes.Model", arguments)>
+</cffunction>
+
 <cffunction name="sqlOrder" returntype="any" access="private">
 	<cfargument name="subject" type="any" required="true" />
 	<cfargument name="descending" type="boolean" default="false" />
@@ -86,8 +93,15 @@
 	<cfreturn constructObject("cfrel.nodes.Paren", arguments)>
 </cffunction>
 
+<cffunction name="sqlQuery" returntype="any" access="private">
+	<cfargument name="subject" type="query" required="true" />
+	<cfargument name="alias" type="string" default="" />
+	<cfreturn constructObject("cfrel.nodes.Query", arguments)>
+</cffunction>
+
 <cffunction name="sqlSubQuery" returntype="any" access="private">
 	<cfargument name="subject" type="any" required="true" />
+	<cfargument name="alias" type="string" default="" />
 	<cfreturn constructObject("cfrel.nodes.SubQuery", arguments)>
 </cffunction>
 

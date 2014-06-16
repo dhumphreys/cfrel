@@ -61,37 +61,41 @@
 		// make decision based on argument type
 		switch(typeOf(arguments.target)) {
 			
-			// accept relations as subqueries
-			case "cfrel.Relation":
-				arguments.target = sqlSubquery(arguments.target);
+			// wrap simple strings in table nodes
+			case "simple":
+				arguments.target = sqlTable(arguments.target);
+			case "cfrel.nodes.Table":
 				break;
 			
-			// accept model and add model to mapping
+			// wrap relations in subquery nodes
+			case "cfrel.Relation":
+				arguments.target = sqlSubquery(arguments.target);
+			case "cfrel.nodes.SubQuery":
+				break;
+			
+			// wrap models in model nodes
 			case "model":
+				arguments.target = sqlModel(arguments.target);
+			case "cfrel.nodes.Model":
 			
 				// set model for mapper behavior
 				if (NOT IsObject(this.model))
-					this.model = arguments.target;
-				
-				// set up table node to wrap model
-				arguments.target = sqlTable(model=arguments.target);
-				break;
-				
-			case "simple":
-				arguments.target = sqlTable(table=arguments.target);
+					this.model = arguments.model;
 				break;
 			
-			// accept queries for QoQ operations
+			// wrap queries in query nodes
 			case "query":
-				variables.qoq = true;
-				
+				arguments.target = sqlQuery(arguments.target);
+			case "cfrel.nodes.Query":
+			
 				// change visitor for QoQ operations
+				variables.qoq = true;
 				variables.visitorClass = "QueryOfQuery";
 				break;
 				
-			// and reject all others by throwing an error
+			// and reject all other arguments by throwing an error
 			default:
-				throwException("Only a table name or another relation can be in FROM clause");
+				throwException("Only a table names, relations, queries, or models can be in FROM clause");
 		}
 		
 		// queue mappings for later execution
