@@ -104,13 +104,19 @@
 		<cfscript>
 			if (StructKeyExists(arguments.model, "alias") AND Len(arguments.model.alias))
 				return arguments.model.alias;
+			else if (typeof(arguments.model) EQ "cfrel.nodes.subQuery")
+				return "subquery";
 			return arguments.model.table;
 		</cfscript>
 	</cffunction>
 	
 	<cffunction name="tableName" returntype="string" access="public" hint="Return table name to reference in query">
 		<cfargument name="model" type="any" required="true" />
-		<cfreturn arguments.model.table />
+		<cfscript>
+			if (typeof(arguments.model) EQ "cfrel.nodes.subQuery")
+				return "subquery";
+			return arguments.model.table;
+		</cfscript>
 	</cffunction>
 	
 	<cffunction name="properties" returntype="struct" access="public" hint="Return all database properties in a structure">

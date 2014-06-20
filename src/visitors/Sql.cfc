@@ -56,9 +56,11 @@
 		<cfscript>
 			var loc = {};
 			
-			// clear out query and subquery counters when response is top-level
-			if (arguments.top)
-				arguments.state = newState();
+			// create a new state for the target relation
+			arguments.state = newState();
+
+			// build additional mappings for the target relation
+			arguments.obj.buildMappings();
 			
 			// push relation onto stack for mapping
 			ArrayPrepend(arguments.state.relations, arguments.obj);
@@ -341,7 +343,7 @@
 	
 	<cffunction name="visit_nodes_subquery" returntype="array" access="private" hint="Render a subquery with an alias">
 		<cfargument name="obj" type="any" required="true" />
-		<cfreturn ["(", visit(obj=arguments.obj.subject, top=false), ") subquery#arguments.state.subQueryCounter++#"] />
+		<cfreturn ["(", visit(obj=arguments.obj.subject, top=false, argumentCollection=arguments), ") subquery#arguments.state.subQueryCounter++#"] />
 	</cffunction>
 	
 	<cffunction name="visit_nodes_table" returntype="string" access="private">

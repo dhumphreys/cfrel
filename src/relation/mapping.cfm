@@ -455,7 +455,7 @@
 			if (StructKeyExists(variables.mappings.tableColumns, loc.table))
 				loc.scope = variables.mappings.tableColumns[loc.table];
 			else
-				loc.scope = [];
+				loc.scope = StructNew();
 			arguments.column = ListLast(arguments.column, ".");
 		}
 		
