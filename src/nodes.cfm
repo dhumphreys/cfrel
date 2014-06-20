@@ -55,6 +55,14 @@
 	<cfreturn constructObject("cfrel.nodes.Function", arguments)>
 </cffunction>
 
+<cffunction name="sqlInclude" returntype="any" access="private">
+	<cfargument name="include" type="string" required="true" />
+	<cfargument name="params" type="array" default="#[]#" />
+	<cfargument name="joinType" type="string" default="" />
+	<cfargument name="includeKey" type="string" default="#ListAppend(arguments.joinType, arguments.include, ':')#" />
+	<cfreturn constructObject("cfrel.nodes.Include", arguments)>
+</cffunction>
+
 <cffunction name="sqlJoin" returntype="any" access="private">
 	<cfargument name="table" type="any" required="true" />
 	<cfargument name="condition" type="any" default="false" />

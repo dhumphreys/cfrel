@@ -4,6 +4,94 @@
 	<cffunction name="init" returntype="struct" access="public" hint="Constructor">
 		<cfreturn this />
 	</cffunction>
+
+	<cffunction name="emptyMap" returntype="struct" access="public" hint="Generate an empty mapping structure">
+		<cfscript>
+			var map = StructNew();
+			map.tables = StructNew();
+			map.columns = StructNew();
+			map.includes = StructNew();
+		</cfscript>
+		<cfreturn map />
+	</cffunction>
+
+	<cffunction name="map" returntype="struct" access="public" hint="Generate mapping struct for a relation">
+		<cfargument name="relation" type="any" required="true" />
+		<cfargument name="map" type="struct" default="#emptyMap()#" />
+		<cfscript>
+			var loc = {};
+			loc.iEnd = Len(arguments.relation.sql.froms);
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc++)
+				arguments.map = mapTable(arguments.relation.sql.froms[loc.i], arguments.map);
+			arguments.map = mapJoins(arguments.relation, arguments.map);
+		</cfscript>
+		<cfreturn arguments.map />
+	</cffunction>
+
+	<cffunction name="mapTable" returntype="struct" access="public" hint="Append mapping information for a table node">
+		<cfargument name="table" type="any" required="true" />
+		<cfargument name="map" type="struct" default="#emptyMap()#" />
+		<cfscript>
+			var loc = StructNew();
+
+			// look up table information and associate it with an alias
+			loc.table = StructNew();
+			loc.table.table = arguments.table.table;
+			loc.table.alias = arguments.table.alias EQ "" ? arguments.table.table : arguments.table.alias;
+			loc.table.alias = uniqueScopeKey(key=loc.table.alias, scope=arguments.map.tables);
+			loc.table.properties = StructNew();
+			loc.table.calculatedProperties = StructNew();
+			loc.table.primaryKey = "";
+
+			// assign alias to passed-in table node
+			// TODO: make these attributes stateless
+			arguments.table.alias = loc.table.alias;
+
+			// create a unique mapping for the table alias
+			arguments.map.tables[loc.table.alias] = loc.table;
+		</cfscript>
+		<cfreturn arguments.map />
+	</cffunction>
+
+	<cffunction name="mapJoins" returntype="struct" access="public" hint="Append mapping information for joins on a relation">
+		<cfargument name="relation" type="any" required="true" />
+		<cfargument name="map" type="struct" default="#emptyMap()#" />
+		<cfscript>
+			var loc = StructNew();
+
+			// loop over each join from the relation
+			var loc.iEnd = ArrayLen(arguments.relation.sql.joins);
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
+				loc.join = arguments.relation.sql.joins[loc.i];
+				switch(typeOf(loc.join)) {
+
+					// if it is a standard join, map the table used in the join
+					case "nodes.sql.join":
+						arguments.map = mapTable(loc.join.table, arguments.map);
+						break;
+
+					// if it is an include, map the include into more joins
+					case "nodes.sql.include":
+						arguments.map = mapInclude(arguments.relation, loc.join, arguments.map);
+						break;
+
+					// if it is anything else, throw an exception
+					default:
+						throwException("Unknown join node type encountered during mapping.");
+				}
+			}
+		</cfscript>
+		<cfreturn arguments.map />
+	</cffunction>
+
+	<cffunction name="mapInclude" returntype="struct" access="public" hint="Fail if includes are attempted">
+		<cfargument name="relation" type="any" required="true" />
+		<cfargument name="include" type="any" required="true" />
+		<cfargument name="map" type="struct" default="#emptyMap()#" />
+		<cfscript>
+			throwException("Cannot map includes with this type of relation.");
+		</cfscript>
+	</cffunction>
 	
 	<cffunction name="aliasName" returntype="string" access="public" hint="Return alias name to reference in query">
 		<cfargument name="model" type="any" required="true" />
