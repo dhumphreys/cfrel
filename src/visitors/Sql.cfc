@@ -343,6 +343,13 @@
 		</cfscript>
 	</cffunction>
 	
+	<cffunction name="visit_nodes_model" returntype="string" access="private">
+		<cfargument name="obj" type="any" required="true" />
+		<cfscript>
+			return "#_escapeSqlEntity(arguments.obj.table)# #_escapeSqlEntity(arguments.obj.alias)#";
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="visit_nodes_type" returntype="string" access="private">
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>

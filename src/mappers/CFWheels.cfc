@@ -14,7 +14,7 @@
 		<cfargument name="table" type="any" required="true" />
 		<cfargument name="map" type="struct" default="#emptyMap()#" />
 		<cfscript>
-			if (StructKeyExists(arguments.table, "model") AND arguments.table.model NEQ false)
+			if (typeOf(arguments.table) EQ "nodes.sqlModel")
 				return mapModel(arguments.table, arguments.map);
 			else
 				return super.mapTable(arguments.table, arguments.map);
@@ -48,7 +48,7 @@
 
 			// append alias to alias list for this table
 			if (NOT structKeyExists(arguments.map.aliases, loc.table.table))
-				arguments.map.aliases[loc.table.table] = ArrayNew();
+				arguments.map.aliases[loc.table.table] = ArrayNew(1);
 			ArrayAppend(arguments.map.aliases[loc.table.table], loc.table.alias);
 
 			// look up properties and associate them with an alias
@@ -108,7 +108,7 @@
 			var loc = {};
 
 			// keep track of a list of joins
-			loc.joins = ArrayNew();
+			loc.joins = ArrayNew(1);
 
 			// look up root model for relation
 			// TODO: use last from in list and operate on from[last].joins
@@ -118,7 +118,7 @@
 			loc.curr.associations = loc.curr.model.$classData().associations;
 
 			// push root model onto a stack
-			loc.stack = ArrayNew();
+			loc.stack = ArrayNew(1);
 			loc.stack[1] = loc.curr;
 			//loc.includeStack = [variables.mappings.includes];
 			
@@ -215,7 +215,7 @@
 								else if (StructKeyExists(loc.stack[1].mapping.calculatedProperties, loc.keyA))
 									loc.columnA = loc.stack[1].mapping.calculatedProperties[loc.keyA].sql;
 								else
-									throwError("Property `#loc.keyA#` not found in model `#loc.stack[1].mapping.modelName#`.");
+									throwException("Property `#loc.keyA#` not found in model `#loc.stack[1].mapping.modelName#`.");
 								
 								// map the columns used in the right hand side of the join
 								if (StructKeyExists(loc.curr.mapping.properties, loc.keyB))
@@ -223,7 +223,7 @@
 								else if (StructKeyExists(loc.curr.mapping.calculatedProperties, loc.keyB))
 									loc.columnB = loc.curr.mapping.calculatedProperties[loc.keyB].sql;
 								else
-									throwError("Property `#loc.keyB#` not found in model `#loc.curr.mapping.modelName#`.");
+									throwException("Property `#loc.keyB#` not found in model `#loc.curr.mapping.modelName#`.");
 								
 								// set up equality comparison between the two keys
 								loc.condition =  ListAppend(loc.condition, "#loc.columnB# = #loc.columnA#", Chr(7));

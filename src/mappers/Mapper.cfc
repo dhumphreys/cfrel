@@ -21,8 +21,8 @@
 		<cfargument name="map" type="struct" default="#emptyMap()#" />
 		<cfscript>
 			var loc = {};
-			loc.iEnd = Len(arguments.relation.sql.froms);
-			for (loc.i = 1; loc.i LTE loc.iEnd; loc++)
+			loc.iEnd = ArrayLen(arguments.relation.sql.froms);
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
 				arguments.map = mapTable(arguments.relation.sql.froms[loc.i], arguments.map);
 			arguments.map = mapJoins(arguments.relation, arguments.map);
 		</cfscript>
@@ -50,7 +50,7 @@
 
 			// append alias to alias list for this table
 			if (NOT structKeyExists(arguments.map.aliases, loc.table.table))
-				arguments.map.aliases[loc.table.table] = ArrayNew();
+				arguments.map.aliases[loc.table.table] = ArrayNew(1);
 			ArrayAppend(arguments.map.aliases[loc.table.table], loc.table.alias);
 
 			// create a unique mapping for the table alias
@@ -72,12 +72,12 @@
 				switch(typeOf(loc.join)) {
 
 					// if it is a standard join, map the table used in the join
-					case "nodes.sql.join":
+					case "cfrel.nodes.join":
 						arguments.map = mapTable(loc.join.table, arguments.map);
 						break;
 
 					// if it is an include, map the include into more joins
-					case "nodes.sql.include":
+					case "cfrel.nodes.include":
 						arguments.map = mapInclude(arguments.relation, loc.join, arguments.map);
 						break;
 
