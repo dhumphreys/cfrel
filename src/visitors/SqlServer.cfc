@@ -31,9 +31,9 @@
 						obj.sql.groups = Duplicate(obj.sql.select);
 					
 					// create new SELECT item from inner query
-					variables.aliasOff = true;
+					arguments.state.aliasOff = true;
 					ArrayAppend(obj.sql.select, ["ROW_NUMBER() OVER (ORDER BY", separateArray(visit(obj=obj.sql.orders, argumentCollection=arguments)), ") AS [rowNum]"]);
-					variables.aliasOff = false;
+					arguments.state.aliasOff = false;
 					
 					// wipe out ORDER BY in inner query
 					obj.sql.orders = [];

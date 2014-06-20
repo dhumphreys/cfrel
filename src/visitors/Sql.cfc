@@ -3,7 +3,6 @@
 	
 	<cffunction name="init" returntype="any" access="public" hint="Constructor">
 		<cfscript>
-			$resetCounters();
 			return this;
 		</cfscript>
 	</cffunction>
@@ -20,9 +19,14 @@
 	
 	<cffunction name="visit" returntype="any" access="public" hint="Visit a particular object">
 		<cfargument name="obj" type="any" required="true" />
+		<cfargument name="state" type="struct" required="false" />
 		<cfscript>
 			var loc = {};
 			var method = 0;
+
+			// create a new state if one is not passed in
+			if (NOT StructKeyExists(arguments, "state"))
+				arguments.state = newState();
 			
 			// find type of object
 			loc.type = typeOf(arguments.obj);
@@ -54,10 +58,10 @@
 			
 			// clear out query and subquery counters when response is top-level
 			if (arguments.top)
-				$resetCounters();
+				arguments.state = newState();
 			
 			// push relation onto stack for mapping
-			ArrayPrepend(variables.relations, arguments.obj);
+			ArrayPrepend(arguments.state.relations, arguments.obj);
 			
 			// set some control variables to reduce load
 			loc.select = false;
@@ -66,8 +70,8 @@
 			loc.fragments = [];
 			
 			// turn aliasing on in select clause
-			loc.aliasOff = variables.aliasOff;
-			variables.aliasOff = false;
+			loc.aliasOff = arguments.state.aliasOff;
+			arguments.state.aliasOff = false;
 			
 			// generate SELECT clause
 			ArrayAppend(loc.fragments, "SELECT");
@@ -90,7 +94,7 @@
 			}
 			
 			// turn aliasing off outside of SELECT clause
-			variables.aliasOff = true;
+			arguments.state.aliasOff = true;
  			
 			// append joins
 			if (ArrayLen(obj.sql.joins) GT 0)
@@ -113,7 +117,7 @@
 				ArrayAppend(loc.fragments, ["ORDER BY", separateArray(visit(obj=obj.sql.orders, argumentCollection=arguments))]);
 			
 			// turn aliasing back on
-			variables.aliasOff = loc.aliasOff;
+			arguments.state.aliasOff = loc.aliasOff;
 			
 			// generate LIMIT clause
 			if (StructKeyExists(obj.sql, "limit"))
@@ -124,7 +128,7 @@
 				ArrayAppend(loc.fragments, "OFFSET #obj.sql.offset#");
 			
 			// pop relation off of stack for mapping
-			ArrayDeleteAt(variables.relations, 1);
+			ArrayDeleteAt(arguments.state.relations, 1);
 				
 			// return sql array
 			return loc.fragments;
@@ -153,7 +157,7 @@
 	
 	<cffunction name="visit_query" returntype="string" access="private" hint="Render a query as a QOQ reference">
 		<cfargument name="obj" type="query" required="true" />
-		<cfreturn "query" & variables.queryCounter++ />
+		<cfreturn "query" & arguments.state.queryCounter++ />
 	</cffunction>
 	
 	<cffunction name="visit_model" returntype="string" access="private" hint="Visit a CFWheels model">
@@ -174,20 +178,20 @@
 			var loc = {};
 			
 			// only use alias
-			if (variables.aliasOnly) {
+			if (arguments.state.aliasOnly) {
 				loc.sql = escape(obj.alias);
 				
 			// don't use alias, only subject
-			} else if (variables.aliasOff) {
+			} else if (arguments.state.aliasOff) {
 				loc.sql = visit(obj=obj.subject, argumentCollection=arguments);
 				
 			// use both, but ignore any aliases inside of subject
 			} else {
 				
-				loc.aliasOff = variables.aliasOff;
-				variables.aliasOff = true;
+				loc.aliasOff = arguments.state.aliasOff;
+				arguments.state.aliasOff = true;
 				loc.sql = [visit(obj=obj.subject, argumentCollection=arguments), "AS #escape(obj.alias)#"];
-				variables.aliasOff = loc.aliasOff;
+				arguments.state.aliasOff = loc.aliasOff;
 			}
 			
 			return loc.sql;
@@ -244,14 +248,14 @@
 			var loc = {};
 			
 			// map the column
-			arguments.obj = $relation().mapColumn(arguments.obj);
+			arguments.obj = $relation(arguments.state).mapColumn(arguments.obj);
 			
 			// read alias unless we have them turned off
 			// TODO: clean up this logic
-			loc.alias = NOT variables.aliasOff AND Len(obj.alias) ? " AS #escape(obj.alias)#" : "";
+			loc.alias = NOT arguments.state.aliasOff AND Len(obj.alias) ? " AS #escape(obj.alias)#" : "";
 			
 			// only use alias if we have asked to do so
-			if (variables.aliasOnly AND Len(loc.alias))
+			if (arguments.state.aliasOnly AND Len(loc.alias))
 				return escape(obj.alias);
 			
 			// use sql mapping instead of column if specified
@@ -293,8 +297,8 @@
 		<cfscript>
 			var loc = {};
 			loc.fn = [];
-			loc.aliasOff = variables.aliasOff;
-			variables.aliasOff = true;
+			loc.aliasOff = arguments.state.aliasOff;
+			arguments.state.aliasOff = true;
 			if (NOT IsSimpleValue(obj.scope) OR obj.scope NEQ "")
 				ArrayAppend(loc.fn, [visit(obj=obj.scope, argumentCollection=arguments), "."]);
 			ArrayAppend(loc.fn, "#obj.name#(");
@@ -302,7 +306,7 @@
 				ArrayAppend(loc.fn, "DISTINCT");
 			ArrayAppend(loc.fn, separateArray(visit(obj=obj.args, argumentCollection=arguments)));
 			ArrayAppend(loc.fn, ")");
-			variables.aliasOff = loc.aliasOff;
+			arguments.state.aliasOff = loc.aliasOff;
 			return loc.fn;
 		</cfscript>
 	</cffunction>
@@ -316,7 +320,7 @@
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
 			// map the parameter data type
-			arguments.obj = $relation().mapParameter(arguments.obj);
+			arguments.obj = $relation(arguments.state).mapParameter(arguments.obj);
 			
 			// if value is an array, set up list params
 			if (IsArray(arguments.obj.value)) {
@@ -337,7 +341,7 @@
 	
 	<cffunction name="visit_nodes_subquery" returntype="array" access="private" hint="Render a subquery with an alias">
 		<cfargument name="obj" type="any" required="true" />
-		<cfreturn ["(", visit(obj=arguments.obj.subject, top=false), ") subquery#variables.subQueryCounter++#"] />
+		<cfreturn ["(", visit(obj=arguments.obj.subject, top=false), ") subquery#arguments.state.subQueryCounter++#"] />
 	</cffunction>
 	
 	<cffunction name="visit_nodes_table" returntype="string" access="private">
@@ -384,10 +388,10 @@
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
 			// map wildcard
-			arguments.obj = $relation().mapWildcard(arguments.obj);
+			arguments.obj = $relation(arguments.state).mapWildcard(arguments.obj);
 			
 			// decide which wildcard behavior to use
-			if (NOT variables.aliasOff AND StructKeyExists(obj, "mapping") AND ArrayLen(obj.mapping))
+			if (NOT arguments.state.aliasOff AND StructKeyExists(obj, "mapping") AND ArrayLen(obj.mapping))
 				return ArrayToList(visit(obj=obj.mapping, argumentCollection=arguments), ", ");
 			else
 				return obj.subject NEQ "" ? "#visit(obj=obj.subject, argumentCollection=arguments)#.*" : "*";
@@ -403,21 +407,24 @@
 		<cfreturn arguments.subject />
 	</cffunction>
 
-	<cffunction name="$resetCounters" returntype="void" access="private" hint="Reset counters and relation stack for new build">
+	<cffunction name="newState" returntype="struct" access="private" hint="Construct an object for holding state-related variables">
 		<cfscript>
-			variables.aliasOnly = false;
-			variables.aliasOff = false;
-			variables.queryCounter = 1;
-			variables.subQueryCounter = 1;
-			variables.relations = [];
+			var loc.state = {};
+			loc.state.aliasOnly = false;
+			loc.state.aliasOff = false;
+			loc.state.queryCounter = 1;
+			loc.state.subQueryCounter = 1;
+			loc.state.relations = [];
+			return loc.state;
 		</cfscript>
 	</cffunction>
 	
 	<cffunction name="$relation" returntype="any" access="private" hint="Return top relation from the stack">
+		<cfargument name="state" type="struct" required="true" />
 		<cfscript>
-			if (ArrayLen(variables.relations) EQ 0)
+			if (ArrayLen(arguments.state.relations) EQ 0)
 				return relation();
-			return variables.relations[1];
+			return arguments.state.relations[1];
 		</cfscript>
 	</cffunction>
 </cfcomponent>
