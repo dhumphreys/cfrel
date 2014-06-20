@@ -9,6 +9,7 @@
 		<cfscript>
 			var map = StructNew();
 			map.tables = StructNew();
+			map.aliases = StructNew();
 			map.columns = StructNew();
 			map.includes = StructNew();
 		</cfscript>
@@ -46,6 +47,11 @@
 			// assign alias to passed-in table node
 			// TODO: make these attributes stateless
 			arguments.table.alias = loc.table.alias;
+
+			// append alias to alias list for this table
+			if (NOT structKeyExists(arguments.map.aliases, loc.table.table))
+				arguments.map.aliases[loc.table.table] = ArrayNew();
+			ArrayAppend(arguments.map.aliases[loc.table.table], loc.table.alias);
 
 			// create a unique mapping for the table alias
 			arguments.map.tables[loc.table.alias] = loc.table;

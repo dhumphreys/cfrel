@@ -46,6 +46,11 @@
 			// TODO: make these attributes stateless
 			arguments.table.alias = loc.table.alias;
 
+			// append alias to alias list for this table
+			if (NOT structKeyExists(arguments.map.aliases, loc.table.table))
+				arguments.map.aliases[loc.table.table] = ArrayNew();
+			ArrayAppend(arguments.map.aliases[loc.table.table], loc.table.alias);
+
 			// look up properties and associate them with an alias
 			for (loc.key in loc.model.properties) {
 				loc.col = StructNew();
