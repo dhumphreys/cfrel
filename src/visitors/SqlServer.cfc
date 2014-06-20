@@ -32,7 +32,7 @@
 					
 					// create new SELECT item from inner query
 					variables.aliasOff = true;
-					ArrayAppend(obj.sql.select, ["ROW_NUMBER() OVER (ORDER BY", separateArray(visit(obj.sql.orders)), ") AS [rowNum]"]);
+					ArrayAppend(obj.sql.select, ["ROW_NUMBER() OVER (ORDER BY", separateArray(visit(obj=obj.sql.orders, argumentCollection=arguments)), ") AS [rowNum]"]);
 					variables.aliasOff = false;
 					
 					// wipe out ORDER BY in inner query
