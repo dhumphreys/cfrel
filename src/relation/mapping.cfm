@@ -258,7 +258,7 @@
 						} else {
 							
 							// find primary keys of other join
-							loc.keys = loc.mapper.primaryKey(loc.assoc.model);
+							loc.keys = loc.mapper.primaryKey(loc.modelStack[1]);
 							
 							// guess join key if not set
 							if (NOT StructKeyExists(loc.assoc, "joinKey") OR loc.assoc.joinKey EQ "")
@@ -295,15 +295,15 @@
 							else if (StructKeyExists(loc.calculatedA, loc.keyA))
 								loc.columnA = loc.modelAlias & "." & loc.calculatedA[loc.keyA].sql;
 							else
-								throwError("Column `#loc.keyA#` not found in `#loc.modelAlias#`.");
+								throwException("Column `#loc.keyA#` not found in `#loc.modelAlias#`.");
 							
 							// determine column or mapping for column B
 							if (StructKeyExists(loc.propertiesB, loc.keyB))
 								loc.columnB = loc.includeStack[1][loc.key]['_alias'] & "." & loc.propertiesB[loc.keyB].column;
-							else if (StructKeyExists(loc.calculatedA, loc.keyA))
+							else if (StructKeyExists(loc.calculatedA, loc.keyB))
 								loc.columnB = loc.includeStack[1][loc.key]['_alias'] & "." & loc.calculatedB[loc.keyB].sql;
 							else
-								throwError("Column `#loc.keyB#` not found in `#loc.modelAlias#`.");
+								throwException("Column `#loc.keyB#` not found in `#loc.includeStack[1][loc.key]['_alias']#`.");
 							
 							// set up equality comparison between the two keys
 							loc.condition =  ListAppend(loc.condition, "#loc.columnB# = #loc.columnA#", Chr(7));
