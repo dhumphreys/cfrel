@@ -60,7 +60,7 @@
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="_escapeSqlEntity" returntype="string" access="private"  hint="Escape SQL column and table names">
+	<cffunction name="escape" returntype="string" access="private"  hint="Escape SQL column and table names">
 		<cfargument name="subject" type="string" required="true" />
 		<cfscript>
 			var loc = {};

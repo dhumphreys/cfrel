@@ -160,7 +160,7 @@
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
 			// todo: move logic to mapper
-			return _escapeSqlEntity(arguments.obj.$classData().tableName);
+			return escape(arguments.obj.$classData().tableName);
 		</cfscript>
 	</cffunction>
 	
@@ -175,7 +175,7 @@
 			
 			// only use alias
 			if (variables.aliasOnly) {
-				loc.sql = _escapeSqlEntity(obj.alias);
+				loc.sql = escape(obj.alias);
 				
 			// don't use alias, only subject
 			} else if (variables.aliasOff) {
@@ -186,7 +186,7 @@
 				
 				loc.aliasOff = variables.aliasOff;
 				variables.aliasOff = true;
-				loc.sql = [visit(obj=obj.subject, argumentCollection=arguments), "AS #_escapeSqlEntity(obj.alias)#"];
+				loc.sql = [visit(obj=obj.subject, argumentCollection=arguments), "AS #escape(obj.alias)#"];
 				variables.aliasOff = loc.aliasOff;
 			}
 			
@@ -248,21 +248,21 @@
 			
 			// read alias unless we have them turned off
 			// TODO: clean up this logic
-			loc.alias = NOT variables.aliasOff AND Len(obj.alias) ? " AS #_escapeSqlEntity(obj.alias)#" : "";
+			loc.alias = NOT variables.aliasOff AND Len(obj.alias) ? " AS #escape(obj.alias)#" : "";
 			
 			// only use alias if we have asked to do so
 			if (variables.aliasOnly AND Len(loc.alias))
-				return _escapeSqlEntity(obj.alias);
+				return escape(obj.alias);
 			
 			// use sql mapping instead of column if specified
 			if (StructKeyExists(obj, "sql"))
-				return _escapeSqlEntity(visit(obj=obj.sql, argumentCollection=arguments)) & loc.alias;
+				return escape(visit(obj=obj.sql, argumentCollection=arguments)) & loc.alias;
 			
 			// remove alias if column equals alias
 			if (ListLast(obj.column, ".") EQ obj.alias)
 				loc.alias = "";
 			
-			return _escapeSqlEntity(obj.column) & loc.alias;
+			return escape(obj.column) & loc.alias;
 		</cfscript>
 	</cffunction>
  	
@@ -346,9 +346,9 @@
 			var loc = {};
 			if (Len(obj.table) EQ 0)
 				throwException("No table defined.");
-			loc.table = _escapeSqlEntity(obj.table);
+			loc.table = escape(obj.table);
 			if (Len(obj.alias) AND obj.table NEQ obj.alias)
-				loc.table &= " " & _escapeSqlEntity(obj.alias);
+				loc.table &= " " & escape(obj.alias);
 			return loc.table;
 		</cfscript>
 	</cffunction>
@@ -356,7 +356,7 @@
 	<cffunction name="visit_nodes_model" returntype="string" access="private">
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
-			return "#_escapeSqlEntity(arguments.obj.table)# #_escapeSqlEntity(arguments.obj.alias)#";
+			return "#escape(arguments.obj.table)# #escape(arguments.obj.alias)#";
 		</cfscript>
 	</cffunction>
 	
@@ -398,7 +398,7 @@
 	--- Private Functions ---
 	------------------------>
 	
-	<cffunction name="_escapeSqlEntity" returntype="string" access="private" hint="Escape SQL column and table names">
+	<cffunction name="escape" returntype="string" access="private" hint="Escape SQL column and table names">
 		<cfargument name="subject" type="string" required="true" />
 		<cfreturn arguments.subject />
 	</cffunction>
