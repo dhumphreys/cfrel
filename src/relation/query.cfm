@@ -80,7 +80,7 @@
 			
 				// set model for mapper behavior
 				if (NOT IsObject(this.model))
-					this.model = arguments.model;
+					this.model = arguments.target.model;
 				break;
 			
 			// wrap queries in query nodes
