@@ -14,7 +14,7 @@
 		<cfargument name="table" type="any" required="true" />
 		<cfargument name="map" type="struct" default="#emptyMap()#" />
 		<cfscript>
-			if (typeOf(arguments.table) EQ "nodes.sqlModel")
+			if (typeOf(arguments.table) EQ "cfrel.nodes.model")
 				return mapModel(arguments.table, arguments.map);
 			else
 				return super.mapTable(arguments.table, arguments.map);
@@ -37,7 +37,7 @@
 			loc.table.alias = uniqueScopeKey(key=loc.model.modelName, scope=arguments.map.tables);
 			loc.table.properties = StructNew();
 			loc.table.calculatedProperties = StructNew();
-			loc.table.primaryKey = loc.model.primaryKey();
+			loc.table.primaryKey = loc.model.keys;
 
 			// create a unique mapping for the table alias
 			arguments.map.tables[loc.table.alias] = loc.table;
@@ -47,9 +47,9 @@
 			arguments.table.alias = loc.table.alias;
 
 			// append alias to alias list for this table
-			if (NOT structKeyExists(arguments.map.aliases, loc.table.table))
-				arguments.map.aliases[loc.table.table] = ArrayNew(1);
-			ArrayAppend(arguments.map.aliases[loc.table.table], loc.table.alias);
+			if (NOT structKeyExists(arguments.map.aliases, loc.model.modelName))
+				arguments.map.aliases[loc.model.modelName] = ArrayNew(1);
+			ArrayAppend(arguments.map.aliases[loc.model.modelName], loc.table.alias);
 
 			// look up properties and associate them with an alias
 			for (loc.key in loc.model.properties) {
@@ -123,11 +123,11 @@
 			//loc.includeStack = [variables.mappings.includes];
 			
 			// loop over the include string one character at a time
-			loc.iEnd = Len(arguments.include);
+			loc.iEnd = Len(arguments.include.include);
 			for (loc.pos = 1; loc.pos LTE loc.iEnd;) {
 				
 				// look at next character in include string
-				switch(Mid(arguments.include, loc.pos, 1)) {
+				switch(Mid(arguments.include.include, loc.pos, 1)) {
 					
 					// skip commas and spaces
 					case ",":
@@ -151,10 +151,10 @@
 					default:
 				
 						// grab the next association name
-						loc.nextPos = REFind("\W", arguments.include, loc.pos, false);
+						loc.nextPos = REFind("\W", arguments.include.include, loc.pos, false);
 						if (loc.nextPos EQ 0)
-							loc.nextPos = Len(arguments.include) + 1;
-						loc.key = Mid(arguments.include, loc.pos, loc.nextPos - loc.pos);
+							loc.nextPos = Len(arguments.include.include) + 1;
+						loc.key = Mid(arguments.include.include, loc.pos, loc.nextPos - loc.pos);
 						loc.pos = loc.nextPos;
 						
 						// only join to the association if it was not previously included
@@ -165,7 +165,7 @@
 							if (NOT StructKeyExists(loc.stack[1].associations, loc.key))
 								throwException("Association `#loc.key#` not found in model `#loc.stack[1].mapping.table#`.");
 							loc.assoc = loc.stack[1].associations[loc.key];
-							loc.table = sqlTable(model=loc.stack[1].model.model(loc.assoc.modelName));
+							loc.table = sqlModel(model=loc.stack[1].model.model(loc.assoc.modelName));
 							arguments.map = mapTable(loc.table, arguments.map);
 
 							// look up root model for relation
@@ -233,17 +233,17 @@
 							loc.condition = Replace(loc.condition, Chr(7), " AND ", "ALL");
 					
 							// if additional conditioning is specified, parse it out of include string
-							loc.condPos = Find("[", arguments.include, loc.pos);
+							loc.condPos = Find("[", arguments.include.include, loc.pos);
 							if (loc.condPos EQ loc.pos) {
-								loc.pos = Find("]", arguments.include, loc.condPos + 1) + 1;
-								loc.condition &= " AND " & Mid(arguments.include, loc.condPos + 1, loc.pos - loc.condPos - 2);
+								loc.pos = Find("]", arguments.include.include, loc.condPos + 1) + 1;
+								loc.condition &= " AND " & Mid(arguments.include.include, loc.condPos + 1, loc.pos - loc.condPos - 2);
 							}
 							
 							// use the passed in join type, or the default for this association
-							loc.joinType = (arguments.joinType EQ "") ? loc.assoc.joinType : arguments.joinType;
+							loc.joinType = (arguments.include.joinType EQ "") ? loc.assoc.joinType : arguments.include.joinType;
 							
 							// join to the table
-							ArrayAppend(loc.joins, sqlJoin(loc.associationTable, loc.condition, [], loc.joinType));
+							ArrayAppend(loc.joins, sqlJoin(loc.table, loc.condition, loc.joinType));
 						//}
 				}
 			}
