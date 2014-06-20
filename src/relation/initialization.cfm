@@ -44,6 +44,8 @@
 		/***************
 		* MAPPING VARS *
 		***************/
+
+		variables.map = false;
 		
 		variables.mappings = {};
 		variables.mappings.columns = {};

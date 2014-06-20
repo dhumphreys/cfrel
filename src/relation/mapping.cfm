@@ -45,6 +45,14 @@
 		return request.visitors[arguments.type];
 	</cfscript>
 </cffunction>
+
+<cffunction name="getMap" returntype="struct" access="public" hint="Build a struct to map table and column references for this relation to the datasource">
+	<cfscript>
+		if (NOT IsStruct(variables.map))
+			variables.map = mapper().map(this);
+		return variables.map;
+	</cfscript>
+</cffunction>
 	
 <cffunction name="buildMappings" returntype="void" access="public" hint="Force pending mappings to be built into search trees">
 	<cfscript>
