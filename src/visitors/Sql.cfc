@@ -159,7 +159,7 @@
 	
 	<cffunction name="visit_query" returntype="string" access="private" hint="Render a query as a QOQ reference">
 		<cfargument name="obj" type="query" required="true" />
-		<cfreturn "query" & arguments.state.queryCounter++ />
+		<cfreturn escape("query" & arguments.state.queryCounter++) />
 	</cffunction>
 	
 	<cffunction name="visit_model" returntype="string" access="private" hint="Visit a CFWheels model">
@@ -343,12 +343,12 @@
 	
 	<cffunction name="visit_nodes_subquery" returntype="array" access="private" hint="Render a subquery with an alias">
 		<cfargument name="obj" type="any" required="true" />
-		<cfreturn ["(", visit(obj=arguments.obj.subject, top=false, argumentCollection=arguments), ") subquery#arguments.state.subQueryCounter++#"] />
+		<cfreturn ["(", visit(obj=arguments.obj.subject, top=false, argumentCollection=arguments), ")", escape("subquery" & arguments.state.subQueryCounter++)] />
 	</cffunction>
 	
 	<cffunction name="visit_nodes_query" returntype="string" access="private" hint="Render a query as a QOQ reference">
 		<cfargument name="obj" type="any" required="true" />
-		<cfreturn "query" & arguments.state.queryCounter++ />
+		<cfreturn escape("query" & arguments.state.queryCounter++) />
 	</cffunction>
 	
 	<cffunction name="visit_nodes_table" returntype="string" access="private">
@@ -398,10 +398,13 @@
 			arguments.obj = $relation(arguments.state).mapWildcard(arguments.obj);
 			
 			// decide which wildcard behavior to use
-			if (NOT arguments.state.aliasOff AND StructKeyExists(obj, "mapping") AND ArrayLen(obj.mapping))
+			if (NOT arguments.state.aliasOff AND StructKeyExists(obj, "mapping") AND ArrayLen(obj.mapping)) {
 				return ArrayToList(visit(obj=obj.mapping, argumentCollection=arguments), ", ");
-			else
-				return obj.subject NEQ "" ? "#visit(obj=obj.subject, argumentCollection=arguments)#.*" : "*";
+			} else if (obj.subject NEQ "") {
+				return escape(visit(obj=obj.subject, argumentCollection=arguments)) & ".*";
+			} else {
+				return "*";
+			}
 		</cfscript>
 	</cffunction>
 	
