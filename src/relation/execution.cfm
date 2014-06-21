@@ -80,8 +80,9 @@
 				if (variables.qoq) {
 					loc.queryArgs.dbType = "query";
 					loc.iEnd = ArrayLen(this.sql.froms);
-					for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
-						loc.queryArgs["query" & loc.i] = this.sql.froms[loc.i];
+					for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
+						loc.queryArgs["query" & loc.i] = this.sql.froms[loc.i].subject;
+					}
 					
 				} else {
 			

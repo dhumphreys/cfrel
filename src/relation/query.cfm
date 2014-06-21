@@ -130,28 +130,27 @@
 		// create table object
 		switch(typeOf(arguments.target)) {
 			
-			// assume simple values are names
+			// wrap strings in table nodes
 			case "simple":
-				loc.table = sqlTable(table=arguments.target);
+				arguments.target = sqlTable(table=arguments.target);
+			case "cfrel.nodes.table":
 				break;
 				
 			// add a model to a new table object
 			case "model":
-				loc.table = sqlTable(model=arguments.target);
+				arguments.target = sqlModel(arguments.target);
+			case "cfrel.nodes.model":
 				break;
 				
 			// use another relation as a subquery
 			case "cfrel.relation":
-				loc.table = sqlSubQuery(arguments.target);
-				break;
-				
-			// just use raw table object
-			case "cfrel.nodes.table":
-				loc.table = arguments.target;
+				arguments.target = sqlSubQuery(arguments.target);
 				break;
 				
 			// if using a query
 			case "query":
+				arguments.target = sqlQuery(arguments.target);
+			case "cfrel.nodes.query":
 				if (variables.qoq EQ false)
 					throwException("Cannot join a query object if relation is not a QoQ");
 					
@@ -176,10 +175,10 @@
 		
 		// queue the mapping of the join table
 		if (NOT arguments.$skipMapping)
-			queueMapping(loc.table);
+			queueMapping(arguments.target);
 		
 		// append join to sql structure
-		ArrayAppend(this.sql.joins, sqlJoin(loc.table, loc.condition, arguments.type));
+		ArrayAppend(this.sql.joins, sqlJoin(arguments.target, loc.condition, arguments.type));
 		
 		return this;
 	</cfscript>

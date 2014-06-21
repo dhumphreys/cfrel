@@ -1,23 +1,83 @@
 <cfcomponent extends="Mapper" displayName="QueryOfQuery" output="false">
+
+	<cffunction name="mapTable" returntype="struct" access="public" hint="Append mapping information for a table node (unless it is a model)">
+		<cfargument name="table" type="any" required="true" />
+		<cfargument name="map" type="struct" default="#emptyMap()#" />
+		<cfscript>
+			if (typeOf(arguments.table) EQ "cfrel.nodes.query")
+				return mapQuery(arguments.table, arguments.map);
+			else
+				return super.mapTable(arguments.table, arguments.map);
+		</cfscript>
+	</cffunction>
+
+	<cffunction name="mapQuery" returntype="struct" access="public" hint="Append mapping information for a model and its properties">
+		<cfargument name="query" type="any" required="true" />
+		<cfargument name="map" type="struct" default="#emptyMap()#" />
+		<cfscript>
+			var loc = StructNew();
+
+			// look up table information and associate it with an alias
+			loc.table = StructNew();
+			loc.table.table = uniqueScopeKey(key="query", scope=arguments.map.tables, base=false);
+			loc.table.alias = loc.table.table;
+			loc.table.properties = StructNew();
+			loc.table.calculatedProperties = StructNew();
+			loc.table.primaryKey = "";
+
+			// create a unique mapping for the table alias
+			arguments.map.tables[loc.table.alias] = loc.table;
+
+			// assign alias to passed-in query node
+			// TODO: make these attributes stateless
+			arguments.query.alias = loc.table.alias;
+
+			// append alias to alias list for this table
+			if (NOT structKeyExists(arguments.map.aliases, "query"))
+				arguments.map.aliases["query"] = ArrayNew(1);
+			ArrayAppend(arguments.map.aliases["query"], loc.table.alias);
+
+			// look up properties and associate them with an alias
+			loc.properties = GetMetaData(arguments.query.subject);
+			loc.iEnd = ArrayLen(loc.properties);
+			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
+				loc.col = StructNew();
+				loc.col.column = loc.properties[loc.i].name;
+				loc.col.table = loc.table.alias;
+				loc.col.alias = uniqueScopeKey(key=loc.col.column, prefix=loc.table.alias, scope=arguments.map.columns);
+				loc.col.cfsqltype = extractDataType(loc.properties[loc.i]);
+
+				// create unique mappings for [alias], [table].[alias], [table].[column]
+				arguments.map.columns[loc.col.alias] = loc.col;
+				arguments.map.columns["#loc.col.table#.#loc.col.alias#"] = loc.col;
+				if (NOT StructKeyExists(arguments.map.columns, "#loc.col.table#.#loc.col.column#"))
+					arguments.map.columns["#loc.col.table#.#loc.col.column#"] = loc.col;
+
+				// add to property list for table mapping
+				loc.table.properties[loc.col.column] = loc.col;
+			}
+		</cfscript>
+		<cfreturn arguments.map />
+	</cffunction>
 	
 	<cffunction name="aliasName" returntype="string" access="public" hint="Return alias name to reference in query">
-		<cfargument name="model" type="any" required="true" />
+		<cfargument name="query" type="any" required="true" />
 		<cfreturn "query" />
 	</cffunction>
 	
 	<cffunction name="tableName" returntype="string" access="public" hint="Return table name to reference in query">
-		<cfargument name="model" type="any" required="true" />
+		<cfargument name="query" type="any" required="true" />
 		<cfreturn "query" />
 	</cffunction>
 	
 	<cffunction name="properties" returntype="struct" access="public" hint="Return all query columns in a structure">
-		<cfargument name="model" type="any" required="true" />
+		<cfargument name="query" type="any" required="true" />
 		<cfscript>
 			var loc = {};
 			loc.returnValue = StructNew();
 			
 			// loop over database properties
-			loc.properties = GetMetaData(arguments.model);
+			loc.properties = GetMetaData(arguments.query.subject);
 			loc.iEnd = ArrayLen(loc.properties);
 			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
 				loc.col = loc.properties[loc.i];

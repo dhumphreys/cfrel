@@ -346,6 +346,11 @@
 		<cfreturn ["(", visit(obj=arguments.obj.subject, top=false, argumentCollection=arguments), ") subquery#arguments.state.subQueryCounter++#"] />
 	</cffunction>
 	
+	<cffunction name="visit_nodes_query" returntype="string" access="private" hint="Render a query as a QOQ reference">
+		<cfargument name="obj" type="any" required="true" />
+		<cfreturn "query" & arguments.state.queryCounter++ />
+	</cffunction>
+	
 	<cffunction name="visit_nodes_table" returntype="string" access="private">
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>

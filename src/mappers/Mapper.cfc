@@ -104,18 +104,31 @@
 		<cfscript>
 			if (StructKeyExists(arguments.model, "alias") AND Len(arguments.model.alias))
 				return arguments.model.alias;
-			else if (typeof(arguments.model) EQ "cfrel.nodes.subQuery")
-				return "subquery";
-			return arguments.model.table;
+
+			switch (typeof(arguments.model)) {
+				case "cfrel.nodes.subQuery":
+					return "subquery";
+				case "query":
+				case "cfrel.nodes.query":
+					return "query";
+				default:
+					return arguments.model.table;
+			}
 		</cfscript>
 	</cffunction>
 	
 	<cffunction name="tableName" returntype="string" access="public" hint="Return table name to reference in query">
 		<cfargument name="model" type="any" required="true" />
 		<cfscript>
-			if (typeof(arguments.model) EQ "cfrel.nodes.subQuery")
-				return "subquery";
-			return arguments.model.table;
+			switch (typeof(arguments.model)) {
+				case "cfrel.nodes.subQuery":
+					return "subquery";
+				case "query":
+				case "cfrel.nodes.query":
+					return "query";
+				default:
+					return arguments.model.table;
+			}
 		</cfscript>
 	</cffunction>
 	

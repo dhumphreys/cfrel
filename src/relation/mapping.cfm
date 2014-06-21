@@ -238,7 +238,7 @@
 						loc.includeStack[1][loc.key] = javaHash();
 				
 						// build mapping for current model
-						loc.associationTable = sqlTable(model=loc.assoc.model);
+						loc.associationTable = sqlModel(model=loc.assoc.model);
 						buildTableMapping(loc.associationTable);
 						
 						// determine table aliases to use
