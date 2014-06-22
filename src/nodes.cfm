@@ -1,3 +1,18 @@
+<!------------------------
+--- Mapping Structures ---
+------------------------->
+
+<cffunction name="emptyMap" returntype="struct" access="public" hint="Generate an empty mapping structure">
+	<cfscript>
+		var map = StructNew();
+		map.tables = StructNew();
+		map.aliases = StructNew();
+		map.columns = StructNew();
+		map.includes = StructNew();
+	</cfscript>
+	<cfreturn map />
+</cffunction>
+
 <!---------------------
 --- Node Generation ---
 ---------------------->
@@ -77,7 +92,6 @@
 
 <cffunction name="sqlModel" returntype="any" access="private">
 	<cfargument name="model" type="any" required="true" />
-	<cfargument name="table" type="string" default="" />
 	<cfargument name="alias" type="string" default="" />
 	<cfreturn constructObject("cfrel.nodes.Model", arguments)>
 </cffunction>
@@ -116,7 +130,6 @@
 <cffunction name="sqlTable" returntype="any" access="private">
 	<cfargument name="table" type="string" default="" />
 	<cfargument name="alias" type="string" default="" />
-	<cfargument name="model" type="any" default="false" />
 	<cfreturn constructObject("cfrel.nodes.Table", arguments)>
 </cffunction>
 

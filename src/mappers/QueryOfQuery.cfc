@@ -28,10 +28,6 @@
 			// create a unique mapping for the table alias
 			arguments.map.tables[loc.table.alias] = loc.table;
 
-			// assign alias to passed-in query node
-			// TODO: make these attributes stateless
-			arguments.query.alias = loc.table.alias;
-
 			// append alias to alias list for this table
 			if (NOT structKeyExists(arguments.map.aliases, "query"))
 				arguments.map.aliases["query"] = ArrayNew(1);
@@ -45,7 +41,9 @@
 				loc.col.column = loc.properties[loc.i].name;
 				loc.col.table = loc.table.alias;
 				loc.col.alias = uniqueScopeKey(key=loc.col.column, prefix=loc.table.alias, scope=arguments.map.columns);
+				loc.col.mapping = "#loc.col.table#.#loc.col.column#";
 				loc.col.cfsqltype = extractDataType(loc.properties[loc.i]);
+				loc.col.calculated = false;
 
 				// create unique mappings for [alias], [table].[alias], [table].[column]
 				arguments.map.columns[loc.col.alias] = loc.col;
@@ -58,42 +56,6 @@
 			}
 		</cfscript>
 		<cfreturn arguments.map />
-	</cffunction>
-	
-	<cffunction name="aliasName" returntype="string" access="public" hint="Return alias name to reference in query">
-		<cfargument name="query" type="any" required="true" />
-		<cfreturn "query" />
-	</cffunction>
-	
-	<cffunction name="tableName" returntype="string" access="public" hint="Return table name to reference in query">
-		<cfargument name="query" type="any" required="true" />
-		<cfreturn "query" />
-	</cffunction>
-	
-	<cffunction name="properties" returntype="struct" access="public" hint="Return all query columns in a structure">
-		<cfargument name="query" type="any" required="true" />
-		<cfscript>
-			var loc = {};
-			loc.returnValue = StructNew();
-			
-			// loop over database properties
-			loc.properties = GetMetaData(arguments.query.subject);
-			loc.iEnd = ArrayLen(loc.properties);
-			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
-				loc.col = loc.properties[loc.i];
-				
-				// create new column entry with specified
-				loc.newCol = StructNew();
-				loc.newCol.property = loc.col.name;
-				loc.newCol.column = loc.col.name;
-				loc.newCol.cfsqltype = extractDataType(loc.col);
-				
-				// append column to return list
-				loc.returnValue[loc.col.name] = loc.newCol;
-			}
-			
-			return loc.returnValue;
-		</cfscript>
 	</cffunction>
 	
 	<cffunction name="extractDataType" returntype="string" access="private" hint="Extract cfsqltype from QoQ column">

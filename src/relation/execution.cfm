@@ -3,10 +3,7 @@
 </cffunction>
 
 <cffunction name="toSqlArray" returntype="array" access="public" hint="Convert relational data into flat SQL array">
-	<cfscript>
-		buildMappings();
-		return flattenArray(visitor().traverseToArray(this));
-	</cfscript>
+	<cfreturn flattenArray(visitor().traverseToArray(obj=this, map=getMap())) />
 </cffunction>
 
 <cffunction name="exec" returntype="struct" access="public" hint="Run query() but return the relation">

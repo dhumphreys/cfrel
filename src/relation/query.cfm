@@ -98,9 +98,6 @@
 				throwException("Only a table names, relations, queries, or models can be in FROM clause");
 		}
 		
-		// queue mappings for later execution
-		queueMapping(arguments.target);
-		
 		// put the target onto the FROM stack
 		ArrayAppend(this.sql.froms, arguments.target);
 		return this;
@@ -112,7 +109,6 @@
 	<cfargument name="condition" type="any" default="false" />
 	<cfargument name="params" type="array" default="#[]#" />
 	<cfargument name="type" type="string" default="inner" hint="inner, outer, natural, or cross" />
-	<cfargument name="$skipMapping" type="boolean" default="false" />
 	<cfscript>
 		var loc = {};
 		if (variables.executed)
@@ -154,17 +150,13 @@
 				if (variables.qoq EQ false)
 					throwException("Cannot join a query object if relation is not a QoQ");
 					
-				// add the query as an additional from
+				// add the query as an additional from instead of joining
 				ArrayAppend(this.sql.froms, arguments.target);
 				
 				// put conditions in where clause if not a cross join
 				// TODO: make up some fancy way to handle QoQ natural joins
 				if (arguments.type NEQ "cross")
 					this.where(arguments.condition, arguments.params);
-				
-				// map the query and return
-				queueMapping(arguments.target);
-				return this;
 				break;
 				
 			// throw error if invalid target
@@ -173,12 +165,9 @@
 				
 		}
 		
-		// queue the mapping of the join table
-		if (NOT arguments.$skipMapping)
-			queueMapping(arguments.target);
-		
-		// append join to sql structure
-		ArrayAppend(this.sql.joins, sqlJoin(arguments.target, loc.condition, arguments.type));
+		// append join to sql structure unless this is a qoq
+		if (NOT variables.qoq)
+			ArrayAppend(this.sql.joins, sqlJoin(arguments.target, loc.condition, arguments.type));
 		
 		return this;
 	</cfscript>
@@ -329,9 +318,9 @@
 		var loc = {};
 		if (variables.executed)
 			return this.clone().include(argumentCollection=arguments);
-		
-		// queue include and its mappings for later
-		queueMapping(arguments);
+
+		// add include statement to join list
+		ArrayAppend(this.sql.joins, sqlInclude(argumentCollection=arguments));
 			
 		return this;
 	</cfscript>

@@ -5,17 +5,6 @@
 		<cfreturn this />
 	</cffunction>
 
-	<cffunction name="emptyMap" returntype="struct" access="public" hint="Generate an empty mapping structure">
-		<cfscript>
-			var map = StructNew();
-			map.tables = StructNew();
-			map.aliases = StructNew();
-			map.columns = StructNew();
-			map.includes = StructNew();
-		</cfscript>
-		<cfreturn map />
-	</cffunction>
-
 	<cffunction name="map" returntype="struct" access="public" hint="Generate mapping struct for a relation">
 		<cfargument name="relation" type="any" required="true" />
 		<cfargument name="map" type="struct" default="#emptyMap()#" />
@@ -35,6 +24,10 @@
 		<cfscript>
 			var loc = StructNew();
 
+			// if a subquery is passed in, map it differently
+			if (typeOf(arguments.table) EQ "cfrel.nodes.subQuery")
+				return mapSubQuery(arguments.table, arguments.map);
+
 			// look up table information and associate it with an alias
 			loc.table = StructNew();
 			loc.table.table = arguments.table.table;
@@ -44,14 +37,37 @@
 			loc.table.calculatedProperties = StructNew();
 			loc.table.primaryKey = "";
 
-			// assign alias to passed-in table node
-			// TODO: make these attributes stateless
-			arguments.table.alias = loc.table.alias;
-
 			// append alias to alias list for this table
 			if (NOT structKeyExists(arguments.map.aliases, loc.table.table))
 				arguments.map.aliases[loc.table.table] = ArrayNew(1);
 			ArrayAppend(arguments.map.aliases[loc.table.table], loc.table.alias);
+
+			// create a unique mapping for the table alias
+			arguments.map.tables[loc.table.alias] = loc.table;
+		</cfscript>
+		<cfreturn arguments.map />
+	</cffunction>
+
+	<cffunction name="mapSubQuery" returntype="struct" access="public" hint="Append mapping information for a subquery node">
+		<cfargument name="sub" type="any" required="true" />
+		<cfargument name="map" type="struct" default="#emptyMap()#" />
+		<cfscript>
+			var loc = StructNew();
+
+			// look up table information and associate it with an alias
+			loc.table = StructNew();
+			loc.table.table = uniqueScopeKey(key="subquery", scope=arguments.map.tables, base=false);
+			loc.table.alias = loc.table.table;
+			loc.table.properties = StructNew();
+			loc.table.calculatedProperties = StructNew();
+			loc.table.primaryKey = "";
+
+			// TODO: look up properties from underlying relation and associate them with an alias
+
+			// append alias to alias list for subqueries
+			if (NOT structKeyExists(arguments.map.aliases, "subquery"))
+				arguments.map.aliases["subquery"] = ArrayNew(1);
+			ArrayAppend(arguments.map.aliases["subquery"], loc.table.alias);
 
 			// create a unique mapping for the table alias
 			arguments.map.tables[loc.table.alias] = loc.table;
@@ -98,56 +114,7 @@
 			throwException("Cannot map includes with this type of relation.");
 		</cfscript>
 	</cffunction>
-	
-	<cffunction name="aliasName" returntype="string" access="public" hint="Return alias name to reference in query">
-		<cfargument name="model" type="any" required="true" />
-		<cfscript>
-			if (StructKeyExists(arguments.model, "alias") AND Len(arguments.model.alias))
-				return arguments.model.alias;
 
-			switch (typeof(arguments.model)) {
-				case "cfrel.nodes.subQuery":
-					return "subquery";
-				case "query":
-				case "cfrel.nodes.query":
-					return "query";
-				default:
-					return arguments.model.table;
-			}
-		</cfscript>
-	</cffunction>
-	
-	<cffunction name="tableName" returntype="string" access="public" hint="Return table name to reference in query">
-		<cfargument name="model" type="any" required="true" />
-		<cfscript>
-			switch (typeof(arguments.model)) {
-				case "cfrel.nodes.subQuery":
-					return "subquery";
-				case "query":
-				case "cfrel.nodes.query":
-					return "query";
-				default:
-					return arguments.model.table;
-			}
-		</cfscript>
-	</cffunction>
-	
-	<cffunction name="properties" returntype="struct" access="public" hint="Return all database properties in a structure">
-		<cfargument name="model" type="any" required="true" />
-		<cfreturn StructNew() />
-	</cffunction>
-	
-	<cffunction name="calculatedProperties" returntype="struct" access="public" hint="Return all calculated properties in a structure">
-		<cfargument name="model" type="any" required="true" />
-		<cfreturn StructNew() />
-	</cffunction>
-	
-	<cffunction name="association" returntype="struct" access="public" hint="Return specific association details">
-		<cfargument name="model" returntype="any" required="true" />
-		<cfargument name="association" type="string" required="true" />
-		<cfset throwException("Association `#arguments.association#` not found.") />
-	</cffunction>
-	
 	<cffunction name="buildStruct" returntype="struct" access="public">
 		<cfargument name="query" type="query" required="true" />
 		<cfargument name="index" type="numeric" default="#arguments.query.currentRow#" />

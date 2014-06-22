@@ -1,15 +1,5 @@
 <cfcomponent extends="Mapper" displayName="CFWheels" output="false">
 	
-	<cffunction name="aliasName" returntype="string" access="public" hint="Return alias name to reference in query">
-		<cfargument name="model" type="any" required="true" />
-		<cfreturn arguments.model.$classData().modelName />
-	</cffunction>
-	
-	<cffunction name="tableName" returntype="string" access="public" hint="Return table name to reference in query">
-		<cfargument name="model" type="any" required="true" />
-		<cfreturn arguments.model.$classData().tableName />
-	</cffunction>
-
 	<cffunction name="mapTable" returntype="struct" access="public" hint="Append mapping information for a table node (unless it is a model)">
 		<cfargument name="table" type="any" required="true" />
 		<cfargument name="map" type="struct" default="#emptyMap()#" />
@@ -42,10 +32,6 @@
 			// create a unique mapping for the table alias
 			arguments.map.tables[loc.table.alias] = loc.table;
 
-			// assign alias to passed-in table node
-			// TODO: make these attributes stateless
-			arguments.table.alias = loc.table.alias;
-
 			// append alias to alias list for this table
 			if (NOT structKeyExists(arguments.map.aliases, loc.model.modelName))
 				arguments.map.aliases[loc.model.modelName] = ArrayNew(1);
@@ -58,7 +44,9 @@
 				loc.col.column = loc.model.properties[loc.key].column;
 				loc.col.table = loc.table.alias;
 				loc.col.alias = uniqueScopeKey(key=loc.key, prefix=loc.table.alias, scope=arguments.map.columns);
+				loc.col.mapping = "#loc.col.table#.#loc.col.column#";
 				loc.col.cfsqltype = loc.model.properties[loc.key].type;
+				loc.col.calculated = false;
 
 				// create unique mappings for [alias], [table].[alias], [table].[property], and [table.column]
 				arguments.map.columns[loc.col.alias] = loc.col;
@@ -76,17 +64,17 @@
 			for (loc.key in loc.model.calculatedProperties) {
 				loc.col = StructNew();
 				loc.col.property = loc.key;
-				loc.col.sql = loc.model.calculatedProperties[loc.key].sql;
 				loc.col.alias = uniqueScopeKey(key=loc.key, prefix=loc.table.alias, scope=arguments.map.columns);
+				loc.col.calculated = true;
 		
-				// solve ambiguous columns for single table calculated properties
-				loc.col.sql = REReplace(loc.col.sql, ":TABLE\b", loc.tableAlias, "ALL");
+				// map to custom sql from model (and solve ambiguous columns for single table calculated properties)
+				loc.col.mapping = REReplace(loc.model.calculatedProperties[loc.key].sql, ":TABLE\b", loc.table.alias, "ALL");
 
 				// create unique mappings for [alias], [table].[alias], [table].[property]
 				arguments.map.columns[loc.col.alias] = loc.col;
-				arguments.map.columns["#loc.col.table#.#loc.col.alias#"] = loc.col;
-				if (NOT StructKeyExists(arguments.map.columns, "#loc.col.table#.#loc.col.property#"))
-					arguments.map.columns["#loc.col.table#.#loc.col.property#"] = loc.col;
+				arguments.map.columns["#loc.table.alias#.#loc.col.alias#"] = loc.col;
+				if (NOT StructKeyExists(arguments.map.columns, "#loc.table.alias#.#loc.col.property#"))
+					arguments.map.columns["#loc.table.alias#.#loc.col.property#"] = loc.col;
 
 				// add to calculated property list for table mapping
 				loc.table.calculatedProperties[loc.col.property] = loc.col;
@@ -114,8 +102,12 @@
 			// TODO: use last from in list and operate on from[last].joins
 			loc.curr = StructNew();
 			loc.curr.model = arguments.relation.sql.froms[1].model;
-			loc.curr.mapping = arguments.map.tables[arguments.relation.sql.froms[1].alias];
 			loc.curr.associations = loc.curr.model.$classData().associations;
+			if (Len(arguments.relation.sql.froms[1].alias))
+				loc.curr.key = arguments.relation.sql.froms[1].alias;
+			else
+				loc.curr.key = arguments.map.aliases[loc.curr.model.$classData().modelName][1];
+			loc.curr.mapping = arguments.map.tables[loc.curr.key];
 
 			// push root model onto a stack
 			loc.stack = ArrayNew(1);
@@ -158,6 +150,7 @@
 						loc.pos = loc.nextPos;
 						
 						// only join to the association if it was not previously included
+						// TODO: figure out how to cancel out duplicate includes
 						//if (NOT StructKeyExists(loc.includeStack[1], loc.key)) {
 							//loc.includeStack[1][loc.key] = javaHash();
 
@@ -171,8 +164,14 @@
 							// look up root model for relation
 							loc.curr = StructNew();
 							loc.curr.model = loc.table.model;
-							loc.curr.mapping = arguments.map.tables[loc.table.alias];
 							loc.curr.associations = loc.curr.model.$classData().associations;
+							if (Len(loc.table.alias)) {
+								loc.curr.key = loc.table.alias;
+							} else {
+								loc.aliases = arguments.map.aliases[loc.curr.model.$classData().modelName];
+								loc.curr.key = loc.aliases[ArrayLen(loc.aliases)];
+							}
+							loc.curr.mapping = arguments.map.tables[loc.curr.key];
 							
 							// depending on association type, determine key lists for join
 							if (loc.assoc.type EQ "belongsTo") {
@@ -201,7 +200,7 @@
 							}
 							
 							// create join condition between list A and list B
-							loc.condition = "";
+							loc.condition = ArrayNew(1);
 							loc.jEnd = ListLen(loc.listA);
 							for (loc.j = 1; loc.j LTE loc.jEnd; loc.j++) {
 								
@@ -226,24 +225,28 @@
 									throwException("Property `#loc.keyB#` not found in model `#loc.curr.mapping.modelName#`.");
 								
 								// set up equality comparison between the two keys
-								loc.condition =  ListAppend(loc.condition, "#loc.columnB# = #loc.columnA#", Chr(7));
+								ArrayAppend(loc.condition, sqlBinaryOp(left=sqlColumn(loc.columnB), op="=", right=sqlColumn(loc.columnA)));
 							}
-							
-							// format condition for ON clause
-							loc.condition = Replace(loc.condition, Chr(7), " AND ", "ALL");
 					
 							// if additional conditioning is specified, parse it out of include string
+							// TODO: handle join parameters!
 							loc.condPos = Find("[", arguments.include.include, loc.pos);
 							if (loc.condPos EQ loc.pos) {
 								loc.pos = Find("]", arguments.include.include, loc.condPos + 1) + 1;
-								loc.condition &= " AND " & Mid(arguments.include.include, loc.condPos + 1, loc.pos - loc.condPos - 2);
+								ArrayAppend(loc.condition, Mid(arguments.include.include, loc.condPos + 1, loc.pos - loc.condPos - 2));
+							}
+
+							// condense conditions into a single tree
+							while (ArrayLen(loc.condition) GT 1) {
+								loc.condition[2] = sqlBinaryOp(left=loc.condition[1], op="AND", right=loc.condition[2]);
+								ArrayDeleteAt(loc.condition, 1);
 							}
 							
 							// use the passed in join type, or the default for this association
 							loc.joinType = (arguments.include.joinType EQ "") ? loc.assoc.joinType : arguments.include.joinType;
 							
 							// join to the table
-							ArrayAppend(loc.joins, sqlJoin(loc.table, loc.condition, loc.joinType));
+							ArrayAppend(loc.joins, sqlJoin(loc.table, ArrayLen(loc.condition) ? loc.condition[1] : false, loc.joinType));
 						//}
 				}
 			}
@@ -253,81 +256,6 @@
 
 		</cfscript>
 		<cfreturn arguments.map />
-	</cffunction>
-	
-	<cffunction name="primaryKey" returntype="string" access="public" hint="Get primary key list from model">
-		<cfargument name="model" type="any" required="true" />
-		<cfreturn arguments.model.primaryKey() />
-	</cffunction>
-	
-	<cffunction name="properties" returntype="struct" access="public" hint="Return all database properties in a structure">
-		<cfargument name="model" type="any" required="true" />
-		<cfscript>
-			var loc = {};
-			loc.returnValue = StructNew();
-			
-			// loop over database properties
-			loc.properties = arguments.model.$classData().properties;
-			for (loc.key in loc.properties) {
-				loc.col = loc.properties[loc.key];
-				
-				// create new column entry with specified
-				loc.newCol = StructNew();
-				loc.newCol.property = loc.key;
-				loc.newCol.column = loc.col.column;
-				loc.newCol.cfsqltype = loc.col.type;
-				
-				// append column to return list
-				loc.returnValue[loc.key] = loc.newCol;
-			}
-			
-			return loc.returnValue;
-		</cfscript>
-	</cffunction>
-	
-	<cffunction name="calculatedProperties" returntype="struct" access="public" hint="Return all calculated properties in a structure">
-		<cfargument name="model" type="any" required="true" />
-		<cfscript>
-			var loc = {};
-			loc.returnValue = StructNew();
-			
-			// loop over calculated properties
-			loc.properties = arguments.model.$classData().calculatedProperties;
-			for (loc.key in loc.properties) {
-				loc.col = loc.properties[loc.key];
-				
-				// create new column entry with specified
-				loc.newCol = StructNew();
-				loc.newCol.property = loc.key;
-				loc.newCol.sql = loc.col.sql;
-				
-				// append column to return list
-				loc.returnValue[loc.key] = loc.newCol;
-			}
-			
-			return loc.returnValue;
-		</cfscript>
-	</cffunction>
-	
-	<cffunction name="association" returntype="struct" access="public" hint="Return specific association details">
-		<cfargument name="model" returntype="any" required="true" />
-		<cfargument name="association" type="string" required="true" />
-		<cfscript>
-			var loc = {};
-			
-			// look up associations
-			loc.associations = injectInspector(arguments.model)._inspect().wheels.class.associations;
-			
-			// throw an error if association is not found
-			if (NOT StructKeyExists(loc.associations, arguments.association))
-				super.association(argumentCollection=arguments);
-				
-			// get association and preload joined model class
-			loc.association = loc.associations[arguments.association];
-			loc.association.model = arguments.model.model(loc.association.modelName);
-			
-			return loc.association;
-		</cfscript>
 	</cffunction>
 	
 	<cffunction name="buildStructCache" returntype="array" access="public">
