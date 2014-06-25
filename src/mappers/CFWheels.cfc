@@ -88,7 +88,7 @@
 		<cfreturn arguments.map />
 	</cffunction>
 
-	<cffunction name="mapInclude" returntype="struct" access="public" hint="Fail if includes are attempted">
+	<cffunction name="mapInclude" returntype="struct" access="public" hint="Map include nodes using CFWheels association data">
 		<cfargument name="relation" type="any" required="true" />
 		<cfargument name="include" type="any" required="true" />
 		<cfargument name="map" type="struct" default="#emptyMap()#" />

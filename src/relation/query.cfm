@@ -314,13 +314,23 @@
 	<cfargument name="include" type="string" required="true" />
 	<cfargument name="params" type="array" default="#[]#" />
 	<cfargument name="joinType" type="string" default="" />
+	<cfargument name="merge" type="boolean" default="true" />
 	<cfscript>
 		var loc = {};
 		if (variables.executed)
 			return this.clone().include(argumentCollection=arguments);
 
-		// add include statement to join list
-		ArrayAppend(this.sql.joins, sqlInclude(argumentCollection=arguments));
+		// merge with a previous include statement if we can
+		loc.len = ArrayLen(this.sql.joins);
+		if (arguments.merge AND loc.len GT 0 AND typeOf(this.sql.joins[loc.len]) EQ "cfrel.nodes.include") {
+			loc.tree = _mergeIncludes(this.sql.joins[loc.len].tree, _includeTree(arguments.include));
+			loc.include = _includeTreeToString(loc.tree);
+			this.sql.joins[loc.len] = sqlInclude(include=loc.include, tree=loc.tree);
+
+		// otherwise, append a new include statement to the join list
+		} else {
+			ArrayAppend(this.sql.joins, sqlInclude(tree=_includeTree(arguments.include), argumentCollection=arguments));
+		}
 			
 		return this;
 	</cfscript>
@@ -439,6 +449,67 @@
 			if (NOT StructKeyExists(loc, "success"))
 				throwException(message="Relation requires arguments for #UCase(arguments.clause)#");
 		}
+	</cfscript>
+</cffunction>
+
+<cffunction name="_includeTree" returntype="struct" access="private" hint="Turn an include string into an ordered tree structure">
+  <cfargument name="include" type="string" required="true" />
+  <cfscript>
+    var loc = {};
+    loc.stack = [javaHash()];
+    
+    // split include string into meaningful tokens
+    loc.regex = "(\w+(\[[^\]]+\])?|\(|\))";
+    loc.tokens = REMatch(loc.regex, arguments.include);
+
+    // loop over each token
+    loc.curr = "";
+    loc.iEnd = ArrayLen(loc.tokens);
+    for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
+    	switch (loc.tokens[loc.i]) {
+
+    		// on left paren, push the current sub-tree onto the stack
+    		case "(": ArrayPrepend(loc.stack, loc.stack[1][loc.curr]); break;
+
+    		// on right paren, pop the last sub-tree off the stack
+    		case ")": ArrayDeleteAt(loc.stack, 1); break;
+
+				// for identifiers, make a new entry
+    		default:
+    			loc.curr = loc.tokens[loc.i];
+    			loc.stack[1][loc.curr] = javaHash();
+    	}
+    }
+
+    return arrayLast(loc.stack);
+  </cfscript>
+</cffunction>
+
+<cffunction name="_includeTreeToString" returnType="string" access="private" hint="Turn an include string into a string">
+  <cfargument name="include" type="struct" required="true" />
+  <cfscript>
+		var loc.rtn = "";
+		for (loc.key in arguments.include) {
+			loc.rtn = ListAppend(loc.rtn, loc.key);
+			if (StructCount(arguments.include[loc.key]))
+				loc.rtn &= "(" & _includeTreeToString(arguments.include[loc.key]) & ")";
+		}
+		return loc.rtn;
+	</cfscript>
+</cffunction>
+
+<cffunction name="_mergeIncludes" returnType="struct" access="private" hint="Intelligently combine include trees to minimize differences">
+  <cfargument name="left" type="struct" required="true" />
+  <cfargument name="right" type="struct" required="true" />
+  <cfscript>
+		var loc = {};
+		for (loc.key in arguments.right) {
+			if (StructKeyExists(arguments.left, loc.key))
+				arguments.left[loc.key] = _mergeIncludes(arguments.left[loc.key], arguments.right[loc.key]);
+			else
+				arguments.left[loc.key] = arguments.right[loc.key];
+		}
+		return arguments.left;
 	</cfscript>
 </cffunction>
 
