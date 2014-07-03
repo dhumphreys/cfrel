@@ -56,7 +56,7 @@
 
 			// look up table information and associate it with an alias
 			loc.table = StructNew();
-			loc.table.table = uniqueScopeKey(key="subquery", scope=arguments.map.tables, base=false);
+			loc.table.table = uniqueScopeKey(key="subquery", scope=arguments.map.tables, alwaysNumber=true, start=1);
 			loc.table.alias = loc.table.table;
 			loc.table.properties = StructNew();
 			loc.table.calculatedProperties = StructNew();

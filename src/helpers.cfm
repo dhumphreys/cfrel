@@ -75,20 +75,23 @@
 	<cfargument name="key" type="string" required="true" />
 	<cfargument name="prefix" type="string" default="" />
 	<cfargument name="scope" type="struct" required="true" />
-	<cfargument name="base" type="boolean" default="true" />
+	<cfargument name="alwaysNumber" type="boolean" default="false" hint="Setting to 'true' causes code to skip straight to numbering keys" />
+	<cfargument name="start" type="numeric" default="2" />
 	<cfscript>
 		var loc = {};
 		loc.key = arguments.key;
 				
 		// if key already used, try prepending a prefix
-		if (NOT arguments.base OR (StructKeyExists(arguments.scope, loc.key) AND Len(arguments.prefix)))
+		if (StructKeyExists(arguments.scope, loc.key) AND Len(arguments.prefix))
 			loc.key = arguments.key = arguments.prefix & arguments.key;
+
+		// if we are always numbering the key, append the start number and increment it
+		if (arguments.alwaysNumber)
+			loc.key = arguments.key & arguments.start++;
 			
 		// if key still conflicts, start appending numbers
-		for (loc.j = 1; NOT arguments.base OR StructKeyExists(arguments.scope, loc.key); loc.j++) {
-			arguments.base = true;
+		for (loc.j = arguments.start; StructKeyExists(arguments.scope, loc.key); loc.j++)
 			loc.key = arguments.key & loc.j;
-		}
 		
 		return loc.key;
 	</cfscript>
