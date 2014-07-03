@@ -145,3 +145,8 @@
 		return arguments.array;
 	</cfscript>
 </cffunction>
+
+<cffunction name="arrayLast" returntype="any" access="private" hint="Return the last item in an array">
+	<cfargument name="array" type="array" required="true" />
+	<cfreturn arguments.array[ArrayLen(arguments.array)] />
+</cffunction>

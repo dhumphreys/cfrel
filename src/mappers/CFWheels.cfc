@@ -95,167 +95,138 @@
 		<cfscript>
 			var loc = {};
 
-			// keep track of a list of joins
-			loc.joins = ArrayNew(1);
-
 			// look up root model for relation
-			// TODO: use last from in list and operate on from[last].joins
+			// TODO: use last `from` in list and operate on from[last].joins
 			loc.curr = StructNew();
 			loc.curr.model = arguments.relation.sql.froms[1].model;
 			loc.curr.associations = loc.curr.model.$classData().associations;
-			if (Len(arguments.relation.sql.froms[1].alias))
-				loc.curr.key = arguments.relation.sql.froms[1].alias;
-			else
-				loc.curr.key = arguments.map.aliases[loc.curr.model.$classData().modelName][1];
-			loc.curr.mapping = arguments.map.tables[loc.curr.key];
+			loc.curr.alias = arguments.map.aliases[loc.curr.model.$classData().modelName][1];
+			loc.curr.mapping = arguments.map.tables[loc.curr.alias];
 
-			// push root model onto a stack
-			loc.stack = ArrayNew(1);
-			loc.stack[1] = loc.curr;
-			//loc.includeStack = [variables.mappings.includes];
-			
-			// loop over the include string one character at a time
-			loc.iEnd = Len(arguments.include.include);
-			for (loc.pos = 1; loc.pos LTE loc.iEnd;) {
-				
-				// look at next character in include string
-				switch(Mid(arguments.include.include, loc.pos, 1)) {
-					
-					// skip commas and spaces
-					case ",":
-					case " ":
-						loc.pos++;
-						break;
-					
-					// if we are stepping a level deeper, push the current model onto the stack
-					case "(":
-						ArrayPrepend(loc.stack, loc.curr);
-						//ArrayPrepend(loc.includeStack, loc.includeStack[1][loc.key]);
-						loc.pos++;
-						break;
-						
-					// if we are stepping a level higher, pop the last model off of the stack
-					case ")":
-						ArrayDeleteAt(loc.stack, 1);
-						loc.pos++;
-						break;
-						
-					default:
-				
-						// grab the next association name
-						loc.nextPos = REFind("\W", arguments.include.include, loc.pos, false);
-						if (loc.nextPos EQ 0)
-							loc.nextPos = Len(arguments.include.include) + 1;
-						loc.key = Mid(arguments.include.include, loc.pos, loc.nextPos - loc.pos);
-						loc.pos = loc.nextPos;
-						
-						// only join to the association if it was not previously included
-						// TODO: figure out how to cancel out duplicate includes
-						//if (NOT StructKeyExists(loc.includeStack[1], loc.key)) {
-							//loc.includeStack[1][loc.key] = javaHash();
+			// generate joins and store them with the 'includeKey' for later mapping
+			arguments.map.includes[arguments.include.includeKey] = mapIncludeTree(arguments.include, arguments.include.tree, loc.curr, arguments.map);
 
-							// look up association and map table information
-							if (NOT StructKeyExists(loc.stack[1].associations, loc.key))
-								throwException("Association `#loc.key#` not found in model `#loc.stack[1].mapping.table#`.");
-							loc.assoc = loc.stack[1].associations[loc.key];
-							loc.table = sqlModel(model=loc.stack[1].model.model(loc.assoc.modelName));
-							arguments.map = mapTable(loc.table, arguments.map);
+			return arguments.map;
+		</cfscript>
+	</cffunction>
 
-							// look up root model for relation
-							loc.curr = StructNew();
-							loc.curr.model = loc.table.model;
-							loc.curr.associations = loc.curr.model.$classData().associations;
-							if (Len(loc.table.alias)) {
-								loc.curr.key = loc.table.alias;
-							} else {
-								loc.aliases = arguments.map.aliases[loc.curr.model.$classData().modelName];
-								loc.curr.key = loc.aliases[ArrayLen(loc.aliases)];
-							}
-							loc.curr.mapping = arguments.map.tables[loc.curr.key];
-							
-							// depending on association type, determine key lists for join
-							if (loc.assoc.type EQ "belongsTo") {
+	<cffunction name="mapIncludeTree" returnType="array" access="private" hint="Map tree portion of include into joins">
+		<cfargument name="include" type="struct" required="true" />
+		<cfargument name="tree" type="struct" required="true" />
+		<cfargument name="parent" type="struct" required="true" />
+		<cfargument name="map" type="struct" required="true" />
+		<cfargument name="joins" type="array" default="#ArrayNew(1)#" />
+		<cfscript>
+			var loc = {};
 
-								// set defaults for join key and foreign key
-								if (NOT StructKeyExists(loc.assoc, "joinKey") OR loc.assoc.joinKey EQ "")
-									loc.assoc.joinKey = loc.curr.mapping.primaryKey;
-								if (loc.assoc.foreignKey EQ "")
-									loc.assoc.foreignKey = REReplace(loc.curr.mapping.primaryKey, "(^|,)", "\1" & loc.curr.mapping.modelName, "ALL");
+			// loop over the keys in the include tree
+			for (loc.key in arguments.tree) {
 
-								// if association is 'belongsTo', use foreign key for left hand side
-								loc.listA = loc.assoc.foreignKey;
-								loc.listB = loc.assoc.joinKey;
-								
-							} else {
-
-								// set defaults for join key and foreign key
-								if (NOT StructKeyExists(loc.assoc, "joinKey") OR loc.assoc.joinKey EQ "")
-									loc.assoc.joinKey = loc.stack[1].mapping.primaryKey;
-								if (loc.assoc.foreignKey EQ "")
-									loc.assoc.foreignKey = REReplace(loc.stack[1].mapping.primaryKey, "(^|,)", "\1" & loc.stack[1].mapping.modelName, "ALL");
-
-								// if association is anything else, use foreign key for right hand side
-								loc.listA = loc.assoc.joinKey;
-								loc.listB = loc.assoc.foreignKey;
-							}
-							
-							// create join condition between list A and list B
-							loc.condition = ArrayNew(1);
-							loc.jEnd = ListLen(loc.listA);
-							for (loc.j = 1; loc.j LTE loc.jEnd; loc.j++) {
-								
-								// handle opposite join directions
-								loc.keyA = ListGetAt(loc.listA, loc.j);
-								loc.keyB = ListGetAt(loc.listB, loc.j);
-								
-								// map the columns used in the left hand side of the join
-								if (StructKeyExists(loc.stack[1].mapping.properties, loc.keyA))
-									loc.columnA = loc.stack[1].mapping.alias & "." & loc.stack[1].mapping.properties[loc.keyA].column;
-								else if (StructKeyExists(loc.stack[1].mapping.calculatedProperties, loc.keyA))
-									loc.columnA = loc.stack[1].mapping.calculatedProperties[loc.keyA].sql;
-								else
-									throwException("Property `#loc.keyA#` not found in model `#loc.stack[1].mapping.modelName#`.");
-								
-								// map the columns used in the right hand side of the join
-								if (StructKeyExists(loc.curr.mapping.properties, loc.keyB))
-									loc.columnB = loc.curr.mapping.alias & "." & loc.curr.mapping.properties[loc.keyB].column;
-								else if (StructKeyExists(loc.curr.mapping.calculatedProperties, loc.keyB))
-									loc.columnB = loc.curr.mapping.calculatedProperties[loc.keyB].sql;
-								else
-									throwException("Property `#loc.keyB#` not found in model `#loc.curr.mapping.modelName#`.");
-								
-								// set up equality comparison between the two keys
-								ArrayAppend(loc.condition, sqlBinaryOp(left=sqlColumn(loc.columnB), op="=", right=sqlColumn(loc.columnA)));
-							}
-					
-							// if additional conditioning is specified, parse it out of include string
-							// TODO: handle join parameters!
-							loc.condPos = Find("[", arguments.include.include, loc.pos);
-							if (loc.condPos EQ loc.pos) {
-								loc.pos = Find("]", arguments.include.include, loc.condPos + 1) + 1;
-								ArrayAppend(loc.condition, Mid(arguments.include.include, loc.condPos + 1, loc.pos - loc.condPos - 2));
-							}
-
-							// condense conditions into a single tree
-							while (ArrayLen(loc.condition) GT 1) {
-								loc.condition[2] = sqlBinaryOp(left=loc.condition[1], op="AND", right=loc.condition[2]);
-								ArrayDeleteAt(loc.condition, 1);
-							}
-							
-							// use the passed in join type, or the default for this association
-							loc.joinType = (arguments.include.joinType EQ "") ? loc.assoc.joinType : arguments.include.joinType;
-							
-							// join to the table
-							ArrayAppend(loc.joins, sqlJoin(loc.table, ArrayLen(loc.condition) ? loc.condition[1] : false, loc.joinType));
-						//}
+				// extract additional conditioning from include statement if it exists
+				loc.includeCondition = "";
+				loc.startPos = Find("[", loc.key);
+				if (loc.startPos GT 1) {
+					loc.endPos = Find("]", loc.key, loc.startPos);
+					if (loc.endPos LTE loc.startPos)
+						throwException("Invalid format found in include condition: '#loc.key#'");
+					loc.includeCondition = Mid(loc.key, loc.startPos + 1, loc.endPos - loc.startPos - 1);
+					loc.key = Left(loc.key, loc.startPos - 1);
 				}
+
+				// look up association and map table information from the parent
+				if (NOT StructKeyExists(arguments.parent.associations, loc.key))
+					throwException("Association `#loc.key#` not found in model `#arguments.parent.mapping.table#`.");
+				loc.assoc = arguments.parent.associations[loc.key];
+				loc.table = sqlModel(model=arguments.parent.model.model(loc.assoc.modelName));
+				arguments.map = mapTable(loc.table, arguments.map);
+
+				// look up association and alias data for the target table
+				loc.curr = StructNew();
+				loc.curr.model = loc.table.model;
+				loc.curr.associations = loc.curr.model.$classData().associations;
+				loc.curr.alias = arrayLast(arguments.map.aliases[loc.curr.model.$classData().modelName]);
+				loc.curr.mapping = arguments.map.tables[loc.curr.alias];
+						
+				// depending on association type, determine key lists for join
+				if (loc.assoc.type EQ "belongsTo") {
+
+					// set defaults for join key and foreign key
+					if (NOT StructKeyExists(loc.assoc, "joinKey") OR loc.assoc.joinKey EQ "")
+						loc.assoc.joinKey = loc.curr.mapping.primaryKey;
+					if (loc.assoc.foreignKey EQ "")
+						loc.assoc.foreignKey = REReplace(loc.curr.mapping.primaryKey, "(^|,)", "\1" & loc.curr.mapping.modelName, "ALL");
+
+					// if association is 'belongsTo', use foreign key for left hand side
+					loc.listA = loc.assoc.foreignKey;
+					loc.listB = loc.assoc.joinKey;
+					
+				} else {
+
+					// set defaults for join key and foreign key
+					if (NOT StructKeyExists(loc.assoc, "joinKey") OR loc.assoc.joinKey EQ "")
+						loc.assoc.joinKey = arguments.parent.mapping.primaryKey;
+					if (loc.assoc.foreignKey EQ "")
+						loc.assoc.foreignKey = REReplace(arguments.parent.mapping.primaryKey, "(^|,)", "\1" & arguments.parent.mapping.modelName, "ALL");
+
+					// if association is anything else, use foreign key for right hand side
+					loc.listA = loc.assoc.joinKey;
+					loc.listB = loc.assoc.foreignKey;
+				}
+				
+				// create join condition between list A and list B
+				loc.condition = ArrayNew(1);
+				loc.jEnd = ListLen(loc.listA);
+				for (loc.j = 1; loc.j LTE loc.jEnd; loc.j++) {
+					
+					// handle opposite join directions
+					loc.keyA = ListGetAt(loc.listA, loc.j);
+					loc.keyB = ListGetAt(loc.listB, loc.j);
+					
+					// map the columns used in the left hand side of the join
+					if (StructKeyExists(arguments.parent.mapping.properties, loc.keyA))
+						loc.columnA = arguments.parent.mapping.alias & "." & arguments.parent.mapping.properties[loc.keyA].column;
+					else if (StructKeyExists(arguments.parent.mapping.calculatedProperties, loc.keyA))
+						loc.columnA = arguments.parent.mapping.calculatedProperties[loc.keyA].sql;
+					else
+						throwException("Property `#loc.keyA#` not found in model `#arguments.parent.mapping.modelName#`.");
+					
+					// map the columns used in the right hand side of the join
+					if (StructKeyExists(loc.curr.mapping.properties, loc.keyB))
+						loc.columnB = loc.curr.mapping.alias & "." & loc.curr.mapping.properties[loc.keyB].column;
+					else if (StructKeyExists(loc.curr.mapping.calculatedProperties, loc.keyB))
+						loc.columnB = loc.curr.mapping.calculatedProperties[loc.keyB].sql;
+					else
+						throwException("Property `#loc.keyB#` not found in model `#loc.curr.mapping.modelName#`.");
+					
+					// set up equality comparison between the two keys
+					ArrayAppend(loc.condition, sqlBinaryOp(left=sqlColumn(loc.columnB), op="=", right=sqlColumn(loc.columnA)));
+				}
+		
+				// if additional conditioning is specified, parse it out of include string
+				// TODO: handle join parameters!
+				if (Len(loc.includeCondition))
+					ArrayAppend(loc.condition, loc.includeCondition);
+
+				// condense conditions into a single tree
+				while (ArrayLen(loc.condition) GT 1) {
+					loc.condition[2] = sqlBinaryOp(left=loc.condition[1], op="AND", right=loc.condition[2]);
+					ArrayDeleteAt(loc.condition, 1);
+				}
+				
+				// use the passed in join type, or the default for this association
+				loc.joinType = (arguments.include.joinType EQ "") ? loc.assoc.joinType : arguments.include.joinType;
+				
+				// join to the table
+				loc.join = sqlJoin(loc.table, ArrayLen(loc.condition) ? loc.condition[1] : false, loc.joinType);
+				ArrayAppend(arguments.joins, loc.join);
+
+				// if there are any nested includes for this join, recursively map the next level
+				if (StructCount(arguments.tree[loc.key]))
+					arguments.joins = mapIncludeTree(arguments.include, arguments.tree[loc.key], loc.curr, arguments.map, arguments.joins);
 			}
 
-			// store generated joins by the 'includeKey' for later mapping
-			arguments.map.includes[arguments.include.includeKey] = loc.joins;
-
+			return arguments.joins;
 		</cfscript>
-		<cfreturn arguments.map />
 	</cffunction>
 	
 	<cffunction name="buildStructCache" returntype="array" access="public">
