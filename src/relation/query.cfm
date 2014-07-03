@@ -115,7 +115,7 @@
 			return this.clone().join(argumentCollection=arguments);
 			
 		// correctly set condition of join
-		if (typeOf(arguments.condition) NEQ "simple") {
+		if (NOT IsSimpleValue(arguments.condition)) {
 			loc.condition = arguments.condition;
 		} else if (arguments.condition NEQ false) {
 			loc.condition = parse(arguments.condition);
@@ -368,9 +368,13 @@
 			// parse each parameter and append to desired scope
 			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
 				loc.value = _transformInput(arguments.args[loc.i], arguments.clause);
-				loc.jEnd = ArrayLen(loc.value);
-				for (loc.j = 1; loc.j LTE loc.jEnd; loc.j++)
-					ArrayAppend(this.sql[arguments.scope], loc.value[loc.j]);
+				if (IsArray(loc.value)) {
+					loc.jEnd = ArrayLen(loc.value);
+					for (loc.j = 1; loc.j LTE loc.jEnd; loc.j++)
+						ArrayAppend(this.sql[arguments.scope], loc.value[loc.j]);
+				} else {
+					ArrayAppend(this.sql[arguments.scope], loc.value);
+				}
 			}
 		}
 	</cfscript>
@@ -391,25 +395,6 @@
 			
 		// if a text clause was passed, we need to parse entire clause and add passed in params
 		} else if (StructKeyExists(arguments.args, "$clause")) {
-			loc.type = typeOf(arguments.args.$clause);
-			loc.parameterCount = ArrayLen(arguments.args.$params);
-				
-			// go ahead and confirm parameter count unless clause is literal
-			if (loc.type EQ "simple") {
-			
-				// make sure string has length
-				if (Len(arguments.args.$clause) EQ 0)
-					throwException(message="#UCase(arguments.clause)# clause strings must have length > 0");
-				
-				// count the number of placeholders in clause and argument array
-				//loc.placeholderCount = Len(arguments.args.$clause) - Len(Replace(arguments.args.$clause, "?", "", "ALL"));
-				
-				// make sure the numbers are equal
-				// if (loc.placeholderCount NEQ loc.parameterCount)
-					//throwException(message="Parameter count does not match number of placeholders in #UCase(arguments.clause)# clause");
-			}
-			
-			// TODO: if literal is passed in, inject positional parameters into string
 				
 			// append clause with parameters to sql scope
 			ArrayAppend(this.sql[arguments.scope], _transformInput(arguments.args.$clause, arguments.clause, arguments.args.$params));
@@ -422,16 +407,12 @@
 				if (ListFindNoCase("$clause,$params", loc.key))
 					continue;
 				
-				// grab the value from arguments and decide its type
-				loc.value = arguments.args[loc.key];
-				loc.type = typeOf(loc.value);
-				
 				// use an IN if value is an array
-				if (loc.type EQ "array")
+				if (IsArray(arguments.args[loc.key]))
 					loc.clause = "#loc.key# IN (?)";
 					
 				// use an equality check if value is simple
-				else if (loc.type EQ "simple")
+				else if (IsSimpleValue(arguments.args[loc.key]))
 					loc.clause = "#loc.key# = ?";
 					
 				// throw an error otherwise
@@ -442,7 +423,7 @@
 				loc.success = true;
 					
 				// append clause to correct scope
-				ArrayAppend(this.sql[arguments.scope], _transformInput(loc.clause, arguments.clause, [loc.value]));
+				ArrayAppend(this.sql[arguments.scope], _transformInput(loc.clause, arguments.clause, [arguments.args[loc.key]]));
 			}
 			
 			// FIXME: (3) throw an error if a good value was not found
@@ -518,16 +499,13 @@
 	<cfargument name="clause" type="string" default="SELECT">
 	<cfargument name="params" type="array" default="#ArrayNew(1)#">
 	<cfscript>
-		var loc = {};
-		loc.type = typeOf(arguments.obj);
-		
-		// nodes should pass straight through
-		if (REFindNoCase("^cfrel\.nodes\.", loc.type) GT 0)
-			return arguments.obj;
-
 		// parse simple values with parser
-		if (loc.type EQ "simple")
+		if (IsSimpleValue(arguments.obj))
 			return parse(arguments.obj, arguments.clause, arguments.params);
+
+		// nodes should pass straight through
+		if (REFindNoCase("^cfrel\.nodes\.", typeOf(arguments.obj)) GT 0)
+			return arguments.obj;
 			
 		// throw error if we havent found it yet
 		throwException("Invalid object type passed into #UCase(arguments.clause)#");
