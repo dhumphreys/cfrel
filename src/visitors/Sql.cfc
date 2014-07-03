@@ -233,16 +233,17 @@
 			var loc = {};
 
 			// set default column and alias from column node
-			loc.column = obj.column;
-			loc.alias = loc.key = Len(obj.alias) ? obj.alias : obj.column;
+			loc.column = loc.key = obj.column;
+			loc.alias = obj.alias;
 			loc.calculated = false;
 
 			// look up more specific mapping if it exists
 			if (StructKeyExists(arguments.map.columns, loc.key)) {
 				loc.calculated = arguments.map.columns[loc.key].calculated;
 				loc.column = arguments.map.columns[loc.key].mapping;
-				loc.alias = arguments.map.columns[loc.key].alias;
-			} else {
+				if (Len(loc.alias) EQ 0)
+					loc.alias = arguments.map.columns[loc.key].alias;
+			} else if (Len(loc.alias) EQ 0) {
 				loc.alias = ListLast(loc.alias, ".");
 			}
 
