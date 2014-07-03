@@ -84,7 +84,7 @@
 		loc.rel.clearPagination();
 				
 		// create new relation to contain subquery
-		loc.rel2 = relation(datasource=this.datasource, mapper=variables.mapperClass, visitor=variables.visitorClass);
+		loc.rel2 = relation(datasource=this.datasource, visitor=variables.visitorClass);
 		loc.rel2.select(sqlLiteral("COUNT(*) AS numberOfRows"));
 		loc.rel2.from(loc.rel);
 		
