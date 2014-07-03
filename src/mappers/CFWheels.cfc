@@ -48,13 +48,11 @@
 				loc.col.cfsqltype = loc.model.properties[loc.key].type;
 				loc.col.calculated = false;
 
-				// create unique mappings for [alias], [table].[alias], [table].[property], and [table.column]
+				// create unique mappings for [alias], [table].[alias], and [table].[property]
 				arguments.map.columns[loc.col.alias] = loc.col;
 				arguments.map.columns["#loc.col.table#.#loc.col.alias#"] = loc.col;
 				if (NOT StructKeyExists(arguments.map.columns, "#loc.col.table#.#loc.col.property#"))
 					arguments.map.columns["#loc.col.table#.#loc.col.property#"] = loc.col;
-				if (NOT StructKeyExists(arguments.map.columns, "#loc.col.table#.#loc.col.column#"))
-					arguments.map.columns["#loc.col.table#.#loc.col.column#"] = loc.col;
 
 				// add to property list for table mapping
 				loc.table.properties[loc.col.property] = loc.col;
