@@ -16,36 +16,40 @@
 <cffunction name="typeOf" returntype="string" access="private" hint="Return type of object as a string">
 	<cfargument name="obj" type="any" required="true" />
 	<cfscript>
-		var loc = {};
-		loc.meta = getMetaData(arguments.obj);
-		
-		// if the argument is a component/object, return its path
-		if (IsArray(loc.meta) EQ false AND StructKeyExists(loc.meta, "fullname"))
-			if (REFindNoCase("(^|\.)models\.", loc.meta.fullname) EQ 0)
-				return stripCfcPrefix(loc.meta.fullname);
-			else
-				return "model";
+		// NOTE: we are checking these types in order of most likely to occur (or as dictated by type conflicts)
 			
-		// a few are easy checks
-		else if (IsCustomFunction(arguments.obj))
-			return "function";
-		else if (IsBinary(arguments.obj))
-			return "binary";
-		else if (IsArray(arguments.obj))
-			return "array";
-		else if (IsQuery(arguments.obj))
-			return "query";
-		// this function requires a value for arguments.obj so we could never return null	
-		// else if (!StructKeyExists(arguments, "obj"))
-		// 	return "null";
-				
-		// some will just be structs, but nodes will have $class set
-		else if (IsStruct(arguments.obj))
-			return StructKeyExists(arguments.obj, "$class") ? arguments.obj.$class : "struct";
-			
-		// everything else is a simple value
-		else
+		// simple string/numeric values
+		if (IsSimpleValue(arguments.obj)) {
 			return "simple";
+
+		// check for binary or array data (in that order)
+		} else if (IsBinary(arguments.obj)) {
+			return "binary";
+		} else if (IsArray(arguments.obj)) {
+			return "array";
+
+		// check for queries or custom function pointers
+		} else if (IsQuery(arguments.obj)) {
+			return "query";
+		} else if (IsCustomFunction(arguments.obj)) {
+			return "function";
+			
+		// if all else fails, use getMetaData() to determine if it is an object or a struct
+		} else {
+			var meta = getMetaData(arguments.obj);
+			
+			// if the argument is a component/object, return its path
+			if (IsArray(meta) EQ false AND StructKeyExists(meta, "fullname")) {
+				if (REFindNoCase("(^|\.)models\.", meta.fullname) EQ 0)
+					return stripCfcPrefix(meta.fullname);
+				else
+					return "model";
+
+			// otherwise, it is just a struct (but could be a cfrel node with $class set)
+			} else {
+				return StructKeyExists(arguments.obj, "$class") ? arguments.obj.$class : "struct";
+			}
+		}
 	</cfscript>
 </cffunction>
 
