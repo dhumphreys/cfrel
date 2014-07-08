@@ -4,18 +4,10 @@
 		var loc = {};
 		
 		// determine type of mapper to use
-		switch (typeOf(arguments.target)) {
-			case "model":
-				loc.type = "CFWheels";
-				break;
-			case "query":
-				loc.type = "QueryOfQuery";
-				break;
-			case "cfrel.nodes.subquery":
-				// TODO: build subquery mapper
-			default:
-				loc.type = "Mapper";
-		}
+		if (typeOf(arguments.target) EQ "model")
+			loc.type = "CFWheels";
+		else
+			loc.type = "Mapper";
 		
 		// lazy load a cache for mapper types
 		if (NOT StructKeyExists(request, "mappers"))
