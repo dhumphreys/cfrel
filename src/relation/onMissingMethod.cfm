@@ -6,7 +6,7 @@
 		if (IsObject(this.model)) {
 			
 			// look for possible named scopes
-			loc.scopes = this.mapper.scopes(this.model);
+			loc.scopes = this.mapper().scopes(this.model);
 			if (StructKeyExists(loc.scopes, arguments.missingMethodName)) {
 				var $scope = loc.scopes[arguments.missingMethodName];
 				if (IsCustomFunction($scope))
