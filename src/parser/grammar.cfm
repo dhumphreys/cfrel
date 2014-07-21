@@ -24,7 +24,7 @@
 		
 		// EXPR AS IDENTIFIER
 		if (accept(t.as) AND expect(t.identifier)) {
-			if (loc.expr.$class EQ "cfrel.nodes.column")
+			if (IsStruct(loc.expr) AND loc.expr.$class EQ "cfrel.nodes.column")
 				loc.expr.alias = tokens[tokenIndex - 1];
 			else
 				return sqlAlias(subject=loc.expr, alias=tokens[tokenIndex - 1]);
