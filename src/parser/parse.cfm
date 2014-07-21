@@ -63,24 +63,9 @@
 	<cfargument name="str" type="string" required="true" />
 	<cfscript>
 		var loc = {};
-		
-		// match against string terminals
-		loc.start = 1;
-		loc.matches = REFindNoCase(literalRegex, arguments.str, loc.start, true);
-		while (loc.matches.pos[1] GT 0) {
-			
-			// grab substring
-			loc.match = Mid(arguments.str, loc.matches.pos[1], loc.matches.len[1]);
-			
-			// place match in literal array
-			ArrayAppend(variables.literals, loc.match);
-			
-			// get new start position for search
-			loc.start = loc.matches.pos[1] + loc.matches.len[1];
-		
-			// match against more string terminals
-			loc.matches = REFindNoCase(literalRegex, arguments.str, loc.start, true);
-		}
+
+		// extract literals (strings, numbers, dates, etc) out of the input string
+		variables.literals = REMatch(literalRegex, arguments.str);
 		
 		// replace literals with placeholders
 		arguments.str = REReplaceNoCase(arguments.str, l.date, t.date, "ALL");
@@ -88,15 +73,11 @@
 		arguments.str = REReplaceNoCase(arguments.str, l.decimal, t.decimal, "ALL");
 		arguments.str = REReplaceNoCase(arguments.str, l.integer, t.integer, "ALL");
 		
-		// pad symbols with spaces and replace consecutive spaces
-		arguments.str = REReplaceNoCase(arguments.str, "(#terminalRegex#)", " \1 ", "ALL");
-		arguments.str = Trim(REReplaceNoCase(arguments.str, "(\s+)", " ", "ALL"));
-		
 		// replace escaped identifiers with their unescaped values
 		arguments.str = REReplace(arguments.str, t.identifier, "\1", "ALL");
 		
-		// split string into tokens by spaces
-		variables.tokens = ListToArray(arguments.str, " ");
+		// split string into tokens using using terminal pattern
+		variables.tokens = REMatchNoCase(terminalRegex, arguments.str);
 		
 		// set up counters for rest of parse
 		variables.tokenIndex = 1;
