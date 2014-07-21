@@ -43,7 +43,7 @@
 				loc.col.property = loc.key;
 				loc.col.column = loc.model.properties[loc.key].column;
 				loc.col.table = loc.table.alias;
-				loc.col.alias = uniqueScopeKey(key=loc.key, prefix=loc.table.alias, scope=arguments.map.columns);
+				loc.col.alias = uniqueScopeKey(key=loc.key, prefix=loc.table.modelName, scope=arguments.map.columns);
 				loc.col.mapping = "#loc.col.table#.#loc.col.column#";
 				loc.col.cfsqltype = loc.model.properties[loc.key].type;
 				loc.col.calculated = false;
@@ -62,7 +62,7 @@
 			for (loc.key in loc.model.calculatedProperties) {
 				loc.col = StructNew();
 				loc.col.property = loc.key;
-				loc.col.alias = uniqueScopeKey(key=loc.key, prefix=loc.table.alias, scope=arguments.map.columns);
+				loc.col.alias = uniqueScopeKey(key=loc.key, prefix=loc.table.modelName, scope=arguments.map.columns);
 				loc.col.calculated = true;
 		
 				// map to custom sql from model (and solve ambiguous columns for single table calculated properties)

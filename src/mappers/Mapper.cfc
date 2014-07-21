@@ -84,7 +84,7 @@
 				loc.col = StructNew();
 				loc.col.column = loc.properties[loc.i].name;
 				loc.col.table = loc.table.alias;
-				loc.col.alias = uniqueScopeKey(key=loc.col.column, prefix=loc.table.alias, scope=arguments.map.columns);
+				loc.col.alias = uniqueScopeKey(key=loc.col.column, prefix="query", scope=arguments.map.columns);
 				loc.col.mapping = "#loc.col.table#.#loc.col.column#";
 				loc.col.cfsqltype = extractDataTypeFromQuery(loc.properties[loc.i]);
 				loc.col.calculated = false;
