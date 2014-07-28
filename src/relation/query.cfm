@@ -368,7 +368,7 @@
 
     		// on right paren, pop the last association name off the prefix
     		case ")":
-					loc.prefix = ListDeleteAt(loc.prefix, loc.depth--);
+					loc.prefix = ListDeleteAt(loc.prefix, loc.depth--, ".");
 					break;
 
 				// for identifiers, make a new entry
@@ -491,21 +491,6 @@
 			if (NOT StructKeyExists(loc, "success"))
 				throwException(message="Relation requires arguments for #UCase(arguments.clause)#");
 		}
-	</cfscript>
-</cffunction>
-
-<cffunction name="_mergeIncludes" returnType="struct" access="private" hint="Intelligently combine include trees to minimize differences">
-  <cfargument name="left" type="struct" required="true" />
-  <cfargument name="right" type="struct" required="true" />
-  <cfscript>
-		var loc = {};
-		for (loc.key in arguments.right) {
-			if (StructKeyExists(arguments.left, loc.key))
-				arguments.left[loc.key] = _mergeIncludes(arguments.left[loc.key], arguments.right[loc.key]);
-			else
-				arguments.left[loc.key] = arguments.right[loc.key];
-		}
-		return arguments.left;
 	</cfscript>
 </cffunction>
 
