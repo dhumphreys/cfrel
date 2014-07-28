@@ -362,13 +362,13 @@
 
     		// on left paren, push the current association name onto the prefix
     		case "(": 
-    			loc.prefix = ListAppend(loc.prefix, loc.curr, ".");
+    			loc.prefix = ListAppend(loc.prefix, loc.curr, "_");
     			loc.depth++;
     			break;
 
     		// on right paren, pop the last association name off the prefix
     		case ")":
-					loc.prefix = ListDeleteAt(loc.prefix, loc.depth--, ".");
+					loc.prefix = ListDeleteAt(loc.prefix, loc.depth--, "_");
 					break;
 
 				// for identifiers, make a new entry
@@ -389,7 +389,7 @@
 					}
 
 					// save the include parameters onto the return
-					loc.rtn[ListAppend(loc.prefix, loc.curr, ".")] = loc.include;
+					loc.rtn[ListAppend(loc.prefix, loc.curr, "_")] = loc.include;
     	}
     }
 

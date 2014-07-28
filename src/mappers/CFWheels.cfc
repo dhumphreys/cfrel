@@ -111,8 +111,8 @@
 					continue;
 
 				// extract name of association and it's parent
-				loc.currKey = ListLast(loc.key, ".");
-				loc.parentKey = ListDeleteAt(loc.key, ListLen(loc.key, "."), ".");
+				loc.currKey = ListLast(loc.key, "_");
+				loc.parentKey = ListDeleteAt(loc.key, ListLen(loc.key, "_"), "_");
 
 				// reference data for the model we want to join from (default to FROM model)
 				loc.parent = (loc.parentKey EQ "") ?  loc.base : loc.associationMappings[loc.parentKey];
