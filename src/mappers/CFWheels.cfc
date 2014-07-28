@@ -92,58 +92,49 @@
 		<cfargument name="map" type="struct" default="#emptyMap()#" />
 		<cfscript>
 			var loc = {};
+			loc.joins = ArrayNew(1);
+			loc.associationMappings = StructNew();
 
-			// look up root model for relation
+			// look up data on FROM model for the relation
 			// TODO: use last `from` in list and operate on from[last].joins
-			loc.curr = StructNew();
-			loc.curr.model = arguments.relation.sql.froms[1].model;
-			loc.curr.associations = loc.curr.model.$classData().associations;
-			loc.curr.alias = arguments.map.aliases[loc.curr.model.$classData().modelName][1];
-			loc.curr.mapping = arguments.map.tables[loc.curr.alias];
+			loc.base = StructNew();
+			loc.base.model = arguments.relation.sql.froms[1].model;
+			loc.base.associations = loc.base.model.$classData().associations;
+			loc.base.alias = arguments.map.aliases[loc.base.model.$classData().modelName][1];
+			loc.base.mapping = arguments.map.tables[loc.base.alias];
 
-			// generate joins and store them with the 'includeKey' for later mapping
-			arguments.map.includes[arguments.include.includeKey] = mapIncludeTree(arguments.include, arguments.include.tree, loc.curr, arguments.map);
+			// loop over every join in the tree
+			for (loc.key in arguments.include.tree) {
 
-			return arguments.map;
-		</cfscript>
-	</cffunction>
+				// skip joins already completed for this include statement
+				if (StructKeyExists(loc.associationMappings, loc.key))
+					continue;
 
-	<cffunction name="mapIncludeTree" returnType="array" access="private" hint="Map tree portion of include into joins">
-		<cfargument name="include" type="struct" required="true" />
-		<cfargument name="tree" type="struct" required="true" />
-		<cfargument name="parent" type="struct" required="true" />
-		<cfargument name="map" type="struct" required="true" />
-		<cfargument name="joins" type="array" default="#ArrayNew(1)#" />
-		<cfscript>
-			var loc = {};
+				// extract name of association and it's parent
+				loc.currKey = ListLast(loc.key, ".");
+				loc.parentKey = ListDeleteAt(loc.key, ListLen(loc.key, "."), ".");
 
-			// loop over the keys in the include tree
-			for (loc.key in arguments.tree) {
-
-				// extract additional conditioning from include statement if it exists
-				loc.includeCondition = "";
-				loc.startPos = Find("[", loc.key);
-				if (loc.startPos GT 1) {
-					loc.endPos = Find("]", loc.key, loc.startPos);
-					if (loc.endPos LTE loc.startPos)
-						throwException("Invalid format found in include condition: '#loc.key#'");
-					loc.includeCondition = Mid(loc.key, loc.startPos + 1, loc.endPos - loc.startPos - 1);
-					loc.key = Left(loc.key, loc.startPos - 1);
-				}
+				// reference data for the model we want to join from (default to FROM model)
+				loc.parent = (loc.parentKey EQ "") ?  loc.base : loc.associationMappings[loc.parentKey];
 
 				// look up association and map table information from the parent
-				if (NOT StructKeyExists(arguments.parent.associations, loc.key))
-					throwException("Association `#loc.key#` not found in model `#arguments.parent.mapping.table#`.");
-				loc.assoc = arguments.parent.associations[loc.key];
-				loc.table = sqlModel(model=arguments.parent.model.model(loc.assoc.modelName));
+				if (NOT StructKeyExists(loc.parent.associations, loc.currKey))
+					throwException("Association `#loc.currKey#` not found in model `#loc.parent.mapping.table#`.");
+				loc.assoc = loc.parent.associations[loc.currKey];
+				loc.table = sqlModel(model=loc.parent.model.model(loc.assoc.modelName));
+
+				// map the table we want to join and append to current mappings
 				arguments.map = mapTable(loc.table, arguments.map);
 
-				// look up association and alias data for the target table
+				// look up data for the association we want to join to
 				loc.curr = StructNew();
 				loc.curr.model = loc.table.model;
 				loc.curr.associations = loc.curr.model.$classData().associations;
 				loc.curr.alias = arrayLast(arguments.map.aliases[loc.curr.model.$classData().modelName]);
 				loc.curr.mapping = arguments.map.tables[loc.curr.alias];
+
+				// store the association structure in a location other joins in this same include can read from
+				loc.associationMappings[loc.currKey] = loc.curr;
 						
 				// depending on association type, determine key lists for join
 				if (loc.assoc.type EQ "belongsTo") {
@@ -162,9 +153,9 @@
 
 					// set defaults for join key and foreign key
 					if (NOT StructKeyExists(loc.assoc, "joinKey") OR loc.assoc.joinKey EQ "")
-						loc.assoc.joinKey = arguments.parent.mapping.primaryKey;
+						loc.assoc.joinKey = loc.parent.mapping.primaryKey;
 					if (loc.assoc.foreignKey EQ "")
-						loc.assoc.foreignKey = REReplace(arguments.parent.mapping.primaryKey, "(^|,)", "\1" & arguments.parent.mapping.modelName, "ALL");
+						loc.assoc.foreignKey = REReplace(loc.parent.mapping.primaryKey, "(^|,)", "\1" & loc.parent.mapping.modelName, "ALL");
 
 					// if association is anything else, use foreign key for right hand side
 					loc.listA = loc.assoc.joinKey;
@@ -181,12 +172,12 @@
 					loc.keyB = ListGetAt(loc.listB, loc.j);
 					
 					// map the columns used in the left hand side of the join
-					if (StructKeyExists(arguments.parent.mapping.properties, loc.keyA))
-						loc.columnA = arguments.parent.mapping.alias & "." & arguments.parent.mapping.properties[loc.keyA].column;
-					else if (StructKeyExists(arguments.parent.mapping.calculatedProperties, loc.keyA))
-						loc.columnA = arguments.parent.mapping.calculatedProperties[loc.keyA].sql;
+					if (StructKeyExists(loc.parent.mapping.properties, loc.keyA))
+						loc.columnA = loc.parent.mapping.alias & "." & loc.parent.mapping.properties[loc.keyA].column;
+					else if (StructKeyExists(loc.parent.mapping.calculatedProperties, loc.keyA))
+						loc.columnA = loc.parent.mapping.calculatedProperties[loc.keyA].sql;
 					else
-						throwException("Property `#loc.keyA#` not found in model `#arguments.parent.mapping.modelName#`.");
+						throwException("Property `#loc.keyA#` not found in model `#loc.parent.mapping.modelName#`.");
 					
 					// map the columns used in the right hand side of the join
 					if (StructKeyExists(loc.curr.mapping.properties, loc.keyB))
@@ -202,8 +193,8 @@
 		
 				// if additional conditioning is specified, parse it out of include string
 				// TODO: handle join parameters!
-				if (Len(loc.includeCondition))
-					ArrayAppend(loc.condition, loc.includeCondition);
+				if (StructKeyExists(arguments.include.tree[loc.key], "condition"))
+					ArrayAppend(loc.condition, arguments.include.tree[loc.key].condition);
 
 				// condense conditions into a single tree
 				while (ArrayLen(loc.condition) GT 1) {
@@ -212,18 +203,17 @@
 				}
 				
 				// use the passed in join type, or the default for this association
-				loc.joinType = (arguments.include.joinType EQ "") ? loc.assoc.joinType : arguments.include.joinType;
+				loc.joinType = (arguments.include.tree[loc.key].joinType EQ "") ? loc.assoc.joinType : arguments.include.tree[loc.key].joinType;
 				
 				// join to the table
 				loc.join = sqlJoin(loc.table, ArrayLen(loc.condition) ? loc.condition[1] : false, loc.joinType);
-				ArrayAppend(arguments.joins, loc.join);
-
-				// if there are any nested includes for this join, recursively map the next level
-				if (StructCount(arguments.tree[loc.key]))
-					arguments.joins = mapIncludeTree(arguments.include, arguments.tree[loc.key], loc.curr, arguments.map, arguments.joins);
+				ArrayAppend(loc.joins, loc.join);
 			}
 
-			return arguments.joins;
+			// store all new joins with their unique 'includeKey' for later mapping
+			arguments.map.includes[arguments.include.includeKey] = loc.joins;
+
+			return arguments.map;
 		</cfscript>
 	</cffunction>
 	
