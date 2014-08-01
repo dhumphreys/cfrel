@@ -192,7 +192,16 @@
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
 			var loc = {};
-			loc.returnValue = [visit(obj=obj.left, argumentCollection=arguments), REReplace(obj.op, "_", " ", "ALL"), visit(obj=obj.right, argumentCollection=arguments)];
+
+			// if we are doing an IN or NOT IN, then surround the right hand side in parenthesis
+			loc.right = visit(obj=obj.right, argumentCollection=arguments);
+			if (obj.op CONTAINS "IN")
+				loc.right = ['(', separateArray(loc.right), ')'];
+
+			// generate the SQL for the operator
+			loc.returnValue = [visit(obj=obj.left, argumentCollection=arguments), REReplace(obj.op, "_", " ", "ALL"), loc.right];
+
+			// if we are doing an OR, then surround the expression in parenthesis to make sure order of operations stands
 			if (obj.op EQ "OR") {
 				ArrayPrepend(loc.returnValue, "(");
 				ArrayAppend(loc.returnValue, ")");

@@ -103,7 +103,7 @@
 					
 			// ADD_EXPR NOT IN LPAREN EXPRS RPAREN
 			if (accept(t.inn) AND expect(t.lparen)) {
-				loc.e = sqlParen(subject=exprs());
+				loc.e = subject=exprs();
 				expect(t.rparen);
 				loc.left = sqlBinaryOp(left=loc.left, op="NOT_IN", right=loc.e);
 			}
@@ -115,7 +115,7 @@
 			
 		// ADD_EXPR IN LPAREN EXPRS RPAREN
 		} else if (accept(t.inn) AND expect(t.lparen)) {
-			loc.e = sqlParen(subject=exprs());
+			loc.e = exprs();
 			expect(t.rparen);
 			loc.left = sqlBinaryOp(left=loc.left, op="IN", right=loc.e);
 			
