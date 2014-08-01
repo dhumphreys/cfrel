@@ -134,7 +134,7 @@
 				loc.curr.mapping = arguments.map.tables[loc.curr.alias];
 
 				// store the association structure in a location other joins in this same include can read from
-				loc.associationMappings[loc.currKey] = loc.curr;
+				loc.associationMappings[loc.key] = loc.curr;
 						
 				// depending on association type, determine key lists for join
 				if (loc.assoc.type EQ "belongsTo") {
