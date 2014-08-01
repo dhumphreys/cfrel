@@ -350,7 +350,7 @@
 	
 	<cffunction name="visit_nodes_paren" returntype="array" access="private">
 		<cfargument name="obj" type="any" required="true" />
-		<cfreturn ["(", separateArray(visit(obj=arguments.obj.subject, argumentCollection=arguments)), ")"] />
+		<cfreturn ["(", visit(obj=arguments.obj.subject, argumentCollection=arguments), ")"] />
 	</cffunction>
 	
 	<cffunction name="visit_nodes_subquery" returntype="array" access="private" hint="Render a subquery with an alias">
