@@ -253,7 +253,7 @@
 				if (Len(loc.alias) EQ 0)
 					loc.alias = arguments.map.columns[loc.key].alias;
 			} else if (Len(loc.alias) EQ 0) {
-				loc.alias = ListLast(loc.alias, ".");
+				loc.alias = ListLast(loc.column, ".");
 			}
 
 			// if we are in alias-only mode, just return the alias by itself
