@@ -104,7 +104,7 @@
 			loc.base.mapping = arguments.map.tables[loc.base.alias];
 
 			// loop over every join in the tree
-			for (loc.key in arguments.include.tree) {
+			for (loc.key in arguments.include.tree.order) {
 
 				// skip joins already completed for this include statement
 				if (StructKeyExists(loc.associationMappings, loc.key))
@@ -193,8 +193,8 @@
 		
 				// if additional conditioning is specified, parse it out of include string
 				// TODO: handle join parameters!
-				if (StructKeyExists(arguments.include.tree[loc.key], "condition"))
-					ArrayAppend(loc.condition, arguments.include.tree[loc.key].condition);
+				if (StructKeyExists(arguments.include.tree.options[loc.key], "condition"))
+					ArrayAppend(loc.condition, arguments.include.tree.options[loc.key].condition);
 
 				// condense conditions into a single tree
 				while (ArrayLen(loc.condition) GT 1) {
@@ -203,7 +203,7 @@
 				}
 				
 				// use the passed in join type, or the default for this association
-				loc.joinType = (arguments.include.tree[loc.key].joinType EQ "") ? loc.assoc.joinType : arguments.include.tree[loc.key].joinType;
+				loc.joinType = (arguments.include.tree.options[loc.key].joinType EQ "") ? loc.assoc.joinType : arguments.include.tree.options[loc.key].joinType;
 				
 				// join to the table
 				loc.join = sqlJoin(loc.table, ArrayLen(loc.condition) ? loc.condition[1] : false, loc.joinType);

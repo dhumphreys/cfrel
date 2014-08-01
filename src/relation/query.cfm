@@ -330,7 +330,8 @@
 			loc.previousInclude = this.sql.joins[loc.len];
 			loc.previousInclude.include = ListAppend(loc.previousInclude.include, loc.include.include);
 			loc.previousInclude.includeKey = ListAppend(loc.previousInclude.includeKey, loc.include.includeKey, ';');
-			StructAppend(loc.previousInclude.tree, loc.include.tree, false);
+			ArrayAppend(loc.previousInclude.tree.order, loc.include.tree.order, true);
+			StructAppend(loc.previousInclude.tree.options, loc.include.tree.options, false);
 
 		// otherwise, append a new include statement to the join list
 		} else {
@@ -346,7 +347,13 @@
 	<cfargument name="joinType" type="string" required="true" />
 	<cfscript>
 		var loc = {};
-		loc.rtn = javaHash();
+
+		// return value: join options and the order in which they occur
+		loc.rtn = StructNew();
+		loc.rtn.options = StructNew();
+		loc.rtn.order = ArrayNew(1);
+
+		// looping variables
 		loc.prefix = "";
 		loc.depth = 0;
 
@@ -374,8 +381,8 @@
 				// for identifiers, make a new entry
     		default:
     			loc.curr = loc.tokens[loc.i];
-    			loc.include = StructNew();
-    			loc.include.joinType = arguments.joinType;
+    			loc.options = StructNew();
+    			loc.options.joinType = arguments.joinType;
 
 					// extract additional conditioning from include statement if it exists
 					// TODO: pass parameters into the parse
@@ -384,12 +391,14 @@
 						loc.endPos = Find("]", loc.curr, loc.startPos);
 						if (loc.endPos LTE loc.startPos)
 							throwException("Invalid format found in include condition: '#loc.curr#'");
-						loc.include.condition = parse(Mid(loc.curr, loc.startPos + 1, loc.endPos - loc.startPos - 1));
+						loc.options.condition = parse(Mid(loc.curr, loc.startPos + 1, loc.endPos - loc.startPos - 1));
 						loc.curr = Left(loc.curr, loc.startPos - 1);
 					}
 
 					// save the include parameters onto the return
-					loc.rtn[ListAppend(loc.prefix, loc.curr, "_")] = loc.include;
+					loc.joinKey = ListAppend(loc.prefix, loc.curr, "_");
+					ArrayAppend(loc.rtn.order, loc.joinKey);
+					loc.rtn.options[loc.joinKey] = loc.options;
     	}
     }
 
