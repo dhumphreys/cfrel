@@ -251,6 +251,7 @@
 		if (variables.executed)
 			return this.clone().clearWhere(argumentCollection=arguments);
 		this.sql.wheres = [];
+		this.params.wheres = [];
 		return this;
 	</cfscript>
 </cffunction>
@@ -269,6 +270,7 @@
 		if (variables.executed)
 			return this.clone().clearHaving(argumentCollection=arguments);
 		this.sql.havings = [];
+		this.params.havings = [];
 		return this;
 	</cfscript>
 </cffunction>
