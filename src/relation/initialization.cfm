@@ -28,6 +28,13 @@
 			havings = [],
 			orders = []
 		};
+
+		// struct to hold SQL parameters
+		this.params = {
+			joins = [],
+			wheres = [],
+			havings = []
+		};
 		
 		// set up max rows for cfquery tag
 		this.maxRows = 0;
@@ -88,9 +95,6 @@
 		variables.tokens = [];
 		variables.tokenTypes = [];
 		variables.literals = [];
-		
-		// store parameter values that are passed in
-		variables.parseParameters = [];
 		
 		// token index during parse
 		variables.tokenIndex = 1;

@@ -192,7 +192,6 @@
 				}
 		
 				// if additional conditioning is specified, parse it out of include string
-				// TODO: handle join parameters!
 				if (StructKeyExists(arguments.include.tree.options[loc.key], "condition"))
 					ArrayAppend(loc.condition, arguments.include.tree.options[loc.key].condition);
 

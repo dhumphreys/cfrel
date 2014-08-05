@@ -324,6 +324,9 @@
 		// generate the join node for the requested include
 		loc.include = sqlInclude(tree=includeTree(arguments.include, arguments.joinType), argumentCollection=arguments);
 
+		// append parameters to the relation
+		ArrayAppend(this.params.joins, arguments.params, true);
+
 		// merge with a previous include statement if we can
 		loc.len = ArrayLen(this.sql.joins);
 		if (arguments.merge AND loc.len GT 0 AND typeOf(this.sql.joins[loc.len]) EQ "cfrel.nodes.include") {
@@ -385,7 +388,6 @@
     			loc.options.joinType = arguments.joinType;
 
 					// extract additional conditioning from include statement if it exists
-					// TODO: pass parameters into the parse
 					loc.startPos = Find("[", loc.curr);
 					if (loc.startPos GT 1) {
 						loc.endPos = Find("]", loc.curr, loc.startPos);
@@ -395,7 +397,7 @@
 						loc.curr = Left(loc.curr, loc.startPos - 1);
 					}
 
-					// save the include parameters onto the return
+					// save the include options for return
 					loc.joinKey = ListAppend(loc.prefix, loc.curr, "_");
 					ArrayAppend(loc.rtn.order, loc.joinKey);
 					loc.rtn.options[loc.joinKey] = loc.options;
@@ -466,8 +468,9 @@
 		// if a text clause was passed, we need to parse entire clause and add passed in params
 		} else if (StructKeyExists(arguments.args, "$clause")) {
 				
-			// append clause with parameters to sql scope
-			ArrayAppend(this.sql[arguments.scope], _transformInput(arguments.args.$clause, arguments.clause, arguments.args.$params));
+			// append clause and parameters to relation object
+			ArrayAppend(this.sql[arguments.scope], _transformInput(arguments.args.$clause, arguments.clause));
+			ArrayAppend(this.params[arguments.scope], arguments.args.$params, true);
 			
 		// if key/value pairs were passed, comparison nodes should be added with parameters
 		} else {
@@ -479,21 +482,24 @@
 				
 				// use an IN if value is an array
 				if (IsArray(arguments.args[loc.key]))
-					loc.clause = "#loc.key# IN (?)";
+					loc.clause = sqlBinaryOp(sqlColumn(column=loc.key), "IN", sqlParam(column=loc.key));
 					
 				// use an equality check if value is simple
 				else if (IsSimpleValue(arguments.args[loc.key]))
-					loc.clause = "#loc.key# = ?";
+					loc.clause = sqlBinaryOp(sqlColumn(column=loc.key), "=", sqlParam(column=loc.key));
 					
 				// throw an error otherwise
 				else
 					throwException("Invalid parameter to #UCase(arguments.clause)# clause. Only arrays and simple values may be used.");
+
+				// append parameters to the relation
+				ArrayAppend(this.params[arguments.scope], arguments.args[loc.key]);
 				
 				// FIXME: (2) note that we found a good value
 				loc.success = true;
 					
 				// append clause to correct scope
-				ArrayAppend(this.sql[arguments.scope], _transformInput(loc.clause, arguments.clause, [arguments.args[loc.key]]));
+				ArrayAppend(this.sql[arguments.scope], _transformInput(loc.clause, arguments.clause));
 			}
 			
 			// FIXME: (3) throw an error if a good value was not found
@@ -506,11 +512,10 @@
 <cffunction name="_transformInput" returntype="any" access="private">
 	<cfargument name="obj" type="any" required="true">
 	<cfargument name="clause" type="string" default="SELECT">
-	<cfargument name="params" type="array" default="#ArrayNew(1)#">
 	<cfscript>
 		// parse simple values with parser
 		if (IsSimpleValue(arguments.obj))
-			return parse(arguments.obj, arguments.clause, arguments.params);
+			return parse(arguments.obj, arguments.clause);
 
 		// nodes should pass straight through
 		if (REFindNoCase("^cfrel\.nodes\.", typeOf(arguments.obj)) GT 0)

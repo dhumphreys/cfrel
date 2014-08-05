@@ -208,10 +208,7 @@
 			
 		// PARAM
 		} else if (accept(t.param)) {
-			if (NOT ArrayLen(variables.parseParameters))
-				throwException("Not enough parameters were supplied for SQL expression.");
-			loc.term = sqlParam(value=variables.parseParameters[1], column=variables.tmpParamColumn);
-			ArrayDeleteAt(variables.parseParameters, 1);
+			loc.term = sqlParam(column=variables.tmpParamColumn);
 			
 		// UNARY TERM
 		} else if (accept(t.unaryOp)) {

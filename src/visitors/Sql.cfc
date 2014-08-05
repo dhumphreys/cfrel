@@ -338,19 +338,6 @@
 				// if possible, map the parameter to the column it references
 				if (StructKeyExists(arguments.map.columns, loc.key) AND StructKeyExists(arguments.map.columns[loc.key], "cfsqltype"))
 					obj.cfsqltype = arguments.map.columns[loc.key].cfsqltype;
-
-				// if no mapping is found, give it our best guess
-				// TODO: never do IsNumeric() for this check
-				else
-					obj.cfsqltype = IsNumeric(obj.value) ? "cf_sql_numeric" : "cf_sql_char";
-			}
-			
-			// if value is an array, set up list params
-			if (IsArray(arguments.obj.value)) {
-				arguments.obj.null = ArrayLen(arguments.obj.value) EQ 0;
-				arguments.obj.value = ArrayToList(arguments.obj.value, Chr(7));
-				arguments.obj.list = true;
-				arguments.obj.separator = Chr(7);
 			}
 			
 			return arguments.obj;

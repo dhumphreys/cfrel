@@ -103,7 +103,7 @@
 </cffunction>
 
 <cffunction name="sqlParam" returntype="any" access="private">
-	<cfargument name="value" type="any" required="true" />
+	<cfargument name="value" type="any" required="false" />
 	<cfargument name="null" type="boolean" default="false" />
 	<cfargument name="cfsqltype" type="string" required="false" />
 	<cfargument name="column" type="string" required="false" />

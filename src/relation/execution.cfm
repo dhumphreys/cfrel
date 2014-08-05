@@ -6,6 +6,36 @@
 	<cfreturn flattenArray(visitor().traverseToArray(obj=this, map=getMap())) />
 </cffunction>
 
+<cffunction name="getParameters" returntype="array" access="public" hint="Return array of all parameters used in query and subqueries">
+	<cfargument name="stack" type="array" default="#ArrayNew(1)#" />
+	<cfscript>
+		var loc = {};
+
+		// stack on parameters from subqueries
+		loc.iEnd = ArrayLen(this.sql.froms);
+		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+			if (typeOf(this.sql.froms[loc.i]) EQ "cfrel.nodes.SubQuery")
+				arguments.stack = this.sql.froms[loc.i].subject.getParameters(arguments.stack);
+
+		// stack on parameters from join subqueries
+		loc.iEnd = ArrayLen(this.sql.joins);
+		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+			if (typeOf(this.sql.joins[loc.i]) EQ "cfrel.nodes.join" AND typeOf(this.sql.joins[loc.i].table) EQ "cfrel.nodes.SubQuery")
+				arguments.stack = this.sql.joins[loc.i].table.subject.getParameters(arguments.stack);
+
+		// stack on join parameters
+		ArrayAppend(arguments.stack, this.params.joins, true);
+
+		// stack on where parameters
+		ArrayAppend(arguments.stack, this.params.wheres, true);
+
+		// stack on having parameters
+		ArrayAppend(arguments.stack, this.params.havings, true);
+
+		return arguments.stack;
+	</cfscript>
+</cffunction>
+
 <cffunction name="exec" returntype="struct" access="public" hint="Run query() but return the relation">
 	<cfargument name="callbacks" type="boolean" default="true" />
 	<cfscript>
@@ -139,8 +169,39 @@
 		var loc = {};
 		loc.sql = arguments.sql;
 		StructDelete(arguments, "sql");
+		loc.params = getParameters();
+		loc.paramCounter = 1;
 	</cfscript>
 	<cfquery name="variables.cache.query" result="variables.cache.result" attributeCollection="#arguments#">
-		<cfloop array="#loc.sql#" index="loc.fragment"><cfif IsStruct(loc.fragment)><cfqueryparam attributeCollection="#loc.fragment#" /><cfelse> #PreserveSingleQuotes(loc.fragment)# </cfif></cfloop>
+		<cfloop array="#loc.sql#" index="loc.fragment"><cfif IsStruct(loc.fragment)><cfif StructKeyExists(loc.fragment, "value")><cfqueryparam attributeCollection="#$paramArguments(loc.fragment)#" /><cfelse><cfqueryparam attributeCollection="#$paramArguments(loc.fragment, loc.params[loc.paramCounter++])#" /></cfif><cfelse> #PreserveSingleQuotes(loc.fragment)# </cfif></cfloop>
 	</cfquery>
+</cffunction>
+
+<cffunction name="$paramArguments" returntype="struct" access="private" hint="Add important options to cfqueryparam arguments">
+	<cfargument name="param" type="struct" required="true" />
+	<cfargument name="value" type="any" required="false" />
+	<cfscript>
+		var loc = {};
+		loc.param = Duplicate(arguments.param);
+
+		// assign value to param if it was passed in
+		if (StructKeyExists(arguments, "value"))
+			loc.param.value = arguments.value;
+
+		// if no type has been set, give it our best guess
+		// TODO: not ideal to do IsNumeric() for this check
+		if (NOT StructKeyExists(loc.param, "cfsqltype"))
+			loc.param.cfsqltype = IsNumeric(loc.param.value) ? "cf_sql_numeric" : "cf_sql_char";
+					
+		
+		// if value is an array, set up list params
+		if (IsArray(loc.param.value)) {
+			loc.param.null = ArrayLen(loc.param.value) EQ 0;
+			loc.param.value = ArrayToList(loc.param.value, Chr(7));
+			loc.param.list = true;
+			loc.param.separator = Chr(7);
+		}
+
+		return loc.param;
+	</cfscript>
 </cffunction>

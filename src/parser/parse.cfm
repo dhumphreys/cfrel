@@ -1,7 +1,6 @@
 <cffunction name="parse" returntype="any" access="public" hint="Turn a SQL string into a tree of nodes">
 	<cfargument name="str" type="string" required="true" />
 	<cfargument name="clause" type="string" default="WHERE" />
-	<cfargument name="params" type="array" default="#ArrayNew(1)#" />
 	<cfscript>
 		var loc = {};
 		
@@ -13,11 +12,7 @@
 			
 			// set up parse cache
 			if (NOT StructKeyExists(application, "cfrel"))
-				application.cfrel = {parseCache={}, paramCache={}};
-				
-			// if key exists, set the parameter columns
-			if (StructKeyExists(application.cfrel.paramCache, loc.cacheKey))
-				variables.parameterColumns = application.cfrel.paramCache[loc.cacheKey];
+				application.cfrel = {parseCache={}};
 				
 			// if key exists, just return cached parse tree
 			if (StructKeyExists(application.cfrel.parseCache, loc.cacheKey))
@@ -26,9 +21,6 @@
 		
 		// break incoming string into tokens
 		tokenize(arguments.str);
-		
-		// set positional parameters in variables scope
-		variables.parseParameters = arguments.params;
 		
 		// parse string depending on clause type
 		switch (arguments.clause) {
@@ -43,17 +35,13 @@
 				loc.tree = expr();
 		}
 		
-		// if tokens or parameters are still left, throw an error
+		// if tokens are still left, throw an error
 		if (tokenIndex LTE tokenLen)
 			throwException("Parsing error. Not all tokens processed. #tokenIndex - 1# of #tokenLen# processed.");
-		if (ArrayLen(variables.parseParameters))
-			throwException("Parsing error. Too many parameters passed into #UCase(arguments.clause)#.");
 			
-		// cache the parse tree and parameter columns in the application scope
-		if (variables.cacheParse) {
+		// cache the parse tree in the application scope
+		if (variables.cacheParse)
 			application.cfrel.parseCache[loc.cacheKey] = Duplicate(loc.tree);
-			application.cfrel.paramCache[loc.cacheKey] = variables.parameterColumns;
-		}
 		
 		return loc.tree;
 	</cfscript>
