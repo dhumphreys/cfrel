@@ -1,5 +1,6 @@
 <cffunction name="toSql" returntype="string" access="public" hint="Convert relational data into a SQL string">
-	<cfreturn sqlArrayToString(toSqlArray()) />
+	<cfargument name="interpolateParams" type="boolean" default="false" />
+	<cfreturn sqlArrayToString(toSqlArray(), arguments.interpolateParams) />
 </cffunction>
 
 <cffunction name="toSqlArray" returntype="array" access="public" hint="Convert relational data into flat SQL array">

@@ -103,17 +103,63 @@
 
 <cffunction name="sqlArrayToString" returntype="string" access="private" hint="Turn SQL tree into a string">
 	<cfargument name="sql" type="array" required="true" />
+	<cfargument name="interpolateParams" type="boolean" default="false" />
 	<cfscript>
 		var loc = {};
 		loc.sql = "";
 		loc.prev = "";
+
+		// get parameter list
+		loc.params = getParameters();
+		loc.paramCounter = 1;
+
+		// loop over each fragment of the sql array
 		loc.iEnd = ArrayLen(arguments.sql);
 		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
 			loc.rtn = arguments.sql[loc.i];
-			if (IsStruct(loc.rtn))
-				loc.rtn = "?";
+
+			// if fragment is a set of cfqueryparam options, do some additional work
+			if (IsStruct(loc.rtn)) {
+
+				// if we aren't interpolating params, just return a question mark placeholder
+				if (NOT arguments.interpolateParams) {
+					loc.rtn = "?";
+
+				// if we are interpolating, then do some additional work
+				} else {
+
+					// add value to parameter if necessary
+					if (StructKeyExists(loc.rtn, "value"))
+						loc.param = $paramArguments(loc.rtn);
+					else
+						loc.param = $paramArguments(loc.rtn, loc.params[loc.paramCounter++]);
+
+					// if the parameter should be null, just return the NULL keyword
+					if (StructKeyExists(loc.param, "null") AND loc.param.null EQ true) {
+						loc.rtn = "NULL";
+
+					} else {
+						loc.rtn = loc.param.value;
+
+						// determine if we should wrap the parameter in quotes
+						loc.quoted = NOT REFindNoCase("^cf_sql_((big|tiny|small)?int|float|numeric|decimal|double|real|bit|money*)$", loc.param.cfsqltype);
+
+						// quote the value (or list) if necessary
+						if (loc.quoted)
+							loc.rtn = ListQualify(loc.rtn, "'", Chr(7));
+
+						// if value is a list, convert it to a comma-separated string
+						if (StructKeyExists(loc.param, "list") AND loc.param.list EQ true)
+							loc.rtn = ListChangeDelims(loc.rtn, ", ", Chr(7));
+					}
+				}
+			}
+
+			// separate fragments with spaces if necessary
 			if (loc.sql NEQ "" AND (NOT REFind("(\(|\.)$", loc.prev) AND NOT REFind("^(,|\.(\D|$)|\))", Left(loc.rtn, 2))))
 				loc.rtn = " " & loc.rtn;
+
+			// append fragment
 			loc.sql &= loc.rtn;
 			loc.prev = loc.rtn;
 		}
