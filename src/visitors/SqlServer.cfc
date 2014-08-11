@@ -30,6 +30,9 @@
 					if (ArrayContains(loc.obj.sql.selectFlags, "DISTINCT") AND ArrayLen(loc.obj.sql.groups) EQ 0)
 						loc.obj.sql.groups = Duplicate(loc.obj.sql.select);
 
+					// make sure there is at least a wildcard in the select list
+					if (ArrayLen(loc.obj.sql.select) EQ 0)
+						ArrayAppend(loc.obj.sql.select, sqlWildcard());
 					
 					// create new SELECT entry to count row numbers
 					arguments.state.aliasOff = true;
