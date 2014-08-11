@@ -4,15 +4,28 @@
 	<cfscript>
 		var loc = {};
 		
+		// determine beginning grammar rule
+		switch (arguments.clause) {
+			case "SELECT":
+			case "GROUP BY":
+				loc.rule = "exprs";
+				break;
+			case "ORDER BY":
+				loc.rule = "orderExprs";
+				break;
+			default:
+				loc.rule = "expr";
+		}
+		
 		// try to read from cache if turned on
 		if (variables.cacheParse) {
 		
 			// create key for cache
-			loc.cacheKey = Hash("#arguments.clause#:#arguments.str#", "MD5");
+			loc.cacheKey = Hash("#loc.rule#:#arguments.str#", "MD5");
 			
 			// set up parse cache
-			if (NOT StructKeyExists(application, "cfrel"))
-				application.cfrel = {parseCache={}};
+			if (NOT StructKeyExists(application, "cfrel") OR NOT StructKeyExists(application.cfrel, "parseCache"))
+				application.cfrel.parseCache = {};
 				
 			// if key exists, just return cached parse tree
 			if (StructKeyExists(application.cfrel.parseCache, loc.cacheKey))
@@ -21,19 +34,10 @@
 		
 		// break incoming string into tokens
 		tokenize(arguments.str);
-		
-		// parse string depending on clause type
-		switch (arguments.clause) {
-			case "SELECT":
-			case "GROUP BY":
-				loc.tree = exprs();
-				break;
-			case "ORDER BY":
-				loc.tree = orderExprs();
-				break;
-			default:
-				loc.tree = expr();
-		}
+
+		// match against selected grammar rule
+		var method = variables[loc.rule];
+		loc.tree = method();
 		
 		// if tokens are still left, throw an error
 		if (tokenIndex LTE tokenLen)
