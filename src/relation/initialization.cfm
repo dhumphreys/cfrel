@@ -43,7 +43,6 @@
 		variables.cache = {};
 		variables.currentRow = 0;
 		variables.executed = false;
-		variables.mapped = false;
 		variables.qoq = arguments.qoq;
 		variables.paged = false;
 		variables.paginationData = false;
@@ -53,14 +52,6 @@
 		***************/
 
 		variables.map = false;
-		
-		variables.mappings = {};
-		variables.mappings.columns = {};
-		variables.mappings.includes = javaHash();
-		variables.mappings.tableAlias = {};
-		variables.mappings.tableColumns = {};
-		variables.mappings.queue = [];
-		variables.mappings.wildcards = {};
 		
 		/***************
 		* PARSING VARS *
