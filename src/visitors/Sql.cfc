@@ -9,21 +9,21 @@
 	
 	<cffunction name="traverseToString" returntype="string" access="public" hint="Return tree traversal as SQL string">
 		<cfargument name="obj" type="any" required="true" />
-		<cfreturn sqlArrayToString(traverseToArray(argumentCollection=arguments)) />
+		<cfreturn sqlArrayToString(visit(argumentCollection=arguments)) />
 	</cffunction>
 	
-	<cffunction name="traverseToArray" returntype="array" access="public" hint="Return tree traversal as flat array of nodes">
+	<cffunction name="visit" returntype="array" access="public" hint="Visit a particular object">
 		<cfargument name="obj" type="any" required="true" />
-		<cfreturn flattenArray(visit(argumentCollection=arguments)) />
-	</cffunction>
-	
-	<cffunction name="visit" returntype="any" access="public" hint="Visit a particular object">
-		<cfargument name="obj" type="any" required="true" />
+		<cfargument name="rtn" type="any" required="false" />
 		<cfargument name="map" type="struct" required="false" />
 		<cfargument name="state" type="struct" required="false" />
 		<cfscript>
 			var loc = {};
 			var method = 0;
+
+			// set up an empty accumulator as a Java ArrayList object
+			if (NOT StructKeyExists(arguments, "rtn"))
+				arguments.rtn = javaArray();
 
 			// use a blank mapping table if one is not passed in
 			if (NOT StructKeyExists(arguments, "map"))
@@ -50,6 +50,33 @@
 			return method(argumentCollection=arguments);
 		</cfscript>
 	</cffunction>
+
+	<cffunction name="visit_list" returntype="array" access="public" hint="Visit an array of objects, separating them with a delimeter">
+		<cfargument name="obj" type="any" required="true" />
+		<cfargument name="delim" type="string" default="," />
+		<cfscript>
+			var loc = {};
+
+			// if object passed in was not an array, just generate sql for the object
+			if (NOT IsArray(arguments.obj))
+				return visit(obj=arguments.obj, rtn=arguments.rtn, map=arguments.map, state=arguments.state);
+
+			// count the items in the array
+			loc.iEnd = ArrayLen(arguments.obj);
+
+			// generate the first item by itself
+			if (loc.iEnd GT 0)
+				arguments.rtn = visit(obj=arguments.obj[1], rtn=arguments.rtn, map=arguments.map, state=arguments.state);
+
+			// separate further items with the delimeter as they are generated
+			for (loc.i = 2; loc.i LTE loc.iEnd; loc.i++) {
+				ArrayAppend(arguments.rtn, arguments.delim);
+				arguments.rtn = visit(obj=arguments.obj[loc.i], rtn=arguments.rtn, map=arguments.map, state=arguments.state);
+			}
+
+			return arguments.rtn;
+		</cfscript>
+	</cffunction>
 	
 	<!-------------------
 	--- Main Visitors ---
@@ -67,27 +94,25 @@
 			// set some control variables to reduce load
 			loc.select = false;
 			
-			// set up fragments array
-			loc.fragments = [];
-			
 			// turn aliasing on in select clause
 			loc.aliasOff = arguments.state.aliasOff;
 			arguments.state.aliasOff = false;
 			
 			// generate SELECT clause
-			ArrayAppend(loc.fragments, "SELECT");
+			ArrayAppend(arguments.rtn, "SELECT");
 			if (ArrayLen(obj.sql.selectFlags) GT 0)
-				ArrayAppend(loc.fragments, visit(obj=obj.sql.selectFlags, argumentCollection=arguments));
+				arguments.rtn = visit(obj=obj.sql.selectFlags, argumentCollection=arguments);
 			if (ArrayLen(obj.sql.select) EQ 0) {
-				ArrayAppend(loc.fragments, visit(obj=sqlWildcard(), argumentCollection=arguments));
+				arguments.rtn = visit(obj=sqlWildcard(), argumentCollection=arguments);
 			} else {
-				ArrayAppend(loc.fragments, separateArray(visit(obj=obj.sql.select, argumentCollection=arguments)));
+				arguments.rtn = visit_list(obj=obj.sql.select, argumentCollection=arguments);
 				loc.select = true;
 			}
 			
 			// generate FROM arguments
 			if (ArrayLen(obj.sql.froms) GT 0) {
-				ArrayAppend(loc.fragments, ["FROM", separateArray(visit(obj=obj.sql.froms, argumentCollection=arguments))]);
+				ArrayAppend(arguments.rtn, "FROM");
+				arguments.rtn = visit_list(obj=obj.sql.froms, argumentCollection=arguments);
 					
 			// error if neither SELECT or FROM was specified
 			} else if (loc.select EQ false) {
@@ -99,57 +124,64 @@
  			
 			// append joins
 			if (ArrayLen(obj.sql.joins) GT 0)
-				ArrayAppend(loc.fragments, visit(obj=obj.sql.joins, argumentCollection=arguments));
+				arguments.rtn = visit(obj=obj.sql.joins, argumentCollection=arguments);
 			
 			// append where clause
-			if (ArrayLen(obj.sql.wheres))
-				ArrayAppend(loc.fragments, ["WHERE", separateArray(visit(obj=obj.sql.wheres, argumentCollection=arguments), "AND")]);
+			if (ArrayLen(obj.sql.wheres)) {
+				ArrayAppend(arguments.rtn, "WHERE");
+				arguments.rtn = visit_list(obj=obj.sql.wheres, delim="AND", argumentCollection=arguments);
+			}
 
 			// append group by clause
-			if (ArrayLen(obj.sql.groups))
-				ArrayAppend(loc.fragments, ["GROUP BY", separateArray(visit(obj=obj.sql.groups, argumentCollection=arguments))]);
+			if (ArrayLen(obj.sql.groups)) {
+				ArrayAppend(arguments.rtn, "GROUP BY");
+				arguments.rtn = visit_list(obj=obj.sql.groups, argumentCollection=arguments);
+			}
 
 			// append having clause
-			if (ArrayLen(obj.sql.havings))
-				ArrayAppend(loc.fragments, ["HAVING", separateArray(visit(obj=obj.sql.havings, argumentCollection=arguments), "AND")]);
+			if (ArrayLen(obj.sql.havings)) {
+				ArrayAppend(arguments.rtn, "HAVING");
+				arguments.rtn = visit_list(obj=obj.sql.havings, delim="AND", argumentCollection=arguments);
+			}
 
 			// append order clause
-			if (ArrayLen(obj.sql.orders))
-				ArrayAppend(loc.fragments, ["ORDER BY", separateArray(visit(obj=obj.sql.orders, argumentCollection=arguments))]);
+			if (ArrayLen(obj.sql.orders)) {
+				ArrayAppend(arguments.rtn, "ORDER BY");
+				arguments.rtn = visit_list(obj=obj.sql.orders, argumentCollection=arguments);
+			}
 			
 			// turn aliasing back on
 			arguments.state.aliasOff = loc.aliasOff;
 			
 			// generate LIMIT clause
 			if (StructKeyExists(obj.sql, "limit"))
-				ArrayAppend(loc.fragments, "LIMIT #obj.sql.limit#");
+				ArrayAppend(arguments.rtn, "LIMIT #obj.sql.limit#");
 				
 			// generate OFFSET clause
 			if (StructKeyExists(obj.sql, "offset") AND obj.sql.offset GT 0)
-				ArrayAppend(loc.fragments, "OFFSET #obj.sql.offset#");
+				ArrayAppend(arguments.rtn, "OFFSET #obj.sql.offset#");
 				
 			// return sql array
-			return loc.fragments;
+			return arguments.rtn;
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="visit_simple" returntype="any" access="private" hint="Render a simple value by just returning it">
+	<cffunction name="visit_simple" returntype="array" access="private" hint="Render a simple value by just returning it">
 		<cfargument name="obj" type="any" required="true" />
-		<cfreturn arguments.obj />
+		<cfscript>
+			ArrayAppend(arguments.rtn, arguments.obj);
+			return arguments.rtn;
+		</cfscript>
 	</cffunction>
 	
 	<cffunction name="visit_array" returntype="array" access="private" hint="Call visit on each element of array">
 		<cfargument name="obj" type="array" required="true" />
 		<cfscript>
 			var loc = {};
-			loc.rtn = [];
 			loc.iEnd = ArrayLen(arguments.obj);
-			
-			// loop over each item and call visit
 			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
-				ArrayAppend(loc.rtn, visit(obj=arguments.obj[loc.i], argumentCollection=arguments));
-				
-			return loc.rtn;
+				arguments.rtn = visit(obj=arguments.obj[loc.i], argumentCollection=arguments);
+			return arguments.rtn;
 		</cfscript>
 	</cffunction>
 	
@@ -164,49 +196,65 @@
 			
 			// only use alias
 			if (arguments.state.aliasOnly) {
-				loc.sql = escape(obj.alias);
+				ArrayAppend(arguments.rtn, escape(obj.alias));
 				
 			// don't use alias, only subject
 			} else if (arguments.state.aliasOff) {
-				loc.sql = visit(obj=obj.subject, argumentCollection=arguments);
+				arguments.rtn = visit(obj=obj.subject, argumentCollection=arguments);
 				
 			// use both, but ignore any aliases inside of subject
 			} else {
 				
 				loc.aliasOff = arguments.state.aliasOff;
 				arguments.state.aliasOff = true;
-				loc.sql = [visit(obj=obj.subject, argumentCollection=arguments), "AS #escape(obj.alias)#"];
+				arguments.rtn = visit(obj=obj.subject, argumentCollection=arguments);
+				ArrayAppend(arguments.rtn, "AS #escape(obj.alias)#");
 				arguments.state.aliasOff = loc.aliasOff;
 			}
 			
-			return loc.sql;
+			return arguments.rtn;
 		</cfscript>
 	</cffunction>
 	
 	<cffunction name="visit_nodes_between" returntype="array" access="private">
 		<cfargument name="obj" type="any" required="true" />
-		<cfreturn [visit(obj=obj.subject, argumentCollection=arguments), "BETWEEN", visit(obj=obj.start, argumentCollection=arguments), "AND", visit(obj=obj.end, argumentCollection=arguments)] />
+		<cfscript>
+			arguments.rtn = visit(obj=obj.subject, argumentCollection=arguments);
+			ArrayAppend(arguments.rtn, "BETWEEN");
+			arguments.rtn = visit(obj=obj.start, argumentCollection=arguments);
+			ArrayAppend(arguments.rtn, "AND");
+			arguments.rtn = visit(obj=obj.end, argumentCollection=arguments);
+			return arguments.rtn;
+		</cfscript>
 	</cffunction>
 	
 	<cffunction name="visit_nodes_binaryOp" returntype="array" access="private">
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
-			var loc = {};
+			// if we are doing an OR, then surround the expression in parenthesis to make sure order of operations stands
+			if (obj.op EQ "OR")
+				ArrayPrepend(arguments.rtn, "(");
 
-			// if we are doing an IN or NOT IN, then surround the right hand side in parenthesis
-			loc.right = visit(obj=obj.right, argumentCollection=arguments);
-			if (obj.op CONTAINS "IN")
-				loc.right = ['(', separateArray(loc.right), ')'];
+			// generate the left hand side and operator
+			arguments.rtn = visit(obj=obj.left, argumentCollection=arguments);
+			ArrayAppend(arguments.rtn, REReplace(obj.op, "_", " ", "ALL"));
 
-			// generate the SQL for the operator
-			loc.returnValue = [visit(obj=obj.left, argumentCollection=arguments), REReplace(obj.op, "_", " ", "ALL"), loc.right];
+			// if the operator is an IN, treat the right hand side like a list
+			if (obj.op CONTAINS "IN") {
+				ArrayAppend(arguments.rtn, "(");
+				arguments.rtn = visit_list(obj=obj.right, argumentCollection=arguments);
+				ArrayAppend(arguments.rtn, ")");
+
+			// otherwise, just generate the right side
+			} else {
+				arguments.rtn = visit(obj=obj.right, argumentCollection=arguments);
+			}
 
 			// if we are doing an OR, then surround the expression in parenthesis to make sure order of operations stands
-			if (obj.op EQ "OR") {
-				ArrayPrepend(loc.returnValue, "(");
-				ArrayAppend(loc.returnValue, ")");
-			}
-			return loc.returnValue;
+			if (obj.op EQ "OR")
+				ArrayAppend(arguments.rtn, ")");
+
+			return arguments.rtn;
 		</cfscript>
 	</cffunction>
 	
@@ -214,29 +262,55 @@
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
 			var loc = {};
-			loc.output = ["CASE"];
+
+			// begin the CASE statement
+			ArrayAppend(arguments.rtn, "CASE");
+
+			// generate subject of CASE statement if passed
 			if (NOT IsSimpleValue(obj.subject) OR obj.subject NEQ "")
-				ArrayAppend(loc.output, visit(obj=obj.subject, argumentCollection=arguments));
+				arguments.rtn = visit(obj=obj.subject, argumentCollection=arguments);
+
+			// generate each WHEN statement
 			if (ArrayLen(obj.cases))
-				ArrayAppend(loc.output, visit(obj=obj.cases, argumentCollection=arguments));
-			if (NOT IsSimpleValue(obj.els) OR obj.els NEQ "")
-				ArrayAppend(loc.output, ["ELSE", visit(obj=obj.els, argumentCollection=arguments)]);
-			ArrayAppend(loc.output, "END");
-			return loc.output;
+				arguments.rtn = visit(obj=obj.cases, argumentCollection=arguments);
+
+			// generate the ELSE statement if passed
+			if (NOT IsSimpleValue(obj.els) OR obj.els NEQ "") {
+				ArrayAppend(arguments.rtn, "ELSE");
+				arguments.rtn = visit(obj=obj.els, argumentCollection=arguments);
+			}
+
+			// close the CASE statement
+			ArrayAppend(arguments.rtn, "END");
+
+			return arguments.rtn;
 		</cfscript>
 	</cffunction>
 	
 	<cffunction name="visit_nodes_caseCondition" returntype="array" access="private">
 		<cfargument name="obj" type="any" required="true" />
-		<cfreturn ["WHEN", visit(obj=obj.condition, argumentCollection=arguments), "THEN", visit(obj=obj.subject, argumentCollection=arguments)] />
+		<cfscript>
+			ArrayAppend(arguments.rtn, "WHEN");
+			arguments.rtn = visit(obj=obj.condition, argumentCollection=arguments);
+			ArrayAppend(arguments.rtn, "THEN");
+			arguments.rtn = visit(obj=obj.subject, argumentCollection=arguments);
+			return arguments.rtn;
+		</cfscript>
 	</cffunction>
 	
 	<cffunction name="visit_nodes_cast" returntype="array" access="private">
 		<cfargument name="obj" type="any" required="true" />
-		<cfreturn ["CAST(", visit(obj=obj.subject, argumentCollection=arguments), "AS #visit(obj=obj.type, argumentCollection=arguments)#)"] />
+		<cfscript>
+			ArrayAppend(arguments.rtn, "CAST(");
+			arguments.rtn = visit(obj=obj.subject, argumentCollection=arguments);
+			ArrayAppend(arguments.rtn, "AS");
+			arguments.rtn = visit(obj=obj.type, argumentCollection=arguments);
+			ArrayAppend(arguments.rtn, ")");
+			return arguments.rtn;
+		</cfscript>
 	</cffunction>
 	
-	<cffunction name="visit_nodes_column" returntype="string" access="private">
+	<cffunction name="visit_nodes_column" returntype="array" access="private">
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
 			var loc = {};
@@ -258,14 +332,17 @@
 
 			// if we are in alias-only mode, just return the alias by itself
 			if (arguments.state.aliasOnly)
-				return escape(loc.alias);
+				ArrayAppend(arguments.rtn, escape(loc.alias));
 
 			// if aliases are disabled, or the column and alias match, and we aren't using a calculated property, just return the column
-			if (arguments.state.aliasOff OR (NOT loc.calculated AND ListLast(loc.column, ".") EQ loc.alias))
-				return escape(loc.column);
+			else if (arguments.state.aliasOff OR (NOT loc.calculated AND ListLast(loc.column, ".") EQ loc.alias))
+				ArrayAppend(arguments.rtn, escape(loc.column));
 			
 			// return the column with its alias
-			return escape(loc.column) & " AS " & escape(loc.alias);
+			else
+				ArrayAppend(arguments.rtn, escape(loc.column) & " AS " & escape(loc.alias));
+
+			return arguments.rtn;
 		</cfscript>
 	</cffunction>
 
@@ -283,83 +360,133 @@
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
 			var loc = {};
-			loc.join = ["JOIN"];
+
+			// set the correct type of JOIN
 			switch(obj.type) {
-				case "outer": loc.join[1] = "LEFT JOIN"; break;
-				case "cross": loc.join[1] = "CROSS JOIN"; break;
-				case "natural": loc.join[1] = "NATURAL JOIN"; break;
+				case "outer": ArrayAppend(arguments.rtn, "LEFT JOIN"); break;
+				case "cross": ArrayAppend(arguments.rtn, "CROSS JOIN"); break;
+				case "natural": ArrayAppend(arguments.rtn, "NATURAL JOIN"); break;
+				default: ArrayAppend(arguments.rtn, "JOIN");
 			}
-			ArrayAppend(loc.join, visit(obj=obj.table, argumentCollection=arguments));
-			if (IsStruct(obj.condition) OR obj.condition NEQ false)
-				ArrayAppend(loc.join, ["ON", visit(obj=obj.condition, argumentCollection=arguments)]);
-			return loc.join;
+
+			// generate the table part of the JOIN
+			arguments.rtn = visit(obj=obj.table, argumentCollection=arguments);
+
+			// generate the ON condition if present
+			if (IsStruct(obj.condition) OR obj.condition NEQ false) {
+				ArrayAppend(arguments.rtn, "ON");
+				arguments.rtn = visit(obj=obj.condition, argumentCollection=arguments);
+			}
+
+			return arguments.rtn;
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="visit_nodes_literal" returntype="string" access="private" hint="Render a literal SQL string">
+	<cffunction name="visit_nodes_literal" returntype="array" access="private" hint="Render a literal SQL string">
 		<cfargument name="obj" type="any" required="true" />
-		<cfreturn arguments.obj.subject />
+		<cfscript>
+			ArrayAppend(arguments.rtn, arguments.obj.subject);
+			return arguments.rtn;
+		</cfscript>
 	</cffunction>
 	
 	<cffunction name="visit_nodes_function" returntype="array" access="private">
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
 			var loc = {};
-			loc.fn = [];
+
+			// turn off aliases for function arguments
 			loc.aliasOff = arguments.state.aliasOff;
 			arguments.state.aliasOff = true;
-			if (NOT IsSimpleValue(obj.scope) OR obj.scope NEQ "")
-				ArrayAppend(loc.fn, [visit(obj=obj.scope, argumentCollection=arguments), "."]);
-			ArrayAppend(loc.fn, "#obj.name#(");
+
+			// prepend scope for function if present
+			if (NOT IsSimpleValue(obj.scope) OR obj.scope NEQ "") {
+				arguments.rtn = visit(obj=obj.scope, argumentCollection=arguments);
+				ArrayAppend(arguments.rtn, ".");
+			}
+
+			// generate the function name
+			ArrayAppend(arguments.rtn, "#obj.name#(");
+
+			// append the DISTINCT keyword if present
 			if (obj.distinct)
-				ArrayAppend(loc.fn, "DISTINCT");
-			ArrayAppend(loc.fn, separateArray(visit(obj=obj.args, argumentCollection=arguments)));
-			ArrayAppend(loc.fn, ")");
+				ArrayAppend(arguments.rtn, "DISTINCT");
+
+			// append the function arguments and close the call
+			arguments.rtn = visit_list(obj=obj.args, argumentCollection=arguments);
+			ArrayAppend(arguments.rtn, ")");
+
+			// switch aliasing back on
 			arguments.state.aliasOff = loc.aliasOff;
-			return loc.fn;
+
+			return arguments.rtn;
 		</cfscript>
 	</cffunction>
 	
 	<cffunction name="visit_nodes_order" returntype="array" access="private">
 		<cfargument name="obj" type="any" required="true" />
-		<cfreturn [visit(obj=obj.subject, argumentCollection=arguments), iif(obj.descending, DE("DESC"), DE("ASC"))] />
+		<cfscript>
+			arguments.rtn = visit(obj=obj.subject, argumentCollection=arguments);
+			if (obj.descending)
+				ArrayAppend(arguments.rtn, "DESC");
+			else
+				ArrayAppend(arguments.rtn, "ASC");
+			return arguments.rtn;
+		</cfscript>
 	</cffunction>
 	
-	<cffunction name="visit_nodes_param" returntype="any" access="private">
+	<cffunction name="visit_nodes_param" returntype="array" access="private">
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
 			var loc = {};
 
+			// duplicate param node so as not to corrupt a cached sql tree
+			loc.obj = Duplicate(arguments.obj);
+
 			// if no type is present on the parameter, attempt to find out what type it is
-			if (StructKeyExists(obj, "column") AND NOT StructKeyExists(obj, "cfsqltype")) {
-				loc.key = obj.column;
-				StructDelete(obj, "column");
+			if (StructKeyExists(loc.obj, "column")) {
+				loc.key = loc.obj.column;
+				StructDelete(loc.obj, "column");
 
 				// if possible, map the parameter to the column it references
-				if (StructKeyExists(arguments.map.columns, loc.key) AND StructKeyExists(arguments.map.columns[loc.key], "cfsqltype"))
-					obj.cfsqltype = arguments.map.columns[loc.key].cfsqltype;
+				if (NOT StructKeyExists(loc.obj, "cfsqltype") AND StructKeyExists(arguments.map.columns, loc.key) AND StructKeyExists(arguments.map.columns[loc.key], "cfsqltype"))
+					loc.obj.cfsqltype = arguments.map.columns[loc.key].cfsqltype;
 			}
+
+			// append parameter object as it is
+			ArrayAppend(arguments.rtn, loc.obj);
 			
-			return arguments.obj;
+			return arguments.rtn;
 		</cfscript>
 	</cffunction>
 	
 	<cffunction name="visit_nodes_paren" returntype="array" access="private">
 		<cfargument name="obj" type="any" required="true" />
-		<cfreturn ["(", visit(obj=arguments.obj.subject, argumentCollection=arguments), ")"] />
+		<cfscript>
+			ArrayAppend(arguments.rtn, "(");
+			arguments.rtn = visit(obj=arguments.obj.subject, argumentCollection=arguments);
+			ArrayAppend(arguments.rtn, ")");
+			return arguments.rtn;
+		</cfscript>
 	</cffunction>
 	
 	<cffunction name="visit_nodes_subquery" returntype="array" access="private" hint="Render a subquery with an alias">
 		<cfargument name="obj" type="any" required="true" />
-		<cfreturn ["(", visit(obj=arguments.obj.subject, argumentCollection=arguments), ")", visit(obj=sqlTable(table="subquery", alias=obj.alias), argumentCollection=arguments)] />
+		<cfscript>
+			ArrayAppend(arguments.rtn, "(");
+			arguments.rtn = visit(obj=arguments.obj.subject, argumentCollection=arguments);
+			ArrayAppend(arguments.rtn, ")");
+			arguments.rtn = visit(obj=sqlTable(table="subquery", alias=obj.alias), argumentCollection=arguments);
+			return arguments.rtn;
+		</cfscript>
 	</cffunction>
 	
-	<cffunction name="visit_nodes_query" returntype="string" access="private" hint="Render a query as a QOQ reference">
+	<cffunction name="visit_nodes_query" returntype="array" access="private" hint="Render a query as a QOQ reference">
 		<cfargument name="obj" type="any" required="true" />
 		<cfreturn visit(obj=sqlTable(table="query", alias=obj.alias), argumentCollection=arguments) />
 	</cffunction>
 	
-	<cffunction name="visit_nodes_table" returntype="string" access="private">
+	<cffunction name="visit_nodes_table" returntype="array" access="private">
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
 			var loc = {};
@@ -377,19 +504,22 @@
 
 			// just return the table if it matches the alias
 			if (ListLast(loc.table, ".") EQ loc.alias)
-				return escape(loc.table);
+				ArrayAppend(arguments.rtn, escape(loc.table));
 
 			// otherwise, return the table with its alias
-			return escape(loc.table) & " " & escape(loc.alias);
+			else
+				ArrayAppend(arguments.rtn, escape(loc.table) & " " & escape(loc.alias));
+
+			return arguments.rtn;
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="visit_nodes_model" returntype="string" access="private">
+	<cffunction name="visit_nodes_model" returntype="array" access="private">
 		<cfargument name="obj" type="any" required="true" />
 		<cfreturn visit(obj=sqlTable(table=arguments.obj.model.$classData().modelName, alias=obj.alias), argumentCollection=arguments) />
 	</cffunction>
 	
-	<cffunction name="visit_nodes_type" returntype="string" access="private">
+	<cffunction name="visit_nodes_type" returntype="array" access="private">
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
 			var loc = {};
@@ -400,19 +530,23 @@
 					loc.type &= ",#obj.val2#";
 				loc.type &= ")";
 			}
-			return loc.type;
+			ArrayAppend(arguments.rtn, loc.type);
+			return arguments.rtn;
 		</cfscript>
 	</cffunction>
 	
 	<cffunction name="visit_nodes_unaryOp" returntype="array" access="private">
 		<cfargument name="obj" type="any" required="true" />
-		<cfreturn [obj.op, visit(obj=obj.subject, argumentCollection=arguments)] />
+		<cfscript>
+			ArrayAppend(arguments.rtn, obj.op);
+			arguments.rtn = visit(obj=obj.subject, argumentCollection=arguments);
+			return arguments.rtn;
+		</cfscript>
 	</cffunction>
 	
-	<cffunction name="visit_nodes_wildcard" returntype="string" access="private">
+	<cffunction name="visit_nodes_wildcard" returntype="array" access="private">
 		<cfargument name="obj" type="any" required="true" />
 		<cfscript>
-
 			var loc = {};
 			loc.columns = ArrayNew(1);
 
@@ -432,16 +566,18 @@
 			
 			// if we found columns to map to, generate a list of them while skipping mappings
 			if (ArrayLen(loc.columns)) {
-				return ArrayToList(visit(obj=loc.columns, map=emptyMap(), argumentCollection=arguments), ", ");
+				arguments.rtn = visit_list(obj=loc.columns, map=emptyMap(), argumentCollection=arguments);
 
 			// if we only have a subject, return the subject with a star
 			} else if (obj.subject NEQ "") {
-				return escape(visit(obj=obj.subject, argumentCollection=arguments)) & ".*";
+				ArrayAppend(arguments.rtn, escape(obj.subject) & ".*");
 
 			// if we have nothing else, just return star
 			} else {
-				return "*";
+				ArrayAppend(arguments.rtn, "*");
 			}
+
+			return arguments.rtn;
 		</cfscript>
 	</cffunction>
 	

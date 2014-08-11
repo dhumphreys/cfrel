@@ -75,6 +75,10 @@
 	<cfreturn CreateObject("java", "java.util.LinkedHashMap").init() />
 </cffunction>
 
+<cffunction name="javaArray" returntype="any" access="private" hint="Return a Java array list object">
+	<cfreturn CreateObject("java", "java.util.ArrayList").init() />
+</cffunction>
+
 <cffunction name="uniqueScopeKey" returntype="string" access="private" hint="Create a unique, meaningful key for a certain scope">
 	<cfargument name="key" type="string" required="true" />
 	<cfargument name="prefix" type="string" default="" />
@@ -164,24 +168,6 @@
 			loc.prev = loc.rtn;
 		}
 		return loc.sql;
-	</cfscript>
-</cffunction>
-
-<cffunction name="flattenArray" returntype="array" access="private" hint="Turn deep array into a flat one">
-	<cfargument name="array" type="any" required="true" />
-	<cfargument name="accumulator" type="array" default="#ArrayNew(1)#" />
-	<cfscript>
-		var loc = {};
-		if (NOT IsArray(arguments.array))
-			return [arguments.array];
-		loc.iEnd = ArrayLen(arguments.array);
-		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
-			if (IsArray(arguments.array[loc.i]))
-				arguments.accumulator = flattenArray(arguments.array[loc.i], arguments.accumulator);
-			else
-				ArrayAppend(arguments.accumulator, arguments.array[loc.i]);
-		}
-		return arguments.accumulator;
 	</cfscript>
 </cffunction>
 

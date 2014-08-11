@@ -4,7 +4,7 @@
 </cffunction>
 
 <cffunction name="toSqlArray" returntype="array" access="public" hint="Convert relational data into flat SQL array">
-	<cfreturn flattenArray(visitor().traverseToArray(obj=this, map=getMap())) />
+	<cfreturn visitor().visit(obj=this, map=getMap()) />
 </cffunction>
 
 <cffunction name="getParameters" returntype="array" access="public" hint="Return array of all parameters used in query and subqueries">
