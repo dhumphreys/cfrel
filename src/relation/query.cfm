@@ -75,11 +75,11 @@
 			
 			// wrap models in model nodes
 			case "model":
-				arguments.target = sqlModel(arguments.target);
+				arguments.target = sqlModel(arguments.target.$classData().modelName);
 			case "cfrel.nodes.Model":
 			
 				// set model for mapper behavior
-				if (NOT IsObject(this.model))
+				if (this.model EQ false)
 					this.model = arguments.target.model;
 				break;
 			
@@ -134,7 +134,7 @@
 				
 			// add a model to a new table object
 			case "model":
-				arguments.target = sqlModel(arguments.target);
+				arguments.target = sqlModel(arguments.target.$classData().modelName);
 			case "cfrel.nodes.model":
 				break;
 				

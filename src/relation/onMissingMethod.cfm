@@ -3,10 +3,10 @@
 	<cfargument name="missingMethodArguments" type="struct" required="true" />
 	<cfscript>
 		var loc = {};
-		if (IsObject(this.model)) {
+		if (this.model NEQ false) {
 			
 			// look for possible named scopes
-			loc.scopes = this.mapper().scopes(this.model);
+			loc.scopes = mapper().scopes(this.model);
 			if (StructKeyExists(loc.scopes, arguments.missingMethodName)) {
 				var $scope = loc.scopes[arguments.missingMethodName];
 				if (IsCustomFunction($scope))

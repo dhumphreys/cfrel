@@ -58,7 +58,7 @@
 		_buildStructCache(argumentCollection=arguments);
 		loc.cacheName = _getCacheName(name="structs", argumentCollection=arguments);
 		if (ArrayLen(variables.cache[loc.cacheName]) LT arguments.index OR NOT ArrayIsDefined(variables.cache[loc.cacheName], arguments.index)) {
-			loc.obj = buildBasicStruct(query=this.query(), model=this.model, argumentCollection=arguments);
+			loc.obj = buildBasicStruct(query=this.query(), argumentCollection=arguments);
 			ArraySet(variables.cache[loc.cacheName], arguments.index, arguments.index, loc.obj);
 		}
 		return variables.cache[loc.cacheName][arguments.index];
@@ -90,7 +90,7 @@
 		_buildObjectCache(argumentCollection=arguments);
 		loc.cacheName = _getCacheName(name="objects", argumentCollection=arguments);
 		if (ArrayLen(variables.cache[loc.cacheName]) LT arguments.index OR NOT ArrayIsDefined(variables.cache[loc.cacheName], arguments.index)) {
-			loc.obj = buildBasicObject(query=this.query(), model=this.model, argumentCollection=arguments);
+			loc.obj = buildBasicObject(query=this.query(), argumentCollection=arguments);
 			ArraySet(variables.cache[loc.cacheName], arguments.index, arguments.index, loc.obj);
 		}
 		return variables.cache[loc.cacheName][arguments.index];

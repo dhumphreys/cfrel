@@ -34,8 +34,8 @@
 	<cfargument name="deep" type="boolean" default="false" />
 	<cfargument name="flat" type="boolean" default="#NOT arguments.deep#" />
 	<cfscript>
-		if (IsObject(this.model) AND NOT arguments.flat)
-			return this.model.$serializeQueryToStructs(arguments.query, includeString(), false, arguments.deep);
+		if (this.model NEQ false AND NOT arguments.flat)
+			return mapper().model(this.model).$serializeQueryToStructs(arguments.query, includeString(), false, arguments.deep);
 		return ArrayNew(1);
 	</cfscript>
 </cffunction>
@@ -46,8 +46,8 @@
 	<cfargument name="flat" type="boolean" default="false" />
 	<cfscript>
 		var loc = {};
-		if (IsObject(this.model)) {
-			loc.array = this.model.$serializeQueryToObjects(arguments.query, includeString(), false, arguments.deep AND NOT arguments.flat);
+		if (this.model NEQ false) {
+			loc.array = mapper().model(this.model).$serializeQueryToObjects(arguments.query, includeString(), false, arguments.deep AND NOT arguments.flat);
 			if (arguments.flat) {
 				loc.iEnd = ArrayLen(loc.array);
 				for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)

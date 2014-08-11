@@ -90,7 +90,7 @@
 </cffunction>
 
 <cffunction name="sqlModel" returntype="any" access="private">
-	<cfargument name="model" type="any" required="true" />
+	<cfargument name="model" type="string" required="true" />
 	<cfargument name="alias" type="string" default="" />
 	<cfreturn constructObject("cfrel.nodes.Model", arguments)>
 </cffunction>

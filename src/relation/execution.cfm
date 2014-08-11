@@ -124,7 +124,7 @@
 				$executeQuery(argumentCollection=loc.queryArgs);
 				
 				// run after find callbacks on query
-				if (arguments.callbacks AND IsObject(this.model))
+				if (arguments.callbacks AND this.model NEQ false)
 					mapper().afterFind(this.model, variables.cache.query);
 				
 				// set up looping counter

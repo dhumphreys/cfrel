@@ -1,4 +1,5 @@
 <cfcomponent extends="Mapper" displayName="CFWheels" output="false">
+	<cfinclude template="#application.wheels.rootPath#/wheels/global/functions.cfm" />
 	
 	<cffunction name="mapTable" returntype="struct" access="public" hint="Append mapping information for a table node (unless it is a model)">
 		<cfargument name="table" type="any" required="true" />
@@ -18,7 +19,7 @@
 			var loc = StructNew();
 
 			// look up model data from cfwheels
-			loc.model = arguments.table.model.$classData();
+			loc.model = model(arguments.table.model).$classData();
 
 			// look up table information and associate it with an alias
 			loc.table = StructNew();
@@ -99,8 +100,8 @@
 			// TODO: use last `from` in list and operate on from[last].joins
 			loc.base = StructNew();
 			loc.base.model = arguments.relation.sql.froms[1].model;
-			loc.base.associations = loc.base.model.$classData().associations;
-			loc.base.alias = arguments.map.aliases[loc.base.model.$classData().modelName][1];
+			loc.base.associations = model(loc.base.model).$classData().associations;
+			loc.base.alias = arguments.map.aliases[loc.base.model][1];
 			loc.base.mapping = arguments.map.tables[loc.base.alias];
 
 			// loop over every join in the tree
@@ -121,14 +122,14 @@
 				if (NOT StructKeyExists(loc.parent.associations, loc.currKey))
 					throwException("Association `#loc.currKey#` not found in model `#loc.parent.mapping.table#`.");
 				loc.assoc = loc.parent.associations[loc.currKey];
-				loc.table = sqlModel(model=loc.parent.model.model(loc.assoc.modelName));
+				loc.table = sqlModel(model=loc.assoc.modelName);
 
 				// map the table we want to join and append to current mappings
 				arguments.map = mapTable(loc.table, arguments.map);
 
 				// look up data for the association we want to join to
 				loc.curr = StructNew();
-				loc.curr.model = loc.table.model;
+				loc.curr.model = model(loc.table.model);
 				loc.curr.associations = loc.curr.model.$classData().associations;
 				loc.curr.alias = arrayLast(arguments.map.aliases[loc.curr.model.$classData().modelName]);
 				loc.curr.mapping = arguments.map.tables[loc.curr.alias];
@@ -217,8 +218,13 @@
 	</cffunction>
 	
 	<cffunction name="scopes" returntype="any" access="public">
-		<cfargument name="model" type="any" required="true" />
-		<cfreturn arguments.model.scopes() />
+		<cfargument name="modelName" type="any" required="true" />
+		<cfreturn model(arguments.modelName).scopes() />
+	</cffunction>
+	
+	<cffunction name="primaryKey" returntype="string" access="public" hint="Get primary key list from model">
+		<cfargument name="modelName" type="any" required="true" />
+		<cfreturn model(arguments.modelName).primaryKey() />
 	</cffunction>
 	
 	<cffunction name="beforeFind" returntype="void" access="public" hint="Do before-find relation logic">
@@ -228,19 +234,19 @@
 			
 			// if recordset is paged, set up ordering like cfwheels
 			// TODO: we are not making sure that all primary key fields are in the order clause here
-			if (arguments.relation.isPaged() AND IsObject(arguments.relation.model) AND ArrayLen(arguments.relation.sql.orders) EQ 0) {
+			if (arguments.relation.isPaged() AND arguments.relation.model NEQ false AND ArrayLen(arguments.relation.sql.orders) EQ 0) {
 				
 				// add the primary keys to the order list
-				arguments.relation.order(arguments.relation.model.primaryKey());
+				arguments.relation.order(primaryKey(arguments.relation.model));
 			}
 		</cfscript>
 	</cffunction>
 	
 	<cffunction name="afterFind" returntype="query" access="public" hint="Do after-find query processing">
-		<cfargument name="model" type="any" required="true" />
+		<cfargument name="modelName" type="any" required="true" />
 		<cfargument name="query" type="query" required="true" />
 		<cfscript>
-			arguments.model.$callback("afterFind", true, arguments.query);
+			model(arguments.modelName).$callback("afterFind", true, arguments.query);
 			return arguments.query;
 		</cfscript>
 	</cffunction>

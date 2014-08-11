@@ -1,10 +1,9 @@
 <cffunction name="mapper" returntype="any" access="public" hint="Load a mapper for the desired element">
-	<cfargument name="target" type="any" default="#this.model#" />
 	<cfscript>
 		var loc = {};
 		
 		// determine type of mapper to use
-		if (typeOf(arguments.target) EQ "model")
+		if (this.model NEQ false)
 			loc.type = "CFWheels";
 		else
 			loc.type = "Mapper";

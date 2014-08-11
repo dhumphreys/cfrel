@@ -516,7 +516,7 @@
 	
 	<cffunction name="visit_nodes_model" returntype="array" access="private">
 		<cfargument name="obj" type="any" required="true" />
-		<cfreturn visit(obj=sqlTable(table=arguments.obj.model.$classData().modelName, alias=obj.alias), argumentCollection=arguments) />
+		<cfreturn visit(obj=sqlTable(table=arguments.obj.model, alias=obj.alias), argumentCollection=arguments) />
 	</cffunction>
 	
 	<cffunction name="visit_nodes_type" returntype="array" access="private">
