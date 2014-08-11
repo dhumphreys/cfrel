@@ -198,47 +198,6 @@
 			}
 		</cfscript>
 	</cffunction>
-
-	<cffunction name="buildStruct" returntype="struct" access="public">
-		<cfargument name="query" type="query" required="true" />
-		<cfargument name="index" type="numeric" default="#arguments.query.currentRow#" />
-		<cfargument name="model" type="any" default="false" />
-		<cfscript>
-			var loc = {};
-			loc.returnVal = {};
-			loc.columns = ListToArray(arguments.query.columnList);
-			loc.iEnd = ArrayLen(loc.columns);
-			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
-				loc.returnVal[loc.columns[loc.i]] = arguments.query[loc.columns[loc.i]][arguments.index];
-			return loc.returnVal;
-		</cfscript>
-	</cffunction>
-	
-	<cffunction name="buildStructCache" returntype="array" access="public">
-		<cfargument name="query" type="query" required="true" />
-		<cfargument name="model" type="any" default="false" />
-		<cfreturn ArrayNew(1) />
-	</cffunction>
-	
-	<cffunction name="buildObject" returntype="struct" access="public">
-		<cfargument name="query" type="query" required="true" />
-		<cfargument name="index" type="numeric" default="#arguments.query.currentRow#" />
-		<cfargument name="model" type="any" default="false" />
-		<cfscript>
-			var loc = {};
-			loc.comp = CreateObject("component", "component");
-			loc.data = buildStruct(argumentCollection=arguments);
-			for (loc.key in loc.data)
-				loc.comp[loc.key] = loc.data[loc.key];
-			return loc.comp;
-		</cfscript>
-	</cffunction>
-	
-	<cffunction name="buildObjectCache" returntype="array" access="public">
-		<cfargument name="query" type="query" required="true" />
-		<cfargument name="model" type="any" default="false" />
-		<cfreturn ArrayNew(1) />
-	</cffunction>
 	
 	<cffunction name="scopes" returntype="any" access="public">
 		<cfargument name="model" type="any" required="true" />

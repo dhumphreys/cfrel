@@ -142,5 +142,5 @@
 </cffunction>
 
 <cffunction name="qoq" returntype="struct" access="public" hint="Return a QoQ relation with the current recordset as the FROM">
-	<cfreturn this.new(model=this.query()).from(this.query()) />
+	<cfreturn this.new(model=this.model).from(this.query()) />
 </cffunction>

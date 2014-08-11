@@ -323,23 +323,17 @@
 		if (variables.executed)
 			return this.clone().include(argumentCollection=arguments);
 
-		// generate the join node for the requested include
-		loc.include = sqlInclude(tree=includeTree(arguments.include, arguments.joinType), argumentCollection=arguments);
-
-		// append parameters to the relation
+		// always append parameters to the relation
 		ArrayAppend(this.params.joins, arguments.params, true);
 
 		// merge with a previous include statement if we can
 		loc.len = ArrayLen(this.sql.joins);
 		if (arguments.merge AND loc.len GT 0 AND typeOf(this.sql.joins[loc.len]) EQ "cfrel.nodes.include") {
-			loc.previousInclude = this.sql.joins[loc.len];
-			loc.previousInclude.include = ListAppend(loc.previousInclude.include, loc.include.include);
-			loc.previousInclude.includeKey = ListAppend(loc.previousInclude.includeKey, loc.include.includeKey, ';');
-			ArrayAppend(loc.previousInclude.tree.order, loc.include.tree.order, true);
-			StructAppend(loc.previousInclude.tree.options, loc.include.tree.options, false);
+			this.sql.joins[loc.len] = mergeIncludes(this.sql.joins[loc.len], arguments.include, arguments.joinType);
 
 		// otherwise, append a new include statement to the join list
 		} else {
+			loc.include = sqlInclude(include=arguments.include, includeKey=ListAppend(arguments.joinType, arguments.include, ':'), tree=includeTree(arguments.include, arguments.joinType));
 			ArrayAppend(this.sql.joins, loc.include);
 		}
 			
@@ -347,18 +341,33 @@
 	</cfscript>
 </cffunction>
 
+<cffunction name="mergeIncludes" returntype="struct" access="private" hint="Merge two include statements into one">
+	<cfargument name="dest" type="struct" required="true" />
+	<cfargument name="include" type="string" required="true" />
+	<cfargument name="joinType" type="string" default="" />
+	<cfscript>
+		arguments.dest.include = ListAppend(arguments.dest.include, arguments.include);
+		arguments.dest.includeKey = ListAppend(arguments.dest.includeKey, ListAppend(arguments.joinType, arguments.include, ':'), ';');
+		arguments.dest.tree = includeTree(arguments.include, arguments.joinType, arguments.dest.tree);
+		return arguments.dest;
+	</cfscript>
+</cffunction>
+
 <cffunction name="includeTree" returntype="struct" access="private">
 	<cfargument name="include" type="string" required="true" />
 	<cfargument name="joinType" type="string" required="true" />
+	<cfargument name="dest" type="struct" required="false" />
 	<cfscript>
 		var loc = {};
 
 		// return value: join options and the order in which they occur
-		loc.rtn = StructNew();
-		loc.rtn.options = StructNew();
-		loc.rtn.order = ArrayNew(1);
+		if (NOT StructKeyExists(arguments, "dest")) {
+			arguments.dest = StructNew();
+			arguments.dest.options = StructNew();
+			arguments.dest.order = ArrayNew(1);
+		}
 
-		// looping variables
+		// track join prefix and depth
 		loc.prefix = "";
 		loc.depth = 0;
 
@@ -401,29 +410,116 @@
 
 					// save the include options for return
 					loc.joinKey = ListAppend(loc.prefix, loc.curr, "_");
-					ArrayAppend(loc.rtn.order, loc.joinKey);
-					loc.rtn.options[loc.joinKey] = loc.options;
+					if (NOT StructKeyExists(arguments.dest.options, loc.joinKey)) {
+						ArrayAppend(arguments.dest.order, loc.joinKey);
+						arguments.dest.options[loc.joinKey] = loc.options;
+					}
     	}
     }
 
-    return loc.rtn;
+    return arguments.dest;
 	</cfscript>
 </cffunction>
 
 <cffunction name="includeString" returntype="string" access="public" hint="Return minimized include string">
-	<cfargument name="includes" type="struct" default="#variables.mappings.includes#" />
 	<cfscript>
 		var loc = {};
-		loc.rtn = "";
-		for (loc.key in arguments.includes) {
-			if (loc.key NEQ "_alias") {
-				if (StructCount(arguments.includes[loc.key]) GT 1)
-					loc.key &= "(#includeString(arguments.includes[loc.key])#)";
-				loc.rtn = ListAppend(loc.rtn, loc.key);
+		loc.finalInclude = "";
+
+		// process each include for this relation's joins
+		for (loc.join in this.sql.joins) {
+			if (loc.join.$class EQ "cfrel.nodes.include") {
+
+				// keep lists of join segments and segments which are redundant
+				loc.segments = Duplicate(loc.join.tree.order);
+				loc.redundant = false;
+				loc.redundantSegments = [];
+
+				// sort the include segments in order of descendents
+				loc.segmentCount = ArrayLen(loc.segments);
+				for (loc.i = 1; loc.i LTE loc.segmentCount; loc.i++) {
+
+					// build a regex for detecting direct children of this node
+					loc.regex = "^" & loc.segments[loc.i] & "_[^_\W]+$";
+
+					// for each segment, search for direct children in the rest of the segments
+					loc.nextPos = loc.i + 1;
+					for (loc.j = loc.nextPos; loc.j LTE loc.segmentCount; loc.j++) {
+
+						// if we find one, move it to the correct position
+						if (REFind(loc.regex, loc.segments[loc.j])) {
+
+							// only physically move the child if it is not already in the correct place
+							if (loc.j NEQ loc.nextPos) {
+								loc.tmp = loc.segments[loc.j];
+								ArrayDeleteAt(loc.segments, loc.j);
+								ArrayInsertAt(loc.segments, loc.nextPos, loc.tmp);
+							}
+
+ 							// mark this redundant segment for removal and increment the next segment placing
+							loc.redundant = true;
+							loc.nextPos++;
+						}
+					}
+
+					// if we found a redundant segment, log it and remove it
+					if (loc.redundant) {
+						ArrayAppend(loc.redundantSegments, loc.segments[loc.i]);
+						ArrayDeleteAt(loc.segments, loc.i);
+
+						// adjust counters to continue looping
+						loc.i--;
+						loc.segmentCount--;
+						loc.redundant = false;
+					}
+				}
+
+				// loop over redundant segments (in reverse order) and combine segments that are direct children
+				for (loc.i = ArrayLen(loc.redundantSegments); loc.i GTE 1; loc.i--) {
+					loc.regex = "^" & loc.redundantSegments[loc.i] & "_(.+)$";
+
+					// search for a direct child of the redundant prefix
+					for (loc.j = 1; loc.j LTE loc.segmentCount; loc.j++) {
+						if (REFind(loc.regex, loc.segments[loc.j])) {
+
+							// strip out prefix and surround with parenthesis
+							loc.matches = balancedParen(REReplace(loc.segments[loc.j], loc.regex, "\1"));
+							loc.secondMatch = false;
+
+							// try to find other matches in a row
+							while (loc.j + 1 LTE loc.segmentCount) {
+
+								// break if we don't find one immediately
+								if (NOT REFind(loc.regex, loc.segments[loc.j + 1]))
+									break;
+
+								// if we did find one, strip out prefix, append to matches, and remove from segment array
+								loc.matches &= "," & balancedParen(REReplace(loc.segments[loc.j + 1], loc.regex, "\1"));
+								ArrayDeleteAt(loc.segments, loc.j + 1);
+								loc.segmentCount--;
+								loc.secondMatch = true;
+							}
+
+							// if we found more than one match, combine into single segment
+							if (loc.secondMatch)
+								loc.segments[loc.j] = loc.redundantSegments[loc.i] & "_" & loc.matches;
+						}
+					}
+				}
+
+				// add parenthesis to each include string and append them to the return list
+				for (loc.i = 1; loc.i LTE loc.segmentCount; loc.i++)
+					loc.finalInclude = ListAppend(loc.finalInclude, balancedParen(loc.segments[loc.i]));
 			}
 		}
-		return loc.rtn;
+
+		return loc.finalInclude;
 	</cfscript>
+</cffunction>
+
+<cffunction name="balancedParen" returntype="string" access="private" hint="Replace underscores in strings with balanced parenthesis">
+	<cfargument name="str" type="string" required="true" />
+	<cfreturn Replace(arguments.str, "_", "(", "ALL") & RepeatString(")", ListLen(arguments.str, "_") - 1) />
 </cffunction>
 
 <cffunction name="_appendFieldsToClause" returntype="void" access="private" hint="Append list(s) to the ">

@@ -58,7 +58,7 @@
 		_buildStructCache(argumentCollection=arguments);
 		loc.cacheName = _getCacheName(name="structs", argumentCollection=arguments);
 		if (ArrayLen(variables.cache[loc.cacheName]) LT arguments.index OR NOT ArrayIsDefined(variables.cache[loc.cacheName], arguments.index)) {
-			loc.obj = mapper().buildStruct(query=this.query(), model=this.model, argumentCollection=arguments);
+			loc.obj = buildBasicStruct(query=this.query(), model=this.model, argumentCollection=arguments);
 			ArraySet(variables.cache[loc.cacheName], arguments.index, arguments.index, loc.obj);
 		}
 		return variables.cache[loc.cacheName][arguments.index];
@@ -90,7 +90,7 @@
 		_buildObjectCache(argumentCollection=arguments);
 		loc.cacheName = _getCacheName(name="objects", argumentCollection=arguments);
 		if (ArrayLen(variables.cache[loc.cacheName]) LT arguments.index OR NOT ArrayIsDefined(variables.cache[loc.cacheName], arguments.index)) {
-			loc.obj = mapper().buildObject(query=this.query(), model=this.model, argumentCollection=arguments);
+			loc.obj = buildBasicObject(query=this.query(), model=this.model, argumentCollection=arguments);
 			ArraySet(variables.cache[loc.cacheName], arguments.index, arguments.index, loc.obj);
 		}
 		return variables.cache[loc.cacheName][arguments.index];
@@ -108,5 +108,33 @@
 		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
 			object(index=loc.i, argumentCollection=arguments);
 		return variables.cache[_getCacheName(name="objects", argumentCollection=arguments)];
+	</cfscript>
+</cffunction>
+
+<cffunction name="buildBasicStruct" returntype="struct" access="public">
+	<cfargument name="query" type="query" required="true" />
+	<cfargument name="index" type="numeric" default="#arguments.query.currentRow#" />
+	<cfscript>
+		var loc = {};
+		loc.returnVal = {};
+		loc.columns = ListToArray(arguments.query.columnList);
+		loc.iEnd = ArrayLen(loc.columns);
+		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+			loc.returnVal[loc.columns[loc.i]] = arguments.query[loc.columns[loc.i]][arguments.index];
+		return loc.returnVal;
+	</cfscript>
+</cffunction>
+
+<cffunction name="buildBasicObject" returntype="struct" access="public">
+	<cfargument name="query" type="query" required="true" />
+	<cfargument name="index" type="numeric" default="#arguments.query.currentRow#" />
+	<cfscript>
+		var loc = {};
+		loc.returnVal = CreateObject("component", "component");
+		loc.columns = ListToArray(arguments.query.columnList);
+		loc.iEnd = ArrayLen(loc.columns);
+		for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
+			loc.returnVal[loc.columns[loc.i]] = arguments.query[loc.columns[loc.i]][arguments.index];
+		return loc.returnVal;
 	</cfscript>
 </cffunction>

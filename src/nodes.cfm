@@ -73,8 +73,7 @@
 <cffunction name="sqlInclude" returntype="any" access="private">
 	<cfargument name="include" type="string" required="true" />
 	<cfargument name="tree" type="struct" required="true" />
-	<cfargument name="params" type="array" default="#[]#" />
-	<cfargument name="includeKey" type="string" default="#ListAppend(arguments.joinType, arguments.include, ':')#" />
+	<cfargument name="includeKey" type="string" default="#arguments.include#" />
 	<cfreturn constructObject("cfrel.nodes.Include", arguments)>
 </cffunction>
 

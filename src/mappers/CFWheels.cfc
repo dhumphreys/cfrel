@@ -216,38 +216,6 @@
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="buildStructCache" returntype="array" access="public">
-		<cfargument name="query" type="query" required="true" />
-		<cfargument name="model" type="any" default="false" />
-		<cfargument name="deep" type="boolean" default="false" />
-		<cfargument name="flat" type="boolean" default="#NOT arguments.deep#" />
-		<cfscript>
-			if (IsObject(arguments.model) AND NOT arguments.flat)
-				return arguments.model.$serializeQueryToStructs(arguments.query, includeString(), false, arguments.deep);
-			return super.buildStructCache(argumentCollection=arguments);
-		</cfscript>
-	</cffunction>
-	
-	<cffunction name="buildObjectCache" returntype="array" access="public">
-		<cfargument name="query" type="query" required="true" />
-		<cfargument name="model" type="any" default="false" />
-		<cfargument name="deep" type="boolean" default="true" />
-		<cfargument name="flat" type="boolean" default="false" />
-		<cfscript>
-			var loc = {};
-			if (IsObject(arguments.model)) {
-				loc.array = arguments.model.$serializeQueryToObjects(arguments.query, includeString(), false, arguments.deep AND NOT arguments.flat);
-				if (arguments.flat) {
-					loc.iEnd = ArrayLen(loc.array);
-					for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++)
-						loc.array[loc.i].setProperties(super.buildStruct(arguments.query, loc.i, arguments.model));
-				}
-				return loc.array;
-			}
-			return super.buildObjectCache(argumentCollection=arguments);
-		</cfscript>
-	</cffunction>
-	
 	<cffunction name="scopes" returntype="any" access="public">
 		<cfargument name="model" type="any" required="true" />
 		<cfreturn arguments.model.scopes() />
