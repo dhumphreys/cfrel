@@ -21,7 +21,7 @@
 		if (variables.cacheParse) {
 		
 			// create key for cache
-			loc.cacheKey = Hash("#loc.rule#:#arguments.str#", "MD5");
+			loc.cacheKey = Hash("#loc.rule#:#variables.parameterize#:#arguments.str#", "MD5");
 			
 			// set up parse cache
 			if (NOT StructKeyExists(application, "cfrel") OR NOT StructKeyExists(application.cfrel, "parseCache"))
