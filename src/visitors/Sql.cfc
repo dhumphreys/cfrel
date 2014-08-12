@@ -233,7 +233,7 @@
 		<cfscript>
 			// if we are doing an OR, then surround the expression in parenthesis to make sure order of operations stands
 			if (obj.op EQ "OR")
-				ArrayPrepend(arguments.rtn, "(");
+				ArrayAppend(arguments.rtn, "(");
 
 			// generate the left hand side and operator
 			arguments.rtn = visit(obj=obj.left, argumentCollection=arguments);

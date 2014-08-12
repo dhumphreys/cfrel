@@ -184,7 +184,7 @@
 		} else if (accept(t.string)) {
 			loc.term = popLiteral();
 			if (variables.parameterize) {
-				loc.term = REReplace(loc.term, "^'(.+)'$", "\1");
+				loc.term = REReplace(loc.term, "^'(.*)'$", "\1");
 				loc.term = REReplace(loc.term, "(\\|')'", "'", "ALL");
 				loc.term = sqlParam(value=loc.term, cfsqltype="cf_sql_varchar");
 			}

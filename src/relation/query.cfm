@@ -166,8 +166,10 @@
 		}
 		
 		// append join to sql structure unless this is a qoq
-		if (NOT variables.qoq)
+		if (NOT variables.qoq) {
 			ArrayAppend(this.sql.joins, sqlJoin(arguments.target, loc.condition, arguments.type));
+			ArrayAppend(this.params.joins, arguments.params, true);
+		}
 		
 		return this;
 	</cfscript>
@@ -389,7 +391,8 @@
 
     		// on right paren, pop the last association name off the prefix
     		case ")":
-					loc.prefix = ListDeleteAt(loc.prefix, loc.depth--, "_");
+					if (loc.depth GT 0)
+						loc.prefix = ListDeleteAt(loc.prefix, loc.depth--, "_");
 					break;
 
 				// for identifiers, make a new entry
