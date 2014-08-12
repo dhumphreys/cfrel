@@ -55,21 +55,27 @@
 	<cfargument name="str" type="string" required="true" />
 	<cfscript>
 		var loc = {};
+		
+		// regular expression for string and numeric literals
+		loc.literalRegex = "('{ts '\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'}'|'([^']*((\\|')'[^']*)*[^\'])?'|\b\d+\b|-?(\B|\b\d+)\.\d+\b)";
+		
+		// regular expression for all terminals (including literal placeholders)
+		loc.terminalRegex = "::(dt|str|dec|int)::|\?|\.|,|\(|\)|\+|-|&|\^|\||\*|/|%|~|<=>|<=|>=|<>|!=|!>|!<|=|<|>|\b(AS|NOT|LIKE|BETWEEN|AND|OR|ASC|DESC|NULL|CAST|IS|IN|CASE|WHEN|THEN|ELSE|END|DISTINCT)\b|[\[""`]?(\w+)[""`\]]?";
 
 		// extract literals (strings, numbers, dates, etc) out of the input string
-		variables.literals = REMatch(literalRegex, arguments.str);
+		variables.literals = REMatch(loc.literalRegex, arguments.str);
 		
 		// replace literals with placeholders
-		arguments.str = REReplaceNoCase(arguments.str, l.date, t.date, "ALL");
-		arguments.str = REReplaceNoCase(arguments.str, l.string, t.string, "ALL");
-		arguments.str = REReplaceNoCase(arguments.str, l.decimal, t.decimal, "ALL");
-		arguments.str = REReplaceNoCase(arguments.str, l.integer, t.integer, "ALL");
+		arguments.str = REReplaceNoCase(arguments.str, "'{ts '\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'}'", "::dt::", "ALL");
+		arguments.str = REReplaceNoCase(arguments.str, "'([^']*((\\|')'[^']*)*[^\'])?'", "::str::", "ALL");
+		arguments.str = REReplaceNoCase(arguments.str, "\b\d+\b", "::dec::", "ALL");
+		arguments.str = REReplaceNoCase(arguments.str, "-?(\B|\b\d+)\.\d+\b", "::int::", "ALL");
 		
 		// replace escaped identifiers with their unescaped values
-		arguments.str = REReplace(arguments.str, t.identifier, "\1", "ALL");
+		arguments.str = REReplace(arguments.str, "[\[""`]?(\w+)[""`\]]?", "\1", "ALL");
 		
 		// split string into tokens using using terminal pattern
-		variables.tokens = REMatchNoCase(terminalRegex, arguments.str);
+		variables.tokens = REMatchNoCase(loc.terminalRegex, arguments.str);
 		
 		// set up counters for rest of parse
 		variables.tokenIndex = 1;
@@ -77,20 +83,10 @@
 	</cfscript>
 </cffunction>
 
-<cffunction name="peek" returntype="boolean" access="private" hint="See if next item on token stack matches regex">
-	<cfargument name="regex" type="string" required="true" />
-	<cfargument name="offset" type="numeric" default="0" />
+<cffunction name="accept" returntype="boolean" access="private" hint="Return true if next item on stack matches string and increment pointer">
+	<cfargument name="str" type="string" required="true" />
 	<cfscript>
-		if (tokenIndex + arguments.offset GT tokenLen)
-			return false;
-		return (REFindNoCase("^(?:#arguments.regex#)$", tokens[tokenIndex + arguments.offset]) GT 0);
-	</cfscript>
-</cffunction>
-
-<cffunction name="accept" returntype="boolean" access="private" hint="Return true if next item on stack matches and increment pointer">
-	<cfargument name="regex" type="string" required="true" />
-	<cfscript>
-		if (peek(arguments.regex)) {
+		if (tokenIndex LTE tokenLen AND tokens[tokenIndex] EQ arguments.str) {
 			tokenIndex++;
 			return true;
 		}
@@ -98,13 +94,32 @@
 	</cfscript>
 </cffunction>
 
-<cffunction name="expect" returntype="boolean" access="private" hint="Accept next item on stack or error out">
+<cffunction name="expect" returntype="boolean" access="private" hint="Accept next string item on stack or error out">
+	<cfargument name="str" type="string" required="true" />
+	<cfscript>
+		if (NOT accept(arguments.str))
+			throwException("Unexpected token found in SQL parse: #tokens[tokenIndex]#");
+		return true;
+	</cfscript>
+</cffunction>
+
+<cffunction name="acceptRegex" returntype="boolean" access="private" hint="Return true if next item on stack matches regex and increment pointer">
 	<cfargument name="regex" type="string" required="true" />
 	<cfscript>
-		if (accept(arguments.regex))
+		if (tokenIndex LTE tokenLen AND REFindNoCase("^(?:#arguments.regex#)$", tokens[tokenIndex]) GT 0) {
+			tokenIndex++;
 			return true;
-		throwException("Unexpected token found in SQL parse: #tokens[tokenIndex]#");
+		}
 		return false;
+	</cfscript>
+</cffunction>
+
+<cffunction name="expectRegex" returntype="boolean" access="private" hint="Accept next regex item on stack or error out">
+	<cfargument name="regex" type="string" required="true" />
+	<cfscript>
+		if (NOT acceptRegex(arguments.regex))
+			throwException("Unexpected token found in SQL parse: #tokens[tokenIndex]#");
+		return true;
 	</cfscript>
 </cffunction>
 

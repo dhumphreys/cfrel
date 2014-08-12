@@ -1,6 +1,6 @@
 <cffunction name="optExprs" returntype="any" access="private" hint="Match optional list of expressions in grammar">
 	<cfscript>
-		if (NOT peek(t.rparen))
+		if (tokens[tokenIndex] NEQ "(")
 			return exprs();
 		return [];
 	</cfscript>
@@ -11,7 +11,7 @@
 		var loc = {};
 		loc.exprs = [];
 		ArrayAppend(loc.exprs, expr());
-		while (accept(t.comma))
+		while (accept(","))
 			ArrayAppend(loc.exprs, expr());
 		return loc.exprs;
 	</cfscript>
@@ -23,7 +23,7 @@
 		loc.expr = orCondition();
 		
 		// EXPR AS IDENTIFIER
-		if (accept(t.as) AND expect(t.identifier)) {
+		if (accept("AS") AND expectRegex("[\[""`]?(\w+)[""`\]]?")) {
 			if (IsStruct(loc.expr) AND loc.expr.$class EQ "cfrel.nodes.column")
 				loc.expr.alias = tokens[tokenIndex - 1];
 			else
@@ -40,7 +40,7 @@
 		loc.left = andCondition();
 		
 		// AND_CONDITION OR OR_CONDITION
-		if (accept(t.orOp))
+		if (accept("OR"))
 			return sqlBinaryOp(left=loc.left, op="OR", right=orCondition());
 		
 		// AND_CONDITION
@@ -54,7 +54,7 @@
 		loc.left = notExpr();
 	
 		// NOT_EXPR AND AND_CONDITION
-		if (accept(t.andOp))
+		if (accept("AND"))
 			return sqlBinaryOp(left=loc.left, op="AND", right=andCondition());
 		
 		// NOT_EXPR
@@ -66,7 +66,7 @@
 	<cfscript>
 		
 		// NOT COMP_EXPR
-		if (accept(t.neg))
+		if (accept("NOT"))
 			return sqlUnaryOp(subject=compExpr(), op="NOT");
 		
 		// COMP_EXPR
@@ -82,47 +82,65 @@
 		// if expression is a column, store it for use by positional parameters
 		if (IsStruct(loc.left) AND loc.left.$class EQ "cfrel.nodes.Column")
 			variables.tmpParamColumn = loc.left.column;
-		
-		// ADD_EXPR BETWEEN TERM AND TERM
-		if (accept(t.between)) {
-			loc.start = term();
-			expect(t.andOp);
-			loc.left = sqlBetween(subject=loc.left, start=loc.start, end=term());
+
+		// pop the next token if available
+		if (tokenIndex LTE tokenLen) {
+			loc.token = tokens[tokenIndex++];
+			switch (loc.token) {
 			
-		} else if (accept(t.iss)) {
-			
-			// ADD_EXPR IS_NOT ADD_EXPR
-			if (accept(t.neg))
-				loc.left = sqlBinaryOp(left=loc.left, op="IS_NOT", right=addExpr());
-				
-			// ADD_EXPR IS ADD_EXPR
-			else
-				loc.left = sqlBinaryOp(left=loc.left, op="IS", right=addExpr());
-			
-		} else if (accept(t.neg)) {
+				// ADD_EXPR BETWEEN TERM AND TERM
+				case "BETWEEN":
+					loc.start = term();
+					expect("AND");
+					loc.left = sqlBetween(subject=loc.left, start=loc.start, end=term());
+					break;
 					
-			// ADD_EXPR NOT IN LPAREN EXPRS RPAREN
-			if (accept(t.inn) AND expect(t.lparen)) {
-				loc.e = subject=exprs();
-				expect(t.rparen);
-				loc.left = sqlBinaryOp(left=loc.left, op="NOT_IN", right=loc.e);
-			}
+				case "IS":
+
+					// ADD_EXPR IS_NOT ADD_EXPR
+					if (accept("NOT"))
+						loc.left = sqlBinaryOp(left=loc.left, op="IS_NOT", right=addExpr());
+						
+					// ADD_EXPR IS ADD_EXPR
+					else
+						loc.left = sqlBinaryOp(left=loc.left, op="IS", right=addExpr());
+
+					break;
 					
-			// ADD_EXPR NOT LIKE ADD_EXPR
-			if (accept(t.like)) {
-				loc.left = sqlBinaryOp(left=loc.left, op="NOT_LIKE", right=addExpr());
+				case "NOT":
+							
+					// ADD_EXPR NOT IN LPAREN EXPRS RPAREN
+					if (accept("IN")) {
+						expect("(");
+						loc.e = subject=exprs();
+						expect(")");
+						loc.left = sqlBinaryOp(left=loc.left, op="NOT_IN", right=loc.e);
+
+					// ADD_EXPR NOT LIKE ADD_EXPR
+					} else if (expect("LIKE")) {
+						loc.left = sqlBinaryOp(left=loc.left, op="NOT_LIKE", right=addExpr());
+					}
+
+					break;
+					
+				// ADD_EXPR IN LPAREN EXPRS RPAREN
+				case "IN":
+					expect("(");
+					loc.e = exprs();
+					expect(")");
+					loc.left = sqlBinaryOp(left=loc.left, op="IN", right=loc.e);
+					break;
+					
+				// ADD_EXPR COMPOP ADD_EXPR
+				case "=": case "<": case ">": case "LIKE": case "<=": case ">=":
+				case "<>": case "!=": case "!>": case "!<": case "<=>":
+					loc.left = sqlBinaryOp(left=loc.left, op=loc.token, right=addExpr());
+					break;
+
+				// backtrack to previous token
+				default:
+					tokenIndex -= 1;
 			}
-			
-		// ADD_EXPR IN LPAREN EXPRS RPAREN
-		} else if (accept(t.inn) AND expect(t.lparen)) {
-			loc.e = exprs();
-			expect(t.rparen);
-			loc.left = sqlBinaryOp(left=loc.left, op="IN", right=loc.e);
-			
-		// ADD_EXPR COMPOP ADD_EXPR
-		} else if (accept(t.compOp)) {
-			loc.op = tokens[tokenIndex - 1];
-			loc.left = sqlBinaryOp(left=loc.left, op=loc.op, right=addExpr());
 		}
 		
 		// unset column used for parameters
@@ -138,8 +156,8 @@
 		loc.left = mulExpr();
 		
 		// MUL_EXPR ADD_OP ADD_EXPR
-		if (accept(t.addOp)) {
-			loc.op = tokens[tokenIndex - 1];
+		if (tokenIndex LTE tokenLen AND Find("+-&^|", tokens[tokenIndex])) {
+			loc.op = tokens[tokenIndex++];
 			return sqlBinaryOp(left=loc.left, op=loc.op, right=addExpr());
 		}
 		
@@ -154,8 +172,8 @@
 		loc.left = term();
 		
 		// TERM MUL_OP MUL_EXPR
-		if (accept(t.mulOp)) {
-			loc.op = tokens[tokenIndex - 1];
+		if (tokenIndex LTE tokenLen AND Find("*/%", tokens[tokenIndex])) {
+			loc.op = tokens[tokenIndex++];
 			return sqlBinaryOp(left=loc.left, op=loc.op, right=mulExpr());
 		}
 		
@@ -167,115 +185,133 @@
 <cffunction name="term" returntype="any" access="private" hint="Match term in grammar">
 	<cfscript>
 		var loc = {};
-		
-		// DECIMAL
-		if (accept(t.decimal)) {
-			loc.term = popLiteral();
-			if (variables.parameterize)
-				loc.term = sqlParam(value=loc.term, cfsqltype="cf_sql_decimal");
-		
-		// INTEGER
-		} else if (accept(t.integer)) {
-			loc.term = popLiteral();
-			if (variables.parameterize)
-				loc.term = sqlParam(value=loc.term, cfsqltype="cf_sql_integer");
-		
-		// STRING
-		} else if (accept(t.string)) {
-			loc.term = popLiteral();
-			if (variables.parameterize) {
-				loc.term = REReplace(loc.term, "^'(.*)'$", "\1");
-				loc.term = REReplace(loc.term, "(\\|')'", "'", "ALL");
-				loc.term = sqlParam(value=loc.term, cfsqltype="cf_sql_varchar");
-			}
-		
-		// DATE
-		} else if (accept(t.date)) {
-			loc.date = REReplace(popLiteral(), "(^'|'$)", "", "ALL");
-			loc.term = "'" & DateFormat(loc.date, "yyyy-mm-dd ") & TimeFormat(loc.date, "hh:mm:ss TT") & "'";
-			if (variables.parameterize) {
-				loc.term = REReplace(loc.term, "^'(.+)'$", "\1");
-				loc.term = sqlParam(value=loc.term, cfsqltype="cf_sql_timestamp");
-			}
+
+		// read the next token
+		loc.token = tokens[tokenIndex++];
+		switch (loc.token) {
+
+			// DECIMAL
+			case "::dec::":
+				loc.term = popLiteral();
+				if (variables.parameterize)
+					loc.term = sqlParam(value=loc.term, cfsqltype="cf_sql_decimal");
+				break;
+
+			// INTEGER
+			case "::int::":
+				loc.term = popLiteral();
+				if (variables.parameterize)
+					loc.term = sqlParam(value=loc.term, cfsqltype="cf_sql_integer");
+				break;
 			
-		// NULL
-		} else if (accept(t.null)) {
-			loc.term = "NULL"; // wrap in nodes.literal? or nodes.null?
-			
-		// WILDCARD
-		} else if (accept(t.star)) {
-			loc.term = sqlWildcard();
-			
-		// PARAM
-		} else if (accept(t.param)) {
-			loc.term = sqlParam(column=variables.tmpParamColumn);
-			
-		// UNARY TERM
-		} else if (accept(t.unaryOp)) {
-			loc.op = tokens[tokenIndex - 1];
-			loc.e = term();
-			loc.term = sqlUnaryOp(op=loc.op, subject=loc.e);
-		
-		// LPAREN EXPR RPAREN
-		} else if (accept(t.lparen)) {
-			loc.e = expr();
-			expect(t.rparen);
-			loc.term = sqlParen(subject=loc.e);
-			
-		// CAST LPAREN OR_CONDITION AS TYPE_NAME RPAREN
-		} else if (accept(t.cast) AND expect(t.lparen)) {
-			loc.e = orCondition();
-			expect(t.as);
-			loc.t = typeName();
-			expect(t.rparen);
-			loc.term = sqlCast(subject=loc.e, type=loc.t);
-			
-		// CASE
-		} else if (peek(t.kase)) {
-			loc.term = castStmt();
-		
-		} else if (expect(t.identifier)) {
-			loc.id = tokens[tokenIndex - 1];
-			
-			// IDENTIFIER LPAREN OPT_EXPRS RPAREN
-			if (accept(t.lparen)) {
-				loc.distinct = (loc.id EQ "COUNT" AND accept(t.distinct));
-				loc.args = optExprs();
-				expect(t.rparen);
-				loc.term = sqlFunction(name=loc.id, args=loc.args, distinct=loc.distinct);
-			
-			} else if (accept(t.dot)) {
-			
-				// IDENTIFIER DOT WILDCARD
-				if (accept(t.star)) {
-					loc.term = sqlWildcard(subject=loc.id);
-				
-				} else if (expect(t.identifier)) {
-					loc.id2 = tokens[tokenIndex - 1];
-					
-					// IDENTIFIER DOT IDENTIFIER LPAREN OPT_EXPRS RPAREN				
-					if (accept(t.lparen)) {
-						loc.args = optExprs();
-						expect(t.rparen);
-						loc.term = sqlFunction(name=loc.id2, scope=sqlColumn(column=loc.id), args=loc.args);
-						
-					// TABLE DOT COLUMN
-					} else {
-						loc.term = sqlColumn(column=ListAppend(loc.id, loc.id2, "."));
-					}
+			// STRING
+			case "::str::":
+				loc.term = popLiteral();
+				if (variables.parameterize) {
+					loc.term = REReplace(loc.term, "^'(.*)'$", "\1");
+					loc.term = REReplace(loc.term, "(\\|')'", "'", "ALL");
+					loc.term = sqlParam(value=loc.term, cfsqltype="cf_sql_varchar");
 				}
+				break;
+			
+			// DATE
+			case "::date::":
+				loc.date = REReplace(popLiteral(), "(^'|'$)", "", "ALL");
+				loc.term = "'" & DateFormat(loc.date, "yyyy-mm-dd ") & TimeFormat(loc.date, "hh:mm:ss TT") & "'";
+				if (variables.parameterize) {
+					loc.term = REReplace(loc.term, "^'(.+)'$", "\1");
+					loc.term = sqlParam(value=loc.term, cfsqltype="cf_sql_timestamp");
+				}
+				break;
 				
-			// IDENTIFIER
-			} else {
-				loc.term = sqlColumn(column=loc.id);
-			}
+			// NULL
+			case "NULL":
+				loc.term = "NULL"; // wrap in nodes.literal? or nodes.null?
+				break;
+				
+			// WILDCARD
+			case "*":
+				loc.term = sqlWildcard();
+				break;
+				
+			// PARAM
+			case "?":
+				loc.term = sqlParam(column=variables.tmpParamColumn);
+				break;
+				
+			// UNARY TERM
+			case "+": case "-": case "~": case "NOT":
+				loc.e = term();
+				loc.term = sqlUnaryOp(op=loc.token, subject=loc.e);
+				break;
+			
+			// LPAREN EXPR RPAREN
+			case "(":
+				loc.e = expr();
+				expect(")");
+				loc.term = sqlParen(subject=loc.e);
+				break;
+				
+			// CAST LPAREN OR_CONDITION AS TYPE_NAME RPAREN
+			case "CAST":
+				expect("(");
+				loc.e = orCondition();
+				expect("AS");
+				loc.t = typeName();
+				expect(")");
+				loc.term = sqlCast(subject=loc.e, type=loc.t);
+				break;
+				
+			// CASE
+			case "CASE":
+				tokenIndex--;
+				loc.term = caseStmt();
+				break;
+			
+			default:
+				tokenIndex--;
+				expectRegex("[\[""`]?(\w+)[""`\]]?");
+				loc.id = loc.token;
+				
+				// IDENTIFIER LPAREN OPT_EXPRS RPAREN
+				if (accept("(")) {
+					loc.distinct = (loc.id EQ "COUNT" AND accept("DISTINCT"));
+					loc.args = optExprs();
+					expect(")");
+					loc.term = sqlFunction(name=loc.id, args=loc.args, distinct=loc.distinct);
+				
+				} else if (accept(".")) {
+				
+					// IDENTIFIER DOT WILDCARD
+					if (accept("*")) {
+						loc.term = sqlWildcard(subject=loc.id);
+					
+					} else if (expectRegex("[\[""`]?(\w+)[""`\]]?")) {
+						loc.id2 = tokens[tokenIndex - 1];
+						
+						// IDENTIFIER DOT IDENTIFIER LPAREN OPT_EXPRS RPAREN				
+						if (accept("(")) {
+							loc.args = optExprs();
+							expect(")");
+							loc.term = sqlFunction(name=loc.id2, scope=sqlColumn(column=loc.id), args=loc.args);
+							
+						// TABLE DOT COLUMN
+						} else {
+							loc.term = sqlColumn(column=ListAppend(loc.id, loc.id2, "."));
+						}
+					}
+					
+				// IDENTIFIER
+				} else {
+					loc.term = sqlColumn(column=loc.id);
+				}
 		}
 		
 		// TERM DOT IDENTIFIER LPAREN OPT_EXPRS RPAREN
-		if (accept(t.dot) AND expect(t.identifier) AND expect(t.lparen)) {
+		if (accept(".") AND expectRegex("[\[""`]?(\w+)[""`\]]?") AND expect("(")) {
 			loc.id = tokens[tokenIndex - 2];
 			loc.args = optExprs();
-			expect(t.rparen);
+			expect(")");
 			loc.term = sqlFunction(name=loc.id, scope=loc.term, args=loc.args);
 		}
 		
@@ -283,7 +319,7 @@
 	</cfscript>
 </cffunction>
 
-<cffunction name="castStmt" returntype="any" access="private" hint="Match SQL case statement">
+<cffunction name="caseStmt" returntype="any" access="private" hint="Match SQL case statement">
 	<cfscript>
 		var loc = {};
 		loc.subject = "";
@@ -291,25 +327,25 @@
 		loc.cases = ArrayNew(1);
 		
 		// CASE
-		if (expect(t.kase)) {
+		if (expect("CASE")) {
 			
 			// CASE EXPR
-			if (NOT peek(t.when))
+			if (token[tokenIndex] NEQ "WHEN")
 				loc.subject = expr();
 				
 			// WHEN EXPR THEN EXPR
-			while (accept(t.when)) {
+			while (accept("WHEN")) {
 				loc.condition = expr();
-				expect(t.then);
+				expect("THEN");
 				ArrayAppend(loc.cases, sqlCaseCondition(condition=loc.condition, subject=expr()));
 			}
 			
 			// ELSE EXPR
-			if (accept(t.els))
+			if (accept("ELSE"))
 				loc.els = expr();
 				
 			// END
-			expect(t.end);
+			expect("END");
 			return sqlCase(subject=loc.subject, cases=loc.cases, els=loc.els);
 		}
 	</cfscript>
@@ -318,13 +354,13 @@
 <cffunction name="typeName" returntype="any" access="private" hint="Match type name in grammar">
 	<cfscript>
 		var loc = {num1="", num2=""};
-		if (accept(t.identifier)) {
+		if (acceptRegex("[\[""`]?(\w+)[""`\]]?")) {
 			loc.id = tokens[tokenIndex - 1];
-			if (accept(t.lparen) AND expect(t.integer)) {
+			if (accept("(") AND expect("::int::")) {
 				loc.num1 = popLiteral();
-				if (accept(t.comma) AND expect(t.integer))
+				if (accept(",") AND expect("::int::"))
 					loc.num2 = popLiteral();
-				expect(t.rparen);
+				expect(")");
 			}
 			return sqlType(name=loc.id, val1=loc.num1, val2=loc.num2);
 		}
@@ -337,7 +373,7 @@
 		var loc = {};
 		loc.orders = [];
 		ArrayAppend(loc.orders, orderExpr());
-		while (accept(t.comma))
+		while (accept(","))
 			ArrayAppend(loc.orders, orderExpr());
 		return loc.orders;
 	</cfscript>
@@ -347,9 +383,12 @@
 	<cfscript>
 		var loc = {};
 		loc.expr = expr();
-		loc.desc = false;
-		if (accept(t.sortOp))
-			loc.desc = (tokens[tokenIndex - 1] EQ "DESC");
+		if (accept("DESC"))
+			loc.desc = true;
+		else if (accept("ASC"))
+			loc.desc = false;
+		else
+			loc.desc = false;
 		return sqlOrder(subject=loc.expr, descending=loc.desc);
 	</cfscript>
 </cffunction>

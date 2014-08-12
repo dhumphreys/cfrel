@@ -64,28 +64,8 @@
 		// store parameterization preference
 		variables.parameterize = arguments.parameterize;
 		
-		// string and numeric literals
-		variables.l = {date="'{ts '\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'}'", string="'([^']*((\\|')'[^']*)*[^\'])?'", integer="\b\d+\b", decimal="-?(\B|\b\d+)\.\d+\b"};
-		
-		// build regex to match literals
-		variables.literalRegex = "(#l.date#|#l.string#|#l.decimal#|#l.integer#)";
-		
-		// terminals (and literal placeholders)
-		variables.t = {date="::dt::", string="::str::", decimal="::dec::", integer="::int::", param="\?", dot="\.",
-			comma=",", lparen="\(", rparen="\)", addOp="\+|-|&|\^|\|", star="\*", mulOp="\*|/|%", as="\bAS\b",
-			unaryOp="\+|-|~|\bNOT\b", compOp="<=>|<=|>=|<>|!=|!>|!<|=|<|>|\bLIKE\b", between="\bBETWEEN\b",
-			andOp="\bAND\b", orOp="\bOR\b", neg="\bNOT\b", sortOp="\bASC\b|\bDESC\b", null="\bNULL\b",
-			cast="\bCAST\b", iss="\bIS\b", inn="\bIN\b", identifier="[\[""`]?(\w+)[""`\]]?", kase="\bCASE\b", when="\bWHEN\b",
-			then="\bTHEN\b", els="\bELSE\b", end="\bEND\b", like="\bLIKE\b", distinct="\bDISTINCT\b"};
-		
-		// build regex to match any of the terminals above
-		variables.terminalRegex = "";
-		for (loc.key in variables.t)
-			terminalRegex = ListAppend(terminalRegex, t[loc.key], "|");
-				
 		// token and literal storage
 		variables.tokens = [];
-		variables.tokenTypes = [];
 		variables.literals = [];
 		
 		// token index during parse
