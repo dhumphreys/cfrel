@@ -1,6 +1,6 @@
 <cffunction name="optExprs" returntype="any" access="private" hint="Match optional list of expressions in grammar">
 	<cfscript>
-		if (tokens[tokenIndex] NEQ "(")
+		if (tokens[tokenIndex] NEQ ")")
 			return exprs();
 		return [];
 	</cfscript>
