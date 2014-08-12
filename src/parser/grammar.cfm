@@ -156,7 +156,7 @@
 		loc.left = mulExpr();
 		
 		// MUL_EXPR ADD_OP ADD_EXPR
-		if (tokenIndex LTE tokenLen AND Find("+-&^|", tokens[tokenIndex])) {
+		if (tokenIndex LTE tokenLen AND Find(tokens[tokenIndex], "+-&^|")) {
 			loc.op = tokens[tokenIndex++];
 			return sqlBinaryOp(left=loc.left, op=loc.op, right=addExpr());
 		}
@@ -172,7 +172,7 @@
 		loc.left = term();
 		
 		// TERM MUL_OP MUL_EXPR
-		if (tokenIndex LTE tokenLen AND Find("*/%", tokens[tokenIndex])) {
+		if (tokenIndex LTE tokenLen AND Find(tokens[tokenIndex], "*/%")) {
 			loc.op = tokens[tokenIndex++];
 			return sqlBinaryOp(left=loc.left, op=loc.op, right=mulExpr());
 		}
@@ -215,7 +215,7 @@
 				break;
 			
 			// DATE
-			case "::date::":
+			case "::dt::":
 				loc.date = REReplace(popLiteral(), "(^'|'$)", "", "ALL");
 				loc.term = "'" & DateFormat(loc.date, "yyyy-mm-dd ") & TimeFormat(loc.date, "hh:mm:ss TT") & "'";
 				if (variables.parameterize) {
@@ -241,8 +241,7 @@
 				
 			// UNARY TERM
 			case "+": case "-": case "~": case "NOT":
-				loc.e = term();
-				loc.term = sqlUnaryOp(op=loc.token, subject=loc.e);
+				loc.term = sqlUnaryOp(op=loc.token, subject=term());
 				break;
 			
 			// LPAREN EXPR RPAREN

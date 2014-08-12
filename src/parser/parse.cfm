@@ -57,7 +57,7 @@
 		var loc = {};
 		
 		// regular expression for string and numeric literals
-		loc.literalRegex = "('{ts '\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'}'|'([^']*((\\|')'[^']*)*[^\'])?'|\b\d+\b|-?(\B|\b\d+)\.\d+\b)";
+		loc.literalRegex = "('{ts '\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'}'|'([^']*((\\|')'[^']*)*[^\'])?'|-?(\B|\b\d+)\.\d+\b|-?\b\d+\b)";
 		
 		// regular expression for all terminals (including literal placeholders)
 		loc.terminalRegex = "::(dt|str|dec|int)::|\?|\.|,|\(|\)|\+|-|&|\^|\||\*|/|%|~|<=>|<=|>=|<>|!=|!>|!<|=|<|>|\b(AS|NOT|LIKE|BETWEEN|AND|OR|ASC|DESC|NULL|CAST|IS|IN|CASE|WHEN|THEN|ELSE|END|DISTINCT)\b|[\[""`]?(\w+)[""`\]]?";
@@ -68,8 +68,8 @@
 		// replace literals with placeholders
 		arguments.str = REReplaceNoCase(arguments.str, "'{ts '\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'}'", "::dt::", "ALL");
 		arguments.str = REReplaceNoCase(arguments.str, "'([^']*((\\|')'[^']*)*[^\'])?'", "::str::", "ALL");
-		arguments.str = REReplaceNoCase(arguments.str, "\b\d+\b", "::dec::", "ALL");
-		arguments.str = REReplaceNoCase(arguments.str, "-?(\B|\b\d+)\.\d+\b", "::int::", "ALL");
+		arguments.str = REReplaceNoCase(arguments.str, "-?(\B|\b\d+)\.\d+\b", "::dec::", "ALL");
+		arguments.str = REReplaceNoCase(arguments.str, "-?\b\d+\b", "::int::", "ALL");
 		
 		// replace escaped identifiers with their unescaped values
 		arguments.str = REReplace(arguments.str, "[\[""`]?(\w+)[""`\]]?", "\1", "ALL");
