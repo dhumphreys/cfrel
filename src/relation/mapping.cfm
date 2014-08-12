@@ -39,8 +39,100 @@
 
 <cffunction name="getMap" returntype="struct" access="public" hint="Build a struct to map table and column references for this relation to the datasource">
 	<cfscript>
-		if (NOT IsStruct(variables.map))
-			variables.map = mapper().map(this);
+
+		// read the map from internal cache if possible
+		if (IsStruct(variables.map))
+			return variables.map;
+
+		// use the global cache if possible
+		if (variables.cacheMap EQ true) {
+			
+			// set up mapping cache
+			if (NOT StructKeyExists(application, "cfrel") OR NOT StructKeyExists(application.cfrel, "mapCache"))
+				application.cfrel.mapCache = {};
+
+			// generate unique key for this mapping
+			var key = mapKey();
+			if (key NEQ false) {
+
+				// store the mapping in the global cache if it isn't there
+				if (NOT StructKeyExists(application.cfrel.mapCache, key))
+					application.cfrel.mapCache[key] = mapper().map(this);
+
+				// read the map from cache, store it internally, and return
+				variables.map = application.cfrel.mapCache[key];
+				return variables.map;
+			}
+		}
+		
+		// just generate the map, store it internally, and return
+		variables.map = mapper().map(this);
 		return variables.map;
+	</cfscript>
+</cffunction>
+
+<cffunction name="mapKey" returntype="any" access="private" hint="Generate a unique key for the mapping structure based on joins">
+	<cfscript>
+		var loc = {};
+		loc.key = "";
+
+		// append FROM clause members to key
+		for (loc.from in this.sql.froms) {
+			switch (loc.from.$class) {
+				case "cfrel.nodes.Table":
+					loc.key = ListAppend(loc.key, "FROM:" & loc.from.table);
+					break;
+				case "cfrel.nodes.Model":
+					loc.key = ListAppend(loc.key, "FROM_MODEL:" & loc.from.model);
+					break;
+				case "cfrel.nodes.Query":
+					loc.key = ListAppend(loc.key, "FROM:query");
+					break;
+				case "cfrel.nodes.SubQuery":
+					loc.key = ListAppend(loc.key, "FROM:subquery");
+					break;
+
+				// return false if an invalid member is encountered
+				default:
+					return false;
+			}
+		}
+
+		// append JOIN clause subjects to key
+		for (loc.join in this.sql.joins) {
+
+			// for regular joins, just use their target table
+			if (loc.join.$class EQ "cfrel.nodes.Join") {
+				switch (loc.join.table.$class) {
+					case "cfrel.nodes.Table":
+						loc.key = ListAppend(loc.key, "JOIN:" & loc.join.table.table);
+						break;
+					case "cfrel.nodes.Model":
+						loc.key = ListAppend(loc.key, "JOIN_MODEL:" & loc.join.table.model);
+						break;
+					case "cfrel.nodes.Query":
+						loc.key = ListAppend(loc.key, "JOIN:query");
+						break;
+					case "cfrel.nodes.SubQuery":
+						loc.key = ListAppend(loc.key, "JOIN:subquery");
+						break;
+
+					// return false if an invalid member is encountered
+					default:
+						return false;
+				}
+
+			// for includes, use their long include key
+			} else if (loc.join.$class EQ "cfrel.nodes.Include") {
+				loc.key = ListAppend(loc.key, "INCLUDE:" & loc.join.includeKey);
+
+			// return false if an invalid member is encountered
+			} else {
+				return false;
+			}
+		}
+
+		// return the key as an MD5 hash
+		return Hash(loc.key, "MD5");
 	</cfscript>
 </cffunction>

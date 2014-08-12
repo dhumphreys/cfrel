@@ -236,6 +236,8 @@
 		<cfargument name="parameterize" type="boolean" default="false" />
 		<cfargument name="includeSoftDeletes" type="boolean" default="false" />
 		<cfargument name="useDefaultScope" type="boolean" default="#$useDefaultScope()#" />
+		<cfargument name="cacheParse" type="boolean" default="true" />
+		<cfargument name="cacheMap" type="boolean" default="true" />
 		<cfscript>
 			var loc = {};
 			

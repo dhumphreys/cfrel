@@ -4,8 +4,8 @@
 	<cfargument name="qoq" type="boolean" default="false" />
 	<cfargument name="model" type="any" default="false" />
 	<cfargument name="parameterize" type="boolean" default="false" />
-	<cfargument name="cache" type="string" default="" />
-	<cfargument name="cacheParse" type="boolean" default="#ListFindNoCase(arguments.cache, 'parse')#" />
+	<cfargument name="cacheParse" type="boolean" default="false" />
+	<cfargument name="cacheMap" type="boolean" default="false" />
 	<cfargument name="includeSoftDeletes" type="boolean" default="false" />
 	<cfscript>
 		
@@ -46,6 +46,10 @@
 		variables.qoq = arguments.qoq;
 		variables.paged = false;
 		variables.paginationData = false;
+
+		// global caching settings
+		variables.cacheParse = arguments.cacheParse;
+		variables.cacheMap = arguments.cacheMap;
 		
 		/***************
 		* MAPPING VARS *
@@ -59,9 +63,6 @@
 		
 		// store parameterization preference
 		variables.parameterize = arguments.parameterize;
-		
-		// set cache setting (if application scope is defined)
-		variables.cacheParse = arguments.cacheParse AND IsDefined("application");
 		
 		// string and numeric literals
 		variables.l = {date="'{ts '\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'}'", string="'([^']*((\\|')'[^']*)*[^\'])?'", integer="\b\d+\b", decimal="-?(\B|\b\d+)\.\d+\b"};
@@ -129,9 +130,9 @@
 </cffunction>
 
 <cffunction name="subQuery" returntype="any" access="public" hint="Create new rel with the current rel as the child">
-	<cfreturn new(datasource=this.datasource, visitor=variables.visitorClass, qoq=variables.qoq, parameterize=variables.parameterize).from(this) />
+	<cfreturn new(datasource=this.datasource, visitor=variables.visitorClass, qoq=variables.qoq, parameterize=variables.parameterize, cacheParse=variables.cacheParse, cacheMap=variables.cacheMap).from(this) />
 </cffunction>
 
 <cffunction name="qoq" returntype="struct" access="public" hint="Return a QoQ relation with the current recordset as the FROM">
-	<cfreturn this.new(model=this.model).from(this.query()) />
+	<cfreturn this.new(model=this.model, parameterize=variables.parameterize, cacheParse=variables.cacheParse, cacheMap=variables.cacheMap).from(this.query()) />
 </cffunction>
