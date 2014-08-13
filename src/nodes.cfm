@@ -156,8 +156,7 @@
 	<cfscript>
 		var loc = {};
 		loc.obj = {$class=arguments.class};
-		for (loc.key in arguments.args)
-			loc.obj[loc.key] = arguments.args[loc.key];
+		StructAppend(loc.obj, arguments.args);
 		return loc.obj;
 	</cfscript>
 </cffunction>
