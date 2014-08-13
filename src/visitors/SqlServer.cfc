@@ -12,50 +12,70 @@
 			// if limit is found
 			if (loc.limit) {
 				
-				// duplicate relation so that we can change some things
-				loc.obj = arguments.obj.clone();
-				
 				// use ROW_NUMBER() in a sub-query to accomplish pagination
 				if (loc.offset) {
+
+					// temporarily keep references to SQL sub-trees that might be altered
+					loc.alteredSql = {
+						select=Duplicate(arguments.obj.sql.select),
+						groups=arguments.obj.sql.groups,
+						orders=arguments.obj.sql.orders,
+						limit=arguments.obj.sql.limit,
+						offset=arguments.obj.sql.offset
+					};
 					
 					// calculate row number range
-					loc.start = loc.obj.sql.offset + 1;
-					loc.end = loc.obj.sql.offset + loc.obj.sql.limit;
+					loc.start = arguments.obj.sql.offset + 1;
+					loc.end = arguments.obj.sql.offset + arguments.obj.sql.limit;
 					
 					// throw error if there is no ORDER BY
-					if (ArrayLen(loc.obj.sql.orders) EQ 0)
+					if (ArrayLen(arguments.obj.sql.orders) EQ 0)
 						throwException("ORDER BY clause is required for pagination");
 					
 					// force a GROUP BY if trying to get DISTINCT rows in subquery
-					if (ArrayContains(loc.obj.sql.selectFlags, "DISTINCT") AND ArrayLen(loc.obj.sql.groups) EQ 0)
-						loc.obj.sql.groups = Duplicate(loc.obj.sql.select);
+					if (ArrayContains(arguments.obj.sql.selectFlags, "DISTINCT") AND ArrayLen(arguments.obj.sql.groups) EQ 0)
+						arguments.obj.sql.groups = Duplicate(arguments.obj.sql.select);
 
 					// make sure there is at least a wildcard in the select list
-					if (ArrayLen(loc.obj.sql.select) EQ 0)
-						ArrayAppend(loc.obj.sql.select, sqlWildcard());
+					if (ArrayLen(arguments.obj.sql.select) EQ 0)
+						ArrayAppend(arguments.obj.sql.select, sqlWildcard());
 					
 					// create new SELECT entry to count row numbers
 					arguments.state.aliasOff = true;
-					ArrayAppend(loc.obj.sql.select, ["ROW_NUMBER() OVER (ORDER BY", visit_list(obj=loc.obj.sql.orders, rtn=[], argumentCollection=arguments), ") AS [rowNum]"], false);
+					ArrayAppend(arguments.obj.sql.select, ["ROW_NUMBER() OVER (ORDER BY", visit_list(obj=arguments.obj.sql.orders, rtn=[], argumentCollection=arguments), ") AS [rowNum]"], false);
 					arguments.state.aliasOff = false;
 					
 					// wipe out ORDER BY in inner query
-					loc.obj.sql.orders = [];
+					arguments.obj.sql.orders = [];
 					
 					// remove LIMIT and OFFSET from inner query
-					StructDelete(loc.obj.sql, "limit");
-					StructDelete(loc.obj.sql, "offset");
+					StructDelete(arguments.obj.sql, "limit");
+					StructDelete(arguments.obj.sql, "offset");
 					
 					// generate SQL for inner query and return inside of SELECT
 					ArrayAppend(arguments.rtn,"SELECT * FROM (");
-					arguments.rtn = super.visit_relation(obj=loc.obj, argumentCollection=arguments);
+					arguments.rtn = super.visit_relation(obj=arguments.obj, argumentCollection=arguments);
 					ArrayAppend(arguments.rtn, ") [paged_query] WHERE [rowNum] BETWEEN #loc.start# AND #loc.end# ORDER BY [rowNum] ASC");
+
+					// replace altered SQL sub-trees in the original relation
+					StructAppend(arguments.obj.sql, loc.alteredSql, true);
 				
 				// use TOP to restrict dataset instead of LIMIT
 				} else {
-					ArrayAppend(loc.obj.sql.selectFlags, "TOP #loc.obj.sql.limit#");
-					StructDelete(loc.obj.sql, "limit");
-					arguments.rtn = super.visit_relation(obj=loc.obj, argumentCollection=arguments);
+
+					// temporarily keep references to SQL sub-trees that might be altered
+					loc.alteredSql = {
+						selectFlags=Duplicate(arguments.obj.sql.selectFlags),
+						limit=arguments.obj.sql.limit
+					};
+
+					// generate the SQL using TOP instead of LIMIT
+					ArrayAppend(arguments.obj.sql.selectFlags, "TOP #arguments.obj.sql.limit#");
+					StructDelete(arguments.obj.sql, "limit");
+					arguments.rtn = super.visit_relation(obj=arguments.obj, argumentCollection=arguments);
+
+					// replace altered SQL sub-trees in the original relation
+					StructAppend(arguments.obj.sql, loc.alteredSql, true);
 				}
 			
 			// if only offset is found, error out
