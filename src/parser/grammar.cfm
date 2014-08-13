@@ -329,7 +329,7 @@
 		if (expect("CASE")) {
 			
 			// CASE EXPR
-			if (token[tokenIndex] NEQ "WHEN")
+			if (tokens[tokenIndex] NEQ "WHEN")
 				loc.subject = expr();
 				
 			// WHEN EXPR THEN EXPR
