@@ -5,6 +5,9 @@
 		if (variables.executed)
 			return this.clone().paginate(argumentCollection=arguments);
 		
+		if (variables.cacheSql)
+			appendSignature(GetFunctionCalledName(), arguments);
+			
 		// throw error if bad values are passed
 		if (arguments.page LT 1 OR arguments.perPage LT 1)
 			throwException("Page and per-page must be greater than zero");
@@ -29,6 +32,9 @@
 		if (variables.executed)
 			return this.clone().clearPagination(argumentCollection=arguments);
 		
+		if (variables.cacheSql)
+			removeFromSignature({"paginate"=1,"limit"=1,"offset"=1});
+
 		// remove limits and offsets
 		if (StructKeyExists(this.sql, "limit"))
 			StructDelete(this.sql, "limit");
@@ -80,7 +86,7 @@
 		loc.rel = this.minimizedRelation();
 		
 		// remove order by and paging since we just care about count
-		loc.rel.sql.orders = [];
+		loc.rel.clearOrder();
 		loc.rel.clearPagination();
 				
 		// create new relation to contain subquery

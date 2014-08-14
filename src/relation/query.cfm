@@ -1,6 +1,9 @@
 <cffunction name="findByKey" returntype="any" access="public" hint="Find a scoped record by key">
 	<cfargument name="key" type="string" required="true" />
 	<cfscript>
+		if (variables.cacheSql)
+			appendSignature(GetFunctionCalledName(), arguments);
+
 		var loc = {};
 		loc.args = {};
 		
@@ -34,6 +37,10 @@
 	<cfscript>
 		if (variables.executed)
 			return this.clone().select(argumentCollection=arguments);
+
+		if (variables.cacheSql)
+			appendSignature(GetFunctionCalledName(), arguments);
+
 		_appendFieldsToClause("SELECT", "select", arguments);
 		return this;
 	</cfscript>
@@ -43,6 +50,10 @@
 	<cfscript>
 		if (variables.executed)
 			return this.clone().distinct(argumentCollection=arguments);
+
+		if (variables.cacheSql)
+			appendSignature(GetFunctionCalledName(), arguments);
+
 		if (NOT ArrayFind(this.sql.selectFlags, "DISTINCT"))
 			ArrayAppend(this.sql.selectFlags, "DISTINCT");
 		return this;
@@ -57,6 +68,9 @@
 		// auto-clone if relation already executed
 		if (variables.executed)
 			return this.clone().from(argumentCollection=arguments);
+
+		if (variables.cacheSql)
+			appendSignature(GetFunctionCalledName(), arguments);
 		
 		// make decision based on argument type
 		switch(typeOf(arguments.target)) {
@@ -113,6 +127,9 @@
 		var loc = {};
 		if (variables.executed)
 			return this.clone().join(argumentCollection=arguments);
+
+		if (variables.cacheSql)
+			appendSignature(GetFunctionCalledName(), arguments);
 			
 		// correctly set condition of join
 		if (NOT IsSimpleValue(arguments.condition)) {
@@ -181,6 +198,14 @@
 	<cfscript>
 		if (variables.executed)
 			return this.qoq().where(argumentCollection=arguments);
+		
+		if (variables.cacheSql) {
+			if (NOT StructKeyExists(arguments, "$clause"))
+				StructDelete(arguments, "$clause");
+			if (NOT StructKeyExists(arguments, "$params"))
+				StructDelete(arguments, "$params");
+			appendSignature(GetFunctionCalledName(), arguments);
+		}
 		_appendConditionsToClause("WHERE", "wheres", arguments);
 		return this;
 	</cfscript>
@@ -190,6 +215,10 @@
 	<cfscript>
 		if (variables.executed)
 			return this.clone().group(argumentCollection=arguments);
+
+		if (variables.cacheSql)
+			appendSignature(GetFunctionCalledName(), arguments);
+
 		_appendFieldsToClause("GROUP BY", "groups", arguments);
 		return this;
 	</cfscript>
@@ -201,6 +230,15 @@
 	<cfscript>
 		if (variables.executed)
 			return this.clone().having(argumentCollection=arguments);
+
+		if (variables.cacheSql) {
+			if (NOT StructKeyExists(arguments, "$clause"))
+				StructDelete(arguments, "$clause");
+			if (NOT StructKeyExists(arguments, "$params"))
+				StructDelete(arguments, "$params");
+			appendSignature(GetFunctionCalledName(), arguments);
+		}
+
 		_appendConditionsToClause("HAVING", "havings", arguments);
 		return this;
 	</cfscript>
@@ -210,6 +248,10 @@
 	<cfscript>
 		if (variables.executed)
 			return this.clone().order(argumentCollection=arguments);
+
+		if (variables.cacheSql)
+			appendSignature(GetFunctionCalledName(), arguments);
+
 		_appendFieldsToClause("ORDER BY", "orders", arguments);
 		return this;
 	</cfscript>
@@ -220,6 +262,10 @@
 	<cfscript>
 		if (variables.executed)
 			return this.clone().limit(argumentCollection=arguments);
+
+		if (variables.cacheSql)
+			appendSignature(GetFunctionCalledName(), arguments);
+
 		if (variables.qoq)
 			this.maxRows = Int(arguments.value);
 		else
@@ -233,6 +279,10 @@
 	<cfscript>
 		if (variables.executed)
 			return this.clone().offset(argumentCollection=arguments);
+
+		if (variables.cacheSql)
+			appendSignature(GetFunctionCalledName(), arguments);
+
 		this.sql.offset = Int(arguments.value);
 		return this;
 	</cfscript>
@@ -242,6 +292,10 @@
 	<cfscript>
 		if (variables.executed)
 			return this.clone().clearSelect(argumentCollection=arguments);
+
+		if (variables.cacheSql)
+			removeFromSignature({"select"=1});
+
 		this.sql.select = [];
 		this.sql.selectFlags = [];
 		return this;
@@ -252,6 +306,10 @@
 	<cfscript>
 		if (variables.executed)
 			return this.clone().clearWhere(argumentCollection=arguments);
+
+		if (variables.cacheSql)
+			removeFromSignature({"where"=1});
+
 		this.sql.wheres = [];
 		this.params.wheres = [];
 		return this;
@@ -262,6 +320,10 @@
 	<cfscript>
 		if (variables.executed)
 			return this.clone().clearGroup(argumentCollection=arguments);
+
+		if (variables.cacheSql)
+			removeFromSignature({"group"=1});
+
 		this.sql.groups = [];
 		return this;
 	</cfscript>
@@ -271,6 +333,10 @@
 	<cfscript>
 		if (variables.executed)
 			return this.clone().clearHaving(argumentCollection=arguments);
+
+		if (variables.cacheSql)
+			removeFromSignature({"having"=1});
+
 		this.sql.havings = [];
 		this.params.havings = [];
 		return this;
@@ -281,6 +347,10 @@
 	<cfscript>
 		if (variables.executed)
 			return this.clone().clearOrder(argumentCollection=arguments);
+
+		if (variables.cacheSql)
+			removeFromSignature({"order"=1});
+
 		this.sql.orders = [];
 		return this;
 	</cfscript>
@@ -324,6 +394,9 @@
 
 		if (variables.executed)
 			return this.clone().include(argumentCollection=arguments);
+
+		if (variables.cacheSql)
+			appendSignature(GetFunctionCalledName(), arguments);
 
 		// always append parameters to the relation
 		ArrayAppend(this.params.joins, arguments.params, true);
@@ -622,7 +695,7 @@
 		if (REFindNoCase("^cfrel\.nodes\.", typeOf(arguments.obj)) GT 0)
 			return arguments.obj;
 			
-		// throw error if we havent found it yet
+		// throw error if we haven't found it yet
 		throwException("Invalid object type passed into #UCase(arguments.clause)#");
 	</cfscript>
 </cffunction>

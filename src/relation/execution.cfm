@@ -4,7 +4,23 @@
 </cffunction>
 
 <cffunction name="toSqlArray" returntype="array" access="public" hint="Convert relational data into flat SQL array">
-	<cfreturn visitor().visit(obj=this, map=getMap()) />
+	<cfscript>
+		if (variables.cacheSql) {
+			var signature = this.buildSignature;
+			var cacheStructure = Application.cfrel.sqlCache;
+
+			var sqlInCache = cacheStructure.containsKey(signature);
+			var sql = sqlInCache ? cacheStructure.get(signature) : visitor().visit(obj=this, map=getMap());
+			
+			if (NOT sqlInCache)
+				cacheStructure.put(signature, sql);
+
+		} else {
+			var sql = visitor().visit(obj=this, map=getMap());
+		}
+
+		return sql;
+	</cfscript>
 </cffunction>
 
 <cffunction name="getParameters" returntype="array" access="public" hint="Return array of all parameters used in query and subqueries">

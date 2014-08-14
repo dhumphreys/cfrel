@@ -1,5 +1,6 @@
 <cfcomponent output="false" mixin="model">
-	
+
+	<!--- TODO: Move this to a place where it can be used without CFWheels --->
 	<cffunction name="init" returntype="any" access="public">
 		<cfscript>
 			
@@ -9,7 +10,14 @@
 			// set up cfrel cfc mappings
 			application.cfrel = {};
 			application.cfrel.cfcPrefix = "plugins.cfrel.lib";
-				
+
+			Application.cfrel.HASH_ALGORITHM = "MD5";
+			
+			// Create caches
+			var concurrentHashMapProxy = CreateObject("java", "java.util.concurrent.ConcurrentHashMap");
+			for (var cacheName in ["parse", "param", "map", "sql", "signatureHash"]) 
+				Application.cfrel[cacheName & "Cache"] = concurrentHashMapProxy.init();
+
 			return this;
 		</cfscript>
 	</cffunction>
@@ -238,6 +246,7 @@
 		<cfargument name="useDefaultScope" type="boolean" default="#$useDefaultScope()#" />
 		<cfargument name="cacheParse" type="boolean" default="true" />
 		<cfargument name="cacheMap" type="boolean" default="true" />
+		<cfargument name="cacheSql" type="boolean" default="true" />
 		<cfscript>
 			var loc = {};
 			

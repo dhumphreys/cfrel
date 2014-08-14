@@ -11,4 +11,5 @@
 	<cfinclude template="relation/query.cfm" />
 	<cfinclude template="parser/parse.cfm" />
 	<cfinclude template="parser/grammar.cfm" />
+	<cfinclude template="caching/signatures.cfm" />
 </cfcomponent>

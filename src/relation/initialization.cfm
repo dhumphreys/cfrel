@@ -6,6 +6,7 @@
 	<cfargument name="parameterize" type="boolean" default="false" />
 	<cfargument name="cacheParse" type="boolean" default="false" />
 	<cfargument name="cacheMap" type="boolean" default="false" />
+	<cfargument name="cacheSql" type="boolean" default="false" />
 	<cfargument name="includeSoftDeletes" type="boolean" default="false" />
 	<cfscript>
 		
@@ -50,6 +51,14 @@
 		// global caching settings
 		variables.cacheParse = arguments.cacheParse;
 		variables.cacheMap = arguments.cacheMap;
+		variables.cacheSql = arguments.cacheSql;
+
+		if (variables.cacheSql) {
+			if (NOT StructKeyExists(request, "cfrel"))
+				request.cfrel = {};
+			request.cfrel.jsonCache = {};
+			this.buildSignature = CreateObject("java", "java.util.ArrayList").init();
+		}
 		
 		/***************
 		* MAPPING VARS *
