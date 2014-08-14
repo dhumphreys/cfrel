@@ -341,6 +341,7 @@
 			// return the calculated property sql with its alias
 			else if (loc.calculated)
 				ArrayAppend(arguments.rtn, loc.column & " AS " & escape(loc.alias));
+
 			// return the column with its alias
 			else
 				ArrayAppend(arguments.rtn, escape(loc.column) & " AS " & escape(loc.alias));
