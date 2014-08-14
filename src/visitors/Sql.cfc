@@ -336,8 +336,11 @@
 
 			// if aliases are disabled, or the column and alias match, and we aren't using a calculated property, just return the column
 			else if (arguments.state.aliasOff OR (NOT loc.calculated AND ListLast(loc.column, ".") EQ loc.alias))
-				ArrayAppend(arguments.rtn, escape(loc.column));
-			
+				ArrayAppend(arguments.rtn, loc.calculated ? loc.column : escape(loc.column));
+
+			// return the calculated property sql with its alias
+			else if (loc.calculated)
+				ArrayAppend(arguments.rtn, loc.column & " AS " & escape(loc.alias));
 			// return the column with its alias
 			else
 				ArrayAppend(arguments.rtn, escape(loc.column) & " AS " & escape(loc.alias));
