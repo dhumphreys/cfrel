@@ -112,7 +112,7 @@
 					// ADD_EXPR NOT IN LPAREN EXPRS RPAREN
 					if (accept("IN")) {
 						expect("(");
-						loc.e = subject=exprs();
+						loc.e = exprs();
 						expect(")");
 						loc.left = sqlBinaryOp(left=loc.left, op="NOT_IN", right=loc.e);
 
