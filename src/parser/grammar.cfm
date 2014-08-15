@@ -194,14 +194,14 @@
 			case "::dec::":
 				loc.term = popLiteral();
 				if (variables.parameterize)
-					loc.term = sqlParam(value=loc.term, cfsqltype="cf_sql_decimal");
+					loc.term = sqlParam(value=loc.term, cfsqltype="cf_sql_decimal", column=variables.tmpParamColumn);
 				break;
 
 			// INTEGER
 			case "::int::":
 				loc.term = popLiteral();
 				if (variables.parameterize)
-					loc.term = sqlParam(value=loc.term, cfsqltype="cf_sql_integer");
+					loc.term = sqlParam(value=loc.term, cfsqltype="cf_sql_integer", column=variables.tmpParamColumn);
 				break;
 			
 			// STRING
@@ -210,7 +210,7 @@
 				if (variables.parameterize) {
 					loc.term = REReplace(loc.term, "^'(.*)'$", "\1");
 					loc.term = REReplace(loc.term, "(\\|')'", "'", "ALL");
-					loc.term = sqlParam(value=loc.term, cfsqltype="cf_sql_varchar");
+					loc.term = sqlParam(value=loc.term, cfsqltype="cf_sql_varchar", column=variables.tmpParamColumn);
 				}
 				break;
 			
@@ -220,7 +220,7 @@
 				loc.term = "'" & DateFormat(loc.date, "yyyy-mm-dd ") & TimeFormat(loc.date, "hh:mm:ss TT") & "'";
 				if (variables.parameterize) {
 					loc.term = REReplace(loc.term, "^'(.+)'$", "\1");
-					loc.term = sqlParam(value=loc.term, cfsqltype="cf_sql_timestamp");
+					loc.term = sqlParam(value=loc.term, cfsqltype="cf_sql_timestamp", column=variables.tmpParamColumn);
 				}
 				break;
 				

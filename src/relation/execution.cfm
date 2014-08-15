@@ -204,10 +204,9 @@
 		if (StructKeyExists(arguments, "value"))
 			loc.param.value = arguments.value;
 
-		// if no type has been set, give it our best guess
-		// TODO: not ideal to do IsNumeric() for this check
+		// if no type has been set, default to a string
 		if (NOT StructKeyExists(loc.param, "cfsqltype"))
-			loc.param.cfsqltype = IsNumeric(loc.param.value) ? "cf_sql_numeric" : "cf_sql_char";
+			loc.param.cfsqltype = "cf_sql_char";
 					
 		
 		// if value is an array, set up list params
@@ -216,6 +215,10 @@
 			loc.param.value = ArrayToList(loc.param.value, Chr(7));
 			loc.param.list = true;
 			loc.param.separator = Chr(7);
+
+		// if value is simple and empty, then pass it as an empty string
+		} else if (Len(loc.param.value) EQ 0) {
+			loc.param.cfsqltype = "cf_sql_char";
 		}
 
 		return loc.param;

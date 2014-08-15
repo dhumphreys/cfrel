@@ -453,7 +453,7 @@
 				StructDelete(loc.obj, "column");
 
 				// if possible, map the parameter to the column it references
-				if (NOT StructKeyExists(loc.obj, "cfsqltype") AND StructKeyExists(arguments.map.columns, loc.key) AND StructKeyExists(arguments.map.columns[loc.key], "cfsqltype"))
+				if (StructKeyExists(arguments.map.columns, loc.key) AND StructKeyExists(arguments.map.columns[loc.key], "cfsqltype"))
 					loc.obj.cfsqltype = arguments.map.columns[loc.key].cfsqltype;
 			}
 
