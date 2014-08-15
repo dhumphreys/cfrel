@@ -46,21 +46,21 @@
 
 		// use the global cache if possible
 		if (variables.cacheMap EQ true) {
-			
-			// set up mapping cache
-			if (NOT StructKeyExists(application, "cfrel") OR NOT StructKeyExists(application.cfrel, "mapCache"))
-				application.cfrel.mapCache = {};
 
 			// generate unique key for this mapping
 			var key = mapKey();
 			if (key NEQ false) {
 
 				// store the mapping in the global cache if it isn't there
-				if (NOT StructKeyExists(application.cfrel.mapCache, key))
-					application.cfrel.mapCache[key] = mapper().map(this);
+				if (NOT inCache("map", key)) {
+					variables.map = mapper().map(this);
+					saveCache("map", key, variables.map);
+				
+				// read the map from cache and store it internally 
+				} else {
+					variables.map = loadCache("map", key);
+				}
 
-				// read the map from cache, store it internally, and return
-				variables.map = application.cfrel.mapCache[key];
 				return variables.map;
 			}
 		}
@@ -132,7 +132,7 @@
 			}
 		}
 
-		// return the key as an MD5 hash
-		return Hash(loc.key, "MD5");
+		// hash the key and return
+		return Hash(loc.key, Application.cfrel.HASH_ALGORITHM);
 	</cfscript>
 </cffunction>

@@ -1,9 +1,6 @@
 <cffunction name="findByKey" returntype="any" access="public" hint="Find a scoped record by key">
 	<cfargument name="key" type="string" required="true" />
 	<cfscript>
-		if (variables.cacheSql)
-			appendSignature(GetFunctionCalledName(), arguments);
-
 		var loc = {};
 		loc.args = {};
 		

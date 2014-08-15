@@ -189,3 +189,129 @@
 	<cfargument name="array" type="array" required="true" />
 	<cfreturn arguments.array[ArrayLen(arguments.array)] />
 </cffunction>
+
+<cffunction name="sizeOfHashMap" returntype="numeric" access="public">
+	<cfargument name="obj" type="any" required="true" />
+	<cfscript>
+		var loc = {};
+		loc.keySet = arguments.obj.keySet();
+		loc.keySetIterator = loc.keySet.iterator();
+		loc.size = 0;
+		while (loc.keySetIterator.hasNext()) {
+			loc.key = loc.keySetIterator.next();
+			loc.size += sizeOf(loc.key);
+			loc.value = arguments.obj.get(loc.key);
+			loc.size += sizeOf(loc.value);
+		}
+
+		return loc.size;
+	</cfscript>
+</cffunction>
+
+<cffunction name="sizeOf" returntype="numeric" access="public">
+	<cfargument name="obj" type="any" required="true" />
+	<cfscript>
+		var loc = {};
+
+		try {
+			loc.returnVal = Len(ToBinary(ObjectSave(arguments.obj)));
+		} catch (any e) {
+			loc.type = typeOf(arguments.obj);
+			// CFRelLog(context="sizeOf", data=loc.type & Chr(10), action="immediate-append");
+
+			switch (loc.type) {
+				case "array":
+					return sizeOfArray(arguments.obj);
+				case "struct":
+					return sizeOfStruct(arguments.obj);
+				case "function":
+					return 0;
+				default:
+					// last ditch effort...
+					// may be inaccurate, but better than nothing
+					if (Not IsSimpleValue(loc.type)) {
+						// loc.returnVal = 16;
+						return sizeOfStruct(arguments.obj);
+					} else {
+						try {
+							loc.returnVal = Len(SerializeJSON(arguments.obj));
+						} catch (any e) {
+							loc.returnVal = 16;
+						}
+					}
+			}
+		}
+
+		// CFRelLog(context="sizeOf", data=SerializeJSON(arguments.obj) & Chr(10) & Chr(10), action="immediate-append");
+		return loc.returnVal;
+	</cfscript>
+</cffunction>
+
+
+<cffunction name="getPrintable" returntype="any" access="public">
+	<cfargument name="obj" type="any" required="true" />
+	<cfscript>
+		if (IsSimpleValue(arguments.obj))
+			return Duplicate(arguments.obj);
+		else if (IsBinary(arguments.obj))
+			return ObjectLoad(arguments.obj);
+		else if (IsArray(arguments.obj)) {
+			var printableObj = [];	
+			for (var i = 1; i < ArrayLen(arguments.obj); i++)
+				printableObj[i] = getPrintable(arguments.obj[i]);
+		}
+		else if (IsStruct(arguments.obj)) {
+			var printableObj = {};
+			for (var key in arguments.obj) {
+				if (StructKeyExists(arguments.obj, key) AND NOT IsCustomFunction(arguments.obj[key]))
+					printableObj[key] = getPrintable(arguments.obj[key]);
+			}
+		}
+		else if (IsCustomFunction(arguments.obj))
+			return "(cannot be printed)";
+		else {
+			try {
+				printableObj = SerializeJSON(arguments.obj);
+			} catch (any e) {
+				try {
+					printableObj = SerializeJSON(ObjectSave(arguments.obj));
+				} catch (any e) {
+					return "(cannot be printed)";
+				}
+			}
+		}
+		return printableObj;
+	</cfscript>
+</cffunction>
+
+
+<cffunction name="sizeOfStruct" returntype="numeric" access="public">
+	<cfargument name="obj" type="struct" required="true" />
+	<cfscript>
+		var loc = {};
+		loc.size = 0;
+		for (loc.key in arguments.obj) {
+			loc.size += sizeOf(loc.key);
+			loc.value = arguments.obj[loc.key];
+			loc.size += sizeOf(loc.value);
+		}
+		return loc.size;
+	</cfscript>
+</cffunction>
+
+<cffunction name="sizeOfArray" returntype="numeric" access="public">
+	<cfargument name="obj" type="array" required="true" />
+	<cfscript>
+		var loc = {};
+		loc.size = 0;
+		for (loc.value in arguments.obj)
+			loc.size += sizeOf(loc.value);
+		return loc.size;
+	</cfscript>
+</cffunction>
+
+
+<cffunction name="bytesAsMBString" returntype="string" access="public">
+	<cfargument name="bytes" type="numeric" required="true" />
+	<cfreturn (NumberFormat(arguments.bytes/1024/1024, ".__")) & " MB" />
+</cffunction>

@@ -47,7 +47,7 @@
 			var obj_isQuery = IsQuery(targetObject);
 			if (obj_isQuery OR IsArray(targetObject)) {
 
-				// if we can, try to load pre-generated JSON serialization from local cache to save time
+				// if we can, try to load pre-generated JSON serialization from request cache to save time
 				if (request.cfrel.jsonCache.containsKey(targetObject)) {
 					signature = request.cfrel.jsonCache.get(targetObject);
 				} else {
@@ -75,8 +75,22 @@
 
 		// Hash long signatures to save space and time
 		if (IsSimpleValue(signature) AND Len(signature) > 96)
-			signature = Hash(signature, Application.cfrel_constants.HASH_ALGORITHM);
+			signature = getSignatureHash(signature);
 
 		return signature;
+	</cfscript>
+</cffunction>
+
+<cffunction name="getSignatureHash" returntype="string" access="public">
+	<cfargument name="signature" type="string" required="true" />
+	<cfscript>
+		if (inCache("signatureHash", signature)) {
+			var hashedSignature = loadCache("signatureHash", signature);
+		} else {
+			var hashedSignature = Hash(signature, Application.cfrel.HASH_ALGORITHM);
+			saveCache("signatureHash", signature, hashedSignature);
+		}
+
+		return hashedSignature;
 	</cfscript>
 </cffunction>

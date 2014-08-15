@@ -21,15 +21,11 @@
 		if (variables.cacheParse) {
 		
 			// create key for cache
-			loc.cacheKey = Hash("#loc.rule#:#variables.parameterize#:#arguments.str#", "MD5");
+			loc.cacheKey = Hash("#loc.rule#:#variables.parameterize#:#arguments.str#", Application.cfrel.HASH_ALGORITHM);
 			
-			// set up parse cache
-			if (NOT StructKeyExists(application, "cfrel") OR NOT StructKeyExists(application.cfrel, "parseCache"))
-				application.cfrel.parseCache = {};
-				
-			// if key exists, just return cached parse tree
-			if (StructKeyExists(application.cfrel.parseCache, loc.cacheKey))
-				return Duplicate(application.cfrel.parseCache[loc.cacheKey]);
+			// if key is in cache, just return cached parse tree
+			if (inCache("parse", loc.cacheKey))
+				return Duplicate(loadCache("parse", loc.cacheKey));
 		}
 		
 		// break incoming string into tokens
@@ -45,7 +41,7 @@
 			
 		// cache the parse tree in the application scope
 		if (variables.cacheParse)
-			application.cfrel.parseCache[loc.cacheKey] = Duplicate(loc.tree);
+			saveCache("parse", loc.cacheKey, Duplicate(loc.tree));
 		
 		return loc.tree;
 	</cfscript>

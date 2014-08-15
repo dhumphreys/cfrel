@@ -6,18 +6,28 @@
 			
 			// set compatible Wheels version
 			this.version = "1.1,1.1.1,1.1.2,1.1.3,1.1.4,1.1.5";
+
+			// create a Java Concurrent object proxies to use for application-level concurrency of application.cfrel and application.cfrel caches
+			var concurrentHashMapProxy = CreateObject("java", "java.util.concurrent.ConcurrentHashMap");
+			var concurrentLinkedQueue = CreateObject("java", "java.util.concurrent.ConcurrentLinkedQueue");
 			
 			// set up cfrel cfc mappings
 			application.cfrel = {};
 			application.cfrel.cfcPrefix = "plugins.cfrel.lib";
 
 			Application.cfrel.HASH_ALGORITHM = "MD5";
-			
-			// Create caches
-			var concurrentHashMapProxy = CreateObject("java", "java.util.concurrent.ConcurrentHashMap");
-			for (var cacheName in ["parse", "param", "map", "sql", "signatureHash"]) 
-				Application.cfrel[cacheName & "Cache"] = concurrentHashMapProxy.init();
 
+			Application.cfrel.allowCaching = true;
+
+			// create caches and cache info structures
+			Application.cfrel.cache = concurrentHashMapProxy.init();
+			for (var cacheName in ["parse", "map", "sql", "signatureHash"]) {
+				Application.cfrel.cache[cacheName] = concurrentHashMapProxy.init();
+				Application.cfrel.cacheSizeSamples[cacheName] = concurrentLinkedQueue.init();
+			}
+
+			// link some java proxies to application scope for better performance in cfrel
+			application.cfrel.javaProxies.concurrentLinkedQueue = concurrentLinkedQueue;
 			return this;
 		</cfscript>
 	</cffunction>

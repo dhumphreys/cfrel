@@ -49,16 +49,7 @@
 		variables.paginationData = false;
 
 		// global caching settings
-		variables.cacheParse = arguments.cacheParse;
-		variables.cacheMap = arguments.cacheMap;
-		variables.cacheSql = arguments.cacheSql;
-
-		if (variables.cacheSql) {
-			if (NOT StructKeyExists(request, "cfrel"))
-				request.cfrel = {};
-			request.cfrel.jsonCache = {};
-			this.buildSignature = CreateObject("java", "java.util.ArrayList").init();
-		}
+		setupCaching(argumentCollection=arguments);
 		
 		/***************
 		* MAPPING VARS *
@@ -85,6 +76,37 @@
 		variables.tmpParamColumn = "";
 		
 		return this;
+	</cfscript>
+</cffunction>
+
+<cffunction name="setupCaching" returntype="void" access="public">
+	<cfscript>
+		// Application-level cache override
+		variables.allowCaching = StructKeyExists(Application.cfrel, "allowCaching") ? Application.cfrel.allowCaching : true;
+
+		// default caching to false
+		variables.cacheParse = variables.cacheMap = variables.cacheSql = false;
+
+		// setup caching structures if caching is allowed
+		if (variables.allowCaching) {
+
+			variables.cacheParse = arguments.cacheParse;
+			variables.cacheMap = arguments.cacheMap;
+			variables.cacheSql = arguments.cacheSql;
+
+			if (NOT StructKeyExists(request, "cfrel"))
+				request.cfrel = {};
+
+			if (NOT StructKeyExists(request.cfrel, "startTime"))
+				request.cfrel.startTime = Now();
+
+			if (variables.cacheSql) {
+				this.buildSignature = CreateObject("java", "java.util.ArrayList").init();
+
+				if (NOT StructKeyExists(request.cfrel, "jsonCache"))
+					request.cfrel.jsonCache = {};
+			}
+		}
 	</cfscript>
 </cffunction>
 
@@ -119,9 +141,9 @@
 </cffunction>
 
 <cffunction name="subQuery" returntype="any" access="public" hint="Create new rel with the current rel as the child">
-	<cfreturn new(datasource=this.datasource, visitor=variables.visitorClass, qoq=variables.qoq, parameterize=variables.parameterize, cacheParse=variables.cacheParse, cacheMap=variables.cacheMap).from(this) />
+	<cfreturn new(datasource=this.datasource, visitor=variables.visitorClass, qoq=variables.qoq, parameterize=variables.parameterize, cacheParse=variables.cacheParse, cacheMap=variables.cacheMap, cacheSql=variables.cacheSql).from(this) />
 </cffunction>
 
 <cffunction name="qoq" returntype="struct" access="public" hint="Return a QoQ relation with the current recordset as the FROM">
-	<cfreturn this.new(model=this.model, parameterize=variables.parameterize, cacheParse=variables.cacheParse, cacheMap=variables.cacheMap).from(this.query()) />
+	<cfreturn this.new(model=this.model, parameterize=variables.parameterize, cacheParse=variables.cacheParse, cacheMap=variables.cacheMap, cacheSql=variables.cacheSql).from(this.query()) />
 </cffunction>

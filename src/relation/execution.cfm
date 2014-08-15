@@ -7,13 +7,12 @@
 	<cfscript>
 		if (variables.cacheSql) {
 			var signature = this.buildSignature;
-			var cacheStructure = Application.cfrel.sqlCache;
 
-			var sqlInCache = cacheStructure.containsKey(signature);
-			var sql = sqlInCache ? cacheStructure.get(signature) : visitor().visit(obj=this, map=getMap());
-			
+			var sqlInCache = inCache("sql", signature);
+			var sql = sqlInCache ? loadCache("sql", signature) : visitor().visit(obj=this, map=getMap());
+
 			if (NOT sqlInCache)
-				cacheStructure.put(signature, sql);
+				saveCache("sql", signature, sql);
 
 		} else {
 			var sql = visitor().visit(obj=this, map=getMap());
