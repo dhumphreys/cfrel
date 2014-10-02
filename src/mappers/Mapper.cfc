@@ -78,8 +78,6 @@
 			ArrayAppend(arguments.map.aliases["query"], loc.table.alias);
 
 			// look up properties and associate them with an alias
-			// TODO: figure out why GetMetaData() is not considering aliases
-			/*
 			loc.properties = GetMetaData(arguments.query.subject);
 			loc.iEnd = ArrayLen(loc.properties);
 			for (loc.i = 1; loc.i LTE loc.iEnd; loc.i++) {
@@ -100,7 +98,6 @@
 				// add to property list for table mapping
 				loc.table.properties[loc.col.column] = loc.col;
 			}
-			*/
 		</cfscript>
 		<cfreturn arguments.map />
 	</cffunction>

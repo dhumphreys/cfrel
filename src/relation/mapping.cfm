@@ -44,8 +44,8 @@
 		if (IsStruct(variables.map))
 			return variables.map;
 
-		// use the global cache if possible
-		if (variables.cacheMap EQ true) {
+		// use the global cache if enabled and not a query of a query
+		if (variables.cacheMap EQ true AND variables.qoq EQ false) {
 
 			// generate unique key for this mapping
 			var key = mapKey();
