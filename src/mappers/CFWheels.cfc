@@ -35,7 +35,7 @@
 		
 			// if the option is set, and the model has soft delete, consider it in the WHERE clause
 			// TODO: disable if NOT variables.includeSoftDeletes
-			loc.table.softDelete = loc.model.softDeletion ? loc.tableAlias & "." & loc.model.$softDeleteColumn() & " IS NULL" : "";
+			loc.table.softDelete = loc.model.softDeletion ? sqlBinaryOp(sqlColumn(loc.table.alias & "." & loc.model.softDeleteColumn), "IS", "NULL") : false;
 
 			// create a unique mapping for the table alias
 			arguments.map.tables[loc.table.alias] = loc.table;

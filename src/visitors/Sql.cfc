@@ -510,7 +510,7 @@
 
 				// append soft delete to where clause or on clause
 				// TODO: for joins, put statement in ON clause
-				if (StructKeyExists(arguments.map.tables, loc.alias) AND Len(arguments.map.tables[loc.alias].softDelete))
+				if (StructKeyExists(arguments.map.tables, loc.alias) AND IsStruct(arguments.map.tables[loc.alias].softDelete))
 					ArrayAppend(arguments.state.softDeletes.wheres, arguments.map.tables[loc.alias].softDelete);
 			}
 
