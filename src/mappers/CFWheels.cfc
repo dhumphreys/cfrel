@@ -21,11 +21,14 @@
 			// look up model data from cfwheels
 			loc.model = model(arguments.table.model).$classData();
 
+			// determine correct base table alias
+			loc.alias = Len(arguments.table.alias) ? arguments.table.alias : arguments.table.model;
+
 			// look up table information and associate it with an alias
 			loc.table = StructNew();
 			loc.table.table = loc.model.tableName;
 			loc.table.modelName = loc.model.modelName;
-			loc.table.alias = uniqueScopeKey(key=loc.model.modelName, scope=arguments.map.tables);
+			loc.table.alias = uniqueScopeKey(key=loc.alias, scope=arguments.map.tables);
 			loc.table.properties = StructNew();
 			loc.table.calculatedProperties = StructNew();
 			loc.table.primaryKey = loc.model.keys;

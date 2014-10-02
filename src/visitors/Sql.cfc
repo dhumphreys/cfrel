@@ -496,8 +496,8 @@
 			var loc = {};
 
 			// determine default table and alias
-			loc.table = obj.table;
-			loc.alias = loc.key = Len(obj.alias) ? obj.alias : ListLast(loc.table, ".");
+			loc.table = loc.key = obj.table;
+			loc.alias = Len(obj.alias) ? obj.alias : ListLast(loc.table, ".");
 
 			// if a more reliable alias can be found, then use it and pop it off the stack
 			if (StructKeyExists(arguments.state.aliases, loc.key) AND ArrayLen(arguments.state.aliases[loc.key])) {
