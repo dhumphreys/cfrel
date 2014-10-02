@@ -18,7 +18,7 @@
 	<cfargument name="cacheData" type="any" required="false">
 	<cfscript>
 		// setup entry to be saved
-		var cacheEntry = {data=arguments.cacheData, accessHistory=Application.javaProxies.concurrentLinkedQueue.init()};
+		var cacheEntry = {data=arguments.cacheData, accessHistory=Application.cfrel.javaProxies.concurrentLinkedQueue.init()};
 
 		// save to cache
 		Application.cfrel.cache[arguments.cacheName].put(arguments.key, cacheEntry);
