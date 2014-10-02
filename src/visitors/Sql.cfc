@@ -126,10 +126,13 @@
 			if (ArrayLen(obj.sql.joins) GT 0)
 				arguments.rtn = visit(obj=obj.sql.joins, argumentCollection=arguments);
 			
-			// append where clause
-			if (ArrayLen(obj.sql.wheres)) {
+			// append where clause and/or soft deletes
+			if (ArrayLen(obj.sql.wheres) OR ArrayLen(arguments.state.softDeletes.wheres)) {
 				ArrayAppend(arguments.rtn, "WHERE");
-				arguments.rtn = visit_list(obj=obj.sql.wheres, delim="AND", argumentCollection=arguments);
+				loc.wheres = [];
+				ArrayAppend(loc.wheres, obj.sql.wheres, true);
+				ArrayAppend(loc.wheres, arguments.state.softDeletes.wheres, true);
+				arguments.rtn = visit_list(obj=loc.wheres, delim="AND", argumentCollection=arguments);
 			}
 
 			// append group by clause
@@ -504,6 +507,11 @@
 				loc.alias = arguments.state.aliases[loc.key][1];
 				ArrayDeleteAt(arguments.state.aliases[loc.key], 1);
 				loc.table = arguments.map.tables[loc.alias].table;
+
+				// append soft delete to where clause or on clause
+				// TODO: for joins, put statement in ON clause
+				if (StructKeyExists(arguments.map.tables, loc.alias) AND Len(arguments.map.tables[loc.alias].softDelete))
+					ArrayAppend(arguments.state.softDeletes.wheres, arguments.map.tables[loc.alias].softDelete);
 			}
 
 			// just return the table if it matches the alias
@@ -601,6 +609,7 @@
 			loc.state.aliasOnly = false;
 			loc.state.aliasOff = false;
 			loc.state.aliases = Duplicate(arguments.map.aliases);
+			loc.state.softDeletes = {wheres=[], joins=[]};
 			return loc.state;
 		</cfscript>
 	</cffunction>

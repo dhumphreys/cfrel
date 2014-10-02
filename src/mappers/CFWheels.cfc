@@ -32,6 +32,10 @@
 			loc.table.properties = StructNew();
 			loc.table.calculatedProperties = StructNew();
 			loc.table.primaryKey = loc.model.keys;
+		
+			// if the option is set, and the model has soft delete, consider it in the WHERE clause
+			// TODO: disable if NOT variables.includeSoftDeletes
+			loc.table.softDelete = loc.model.softDeletion ? loc.tableAlias & "." & loc.model.$softDeleteColumn() & " IS NULL" : "";
 
 			// create a unique mapping for the table alias
 			arguments.map.tables[loc.table.alias] = loc.table;
@@ -81,11 +85,7 @@
 				// add to calculated property list for table mapping
 				loc.table.calculatedProperties[loc.col.property] = loc.col;
 			}
-		
-			// TODO: figure out how to handle soft deletes with new mapping model
-			// if the option is set, and the model has soft delete, consider it in the WHERE clause
-			//if (NOT variables.includeSoftDeletes AND loc.model.$softDeletion())
-			//	arguments.relation.where(loc.tableAlias & "." & loc.model.$softDeleteColumn() & " IS NULL");
+
 		</cfscript>
 		<cfreturn arguments.map />
 	</cffunction>

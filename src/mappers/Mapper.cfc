@@ -43,6 +43,7 @@
 			loc.table.properties = StructNew();
 			loc.table.calculatedProperties = StructNew();
 			loc.table.primaryKey = "";
+			loc.table.softDelete = "";
 
 			// append alias to alias list for this table
 			if (NOT structKeyExists(arguments.map.aliases, loc.table.table))
@@ -68,6 +69,7 @@
 			loc.table.properties = StructNew();
 			loc.table.calculatedProperties = StructNew();
 			loc.table.primaryKey = "";
+			loc.table.softDelete = "";
 
 			// create a unique mapping for the table alias
 			arguments.map.tables[loc.table.alias] = loc.table;
@@ -115,6 +117,7 @@
 			loc.table.properties = StructNew();
 			loc.table.calculatedProperties = StructNew();
 			loc.table.primaryKey = "";
+			loc.table.softDelete = "";
 
 			// TODO: look up properties from underlying relation and associate them with an alias
 
