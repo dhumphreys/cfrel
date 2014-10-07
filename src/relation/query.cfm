@@ -204,14 +204,7 @@
 	<cfscript>
 		if (variables.executed)
 			return this.qoq().where(argumentCollection=arguments);
-		
-		if (variables.cacheSql) {
-			if (NOT StructKeyExists(arguments, "$clause"))
-				StructDelete(arguments, "$clause");
-			if (NOT StructKeyExists(arguments, "$params"))
-				StructDelete(arguments, "$params");
-			appendSignature(GetFunctionCalledName(), arguments);
-		}
+
 		_appendConditionsToClause("WHERE", "wheres", arguments);
 		return this;
 	</cfscript>
@@ -236,14 +229,6 @@
 	<cfscript>
 		if (variables.executed)
 			return this.clone().having(argumentCollection=arguments);
-
-		if (variables.cacheSql) {
-			if (NOT StructKeyExists(arguments, "$clause"))
-				StructDelete(arguments, "$clause");
-			if (NOT StructKeyExists(arguments, "$params"))
-				StructDelete(arguments, "$params");
-			appendSignature(GetFunctionCalledName(), arguments);
-		}
 
 		_appendConditionsToClause("HAVING", "havings", arguments);
 		return this;
@@ -647,6 +632,9 @@
 			
 		// if a text clause was passed, we need to parse entire clause and add passed in params
 		} else if (StructKeyExists(arguments.args, "$clause")) {
+		
+			if (variables.cacheSql)
+				appendSignature(arguments.clause, {$clause=arguments.args.$clause});
 				
 			// append clause and parameters to relation object
 			ArrayAppend(this.sql[arguments.scope], _transformInput(arguments.args.$clause, arguments.clause));
@@ -654,6 +642,11 @@
 			
 		// if key/value pairs were passed, comparison nodes should be added with parameters
 		} else {
+
+			// store a hypothetical clause with parameter placeholders for caching purposes
+			loc.cacheClause = [];
+
+			// loop over each key=value pair in the clause
 			for (loc.key in arguments.args) {
 				
 				// FIXME: (1) railo seems to keep these arguments around
@@ -661,16 +654,19 @@
 					continue;
 				
 				// use an IN if value is an array
-				if (IsArray(arguments.args[loc.key]))
+				if (IsArray(arguments.args[loc.key])) {
 					loc.clause = sqlBinaryOp(sqlColumn(column=loc.key), "IN", sqlParam(column=loc.key));
+					ArrayAppend(loc.cacheClause, "#loc.key# IN ?");
 					
 				// use an equality check if value is simple
-				else if (IsSimpleValue(arguments.args[loc.key]))
+				} else if (IsSimpleValue(arguments.args[loc.key])) {
 					loc.clause = sqlBinaryOp(sqlColumn(column=loc.key), "=", sqlParam(column=loc.key));
+					ArrayAppend(loc.cacheClause, "#loc.key# = ?");
 					
 				// throw an error otherwise
-				else
+				} else {
 					throwException("Invalid parameter to #UCase(arguments.clause)# clause. Only arrays and simple values may be used.");
+				}
 
 				// append parameters to the relation
 				ArrayAppend(this.params[arguments.scope], arguments.args[loc.key]);
@@ -680,7 +676,14 @@
 					
 				// append clause to correct scope
 				ArrayAppend(this.sql[arguments.scope], _transformInput(loc.clause, arguments.clause));
+
+				// blank out named argument for caching purposes
+				arguments.args[loc.key] = "";
 			}
+		
+			// store signature with a hypothetical conditional clause, as if we weren't using key=value params
+			if (variables.cacheSql)
+				appendSignature(arguments.clause, {$clause=ArrayToList(loc.cacheClause, " AND ")});
 			
 			// FIXME: (3) throw an error if a good value was not found
 			if (NOT StructKeyExists(loc, "success"))
