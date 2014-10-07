@@ -125,7 +125,7 @@
 
 				// look up association and map table information from the parent
 				if (NOT StructKeyExists(loc.parent.associations, loc.currKey))
-					throwException("Association `#loc.currKey#` not found in model `#loc.parent.mapping.table#`.");
+					throwException("Association `#loc.currKey#` not found in model `#loc.parent.mapping.modelName#`.");
 				loc.assoc = loc.parent.associations[loc.currKey];
 				loc.table = sqlModel(model=loc.assoc.modelName, includeSoftDeletes=arguments.include.includeSoftDeletes);
 
