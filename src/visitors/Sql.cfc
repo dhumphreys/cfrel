@@ -112,7 +112,9 @@
 			// generate FROM arguments
 			if (ArrayLen(obj.sql.froms) GT 0) {
 				ArrayAppend(arguments.rtn, "FROM");
+				arguments.state.softDeleteContext = "from";
 				arguments.rtn = visit_list(obj=obj.sql.froms, argumentCollection=arguments);
+				arguments.state.softDeleteContext = "other";
 					
 			// error if neither SELECT or FROM was specified
 			} else if (loc.select EQ false) {
@@ -123,8 +125,11 @@
 			arguments.state.aliasOff = true;
  			
 			// append joins
-			if (ArrayLen(obj.sql.joins) GT 0)
+			if (ArrayLen(obj.sql.joins) GT 0) {
+				arguments.state.softDeleteContext = "join";
 				arguments.rtn = visit(obj=obj.sql.joins, argumentCollection=arguments);
+				arguments.state.softDeleteContext = "other";
+			}
 			
 			// append where clause and/or soft deletes
 			if (ArrayLen(obj.sql.wheres) OR ArrayLen(arguments.state.softDeletes.wheres)) {
@@ -379,10 +384,20 @@
 			// generate the table part of the JOIN
 			arguments.rtn = visit(obj=obj.table, argumentCollection=arguments);
 
-			// generate the ON condition if present
-			if (IsStruct(obj.condition) OR obj.condition NEQ false) {
+			// generate the ON clause if conditions or soft deletes are present for this join
+			loc.hasJoinConditions = IsStruct(obj.condition) OR obj.condition NEQ false;
+			if (loc.hasJoinConditions OR ArrayLen(arguments.state.softDeletes.joins)) {
 				ArrayAppend(arguments.rtn, "ON");
-				arguments.rtn = visit(obj=obj.condition, argumentCollection=arguments);
+
+				// combine the conditions and soft deletes into a single array
+				loc.conditions = [];
+				if (loc.hasJoinConditions)
+					ArrayAppend(loc.conditions, obj.condition);
+				ArrayAppend(loc.conditions, arguments.state.softDeletes.joins, true);
+				arguments.state.softDeletes.joins = [];
+
+				// generate the ON clause content and concatenate the fragments with AND
+				arguments.rtn = visit_list(obj=loc.conditions, delim="AND", argumentCollection=arguments);
 			}
 
 			return arguments.rtn;
@@ -509,9 +524,12 @@
 				loc.table = arguments.map.tables[loc.alias].table;
 
 				// append soft delete to where clause or on clause
-				// TODO: for joins, put statement in ON clause
-				if (StructKeyExists(arguments.map.tables, loc.alias) AND IsStruct(arguments.map.tables[loc.alias].softDelete))
-					ArrayAppend(arguments.state.softDeletes.wheres, arguments.map.tables[loc.alias].softDelete);
+				if (StructKeyExists(arguments.map.tables, loc.alias) AND IsStruct(arguments.map.tables[loc.alias].softDelete)) {
+					if (arguments.state.softDeleteContext EQ "join")
+						ArrayAppend(arguments.state.softDeletes.joins, arguments.map.tables[loc.alias].softDelete);
+					else
+						ArrayAppend(arguments.state.softDeletes.wheres, arguments.map.tables[loc.alias].softDelete);
+				}
 			}
 
 			// just return the table if it matches the alias
@@ -610,6 +628,7 @@
 			loc.state.aliasOff = false;
 			loc.state.aliases = Duplicate(arguments.map.aliases);
 			loc.state.softDeletes = {wheres=[], joins=[]};
+			loc.state.softDeleteContext = "other";
 			return loc.state;
 		</cfscript>
 	</cffunction>
