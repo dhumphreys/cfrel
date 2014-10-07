@@ -83,7 +83,7 @@
 					loc.key = ListAppend(loc.key, "FROM:" & loc.from.table);
 					break;
 				case "cfrel.nodes.Model":
-					loc.key = ListAppend(loc.key, "FROM_MODEL:" & loc.from.model);
+					loc.key = ListAppend(loc.key, "FROM_MODEL:" & loc.from.model & (loc.from.includeSoftDeletes ? ":INCLUDE_SOFT_DELETES" : ""));
 					break;
 				case "cfrel.nodes.Query":
 					loc.key = ListAppend(loc.key, "FROM:query");
@@ -108,7 +108,7 @@
 						loc.key = ListAppend(loc.key, "JOIN:" & loc.join.table.table);
 						break;
 					case "cfrel.nodes.Model":
-						loc.key = ListAppend(loc.key, "JOIN_MODEL:" & loc.join.table.model);
+						loc.key = ListAppend(loc.key, "JOIN_MODEL:" & loc.join.table.model & (loc.join.includeSoftDeletes ? ":INCLUDE_SOFT_DELETES" : ""));
 						break;
 					case "cfrel.nodes.Query":
 						loc.key = ListAppend(loc.key, "JOIN:query");
@@ -124,7 +124,7 @@
 
 			// for includes, use their long include key
 			} else if (loc.join.$class EQ "cfrel.nodes.Include") {
-				loc.key = ListAppend(loc.key, "INCLUDE:" & loc.join.includeKey);
+				loc.key = ListAppend(loc.key, "INCLUDE:" & loc.join.includeKey & (loc.join.includeSoftDeletes ? ":INCLUDE_SOFT_DELETES" : ""));
 
 			// return false if an invalid member is encountered
 			} else {

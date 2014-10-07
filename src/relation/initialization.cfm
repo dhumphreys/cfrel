@@ -50,6 +50,10 @@
 
 		// global caching settings
 		setupCaching(argumentCollection=arguments);
+
+		// cache initialization options
+		if (variables.cacheSql)
+			appendSignature(GetFunctionCalledName(), {datasource=arguments.datasource, parameterize=arguments.parameterize, includeSoftDeletes=arguments.includeSoftDeletes});
 		
 		/***************
 		* MAPPING VARS *
