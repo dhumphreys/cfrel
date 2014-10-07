@@ -34,8 +34,10 @@
 			loc.table.primaryKey = loc.model.keys;
 		
 			// if the option is set, and the model has soft delete, consider it in the WHERE clause
-			// TODO: disable if NOT variables.includeSoftDeletes
-			loc.table.softDelete = loc.model.softDeletion ? sqlBinaryOp(sqlColumn(loc.table.alias & "." & loc.model.softDeleteColumn), "IS", "NULL") : false;
+			if (NOT arguments.table.includeSoftDeletes AND loc.model.softDeletion)
+				loc.table.softDelete = sqlBinaryOp(sqlColumn(loc.table.alias & "." & loc.model.softDeleteColumn), "IS", "NULL");
+			else
+				loc.table.softDelete =  false;
 
 			// create a unique mapping for the table alias
 			arguments.map.tables[loc.table.alias] = loc.table;
@@ -125,7 +127,7 @@
 				if (NOT StructKeyExists(loc.parent.associations, loc.currKey))
 					throwException("Association `#loc.currKey#` not found in model `#loc.parent.mapping.table#`.");
 				loc.assoc = loc.parent.associations[loc.currKey];
-				loc.table = sqlModel(model=loc.assoc.modelName);
+				loc.table = sqlModel(model=loc.assoc.modelName, includeSoftDeletes=arguments.include.includeSoftDeletes);
 
 				// map the table we want to join and append to current mappings
 				arguments.map = mapTable(loc.table, arguments.map);

@@ -74,6 +74,7 @@
 	<cfargument name="include" type="string" required="true" />
 	<cfargument name="tree" type="struct" required="true" />
 	<cfargument name="includeKey" type="string" default="#arguments.include#" />
+	<cfargument name="includeSoftDeletes" type="boolean" required="false" />
 	<cfreturn constructObject("cfrel.nodes.Include", arguments)>
 </cffunction>
 
@@ -92,6 +93,7 @@
 <cffunction name="sqlModel" returntype="any" access="private">
 	<cfargument name="model" type="string" required="true" />
 	<cfargument name="alias" type="string" default="" />
+	<cfargument name="includeSoftDeletes" type="boolean" required="false" />
 	<cfreturn constructObject("cfrel.nodes.Model", arguments)>
 </cffunction>
 

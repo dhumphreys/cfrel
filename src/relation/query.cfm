@@ -88,6 +88,10 @@
 			case "model":
 				arguments.target = sqlModel(arguments.target.$classData().modelName);
 			case "cfrel.nodes.Model":
+
+				// set default soft delete behavior
+				if (NOT StructKeyExists(arguments.target, "includeSoftDeletes"))
+					arguments.target.includeSoftDeletes = variables.includeSoftDeletes;
 			
 				// set model for mapper behavior
 				if (this.model EQ false)
@@ -150,6 +154,11 @@
 			case "model":
 				arguments.target = sqlModel(arguments.target.$classData().modelName);
 			case "cfrel.nodes.model":
+
+				// set default soft delete behavior
+				if (NOT StructKeyExists(arguments.target, "includeSoftDeletes"))
+					arguments.target.includeSoftDeletes = variables.includeSoftDeletes;
+
 				break;
 				
 			// use another relation as a subquery
@@ -405,7 +414,7 @@
 
 		// otherwise, append a new include statement to the join list
 		} else {
-			loc.include = sqlInclude(include=arguments.include, includeKey=ListAppend(arguments.joinType, arguments.include, ':'), tree=includeTree(arguments.include, arguments.joinType));
+			loc.include = sqlInclude(include=arguments.include, includeKey=ListAppend(arguments.joinType, arguments.include, ':'), tree=includeTree(arguments.include, arguments.joinType), includeSoftDeletes=variables.includeSoftDeletes);
 			ArrayAppend(this.sql.joins, loc.include);
 		}
 			
